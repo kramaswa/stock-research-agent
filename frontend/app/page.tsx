@@ -184,7 +184,8 @@ export default function Home() {
       horizon: userContext.horizon,
       goal: userContext.goal,
     });
-    const url = `http://localhost:8000/research/${ticker.trim().toUpperCase()}?${params}`;
+    const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const url = `${base}/research/${ticker.trim().toUpperCase()}?${params}`;
     const controller = new AbortController();
     abortRef.current = () => controller.abort();
 
