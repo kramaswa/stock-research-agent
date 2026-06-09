@@ -1,0 +1,390 @@
+"use client";
+
+import { useState, useRef } from "react";
+import dynamic from "next/dynamic";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Search, TrendingUp, Newspaper, BarChart3, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+
+const PriceChart = dynamic(() => import("./PriceChart"), { ssr: false });
+
+type AgentStep = "init" | "quant" | "news" | "synthesis" | "done";
+
+interface AgentResult {
+  quant?: string;
+  news?: string;
+}
+
+interface ReportData {
+  content: string;
+  ticker: string;
+  company: string;
+}
+
+interface ChartPoint {
+  label: string;
+  date: string;
+  price: number;
+}
+
+interface UserContext {
+  risk: string;
+  horizon: string;
+  goal: string;
+}
+
+function ToggleGroup({
+  label,
+  options,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-gray-400 font-medium whitespace-nowrap">{label}</span>
+      <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            disabled={disabled}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap
+              ${value === opt.value
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-500 hover:bg-gray-50"
+              }
+              disabled:opacity-50 disabled:cursor-not-allowed
+              border-r border-gray-200 last:border-r-0`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+const STEP_ORDER: AgentStep[] = ["init", "quant", "news", "synthesis", "done"];
+
+const STEP_META: Record<AgentStep, { label: string }> = {
+  init: { label: "Looking up ticker" },
+  quant: { label: "Quantitative analysis" },
+  news: { label: "News & competitors (parallel)" },
+  synthesis: { label: "Synthesizing report" },
+  done: { label: "Complete" },
+};
+
+function StepIndicator({
+  step,
+  currentStep,
+  message,
+}: {
+  step: AgentStep;
+  currentStep: AgentStep | null;
+  message?: string;
+}) {
+  const stepIndex = STEP_ORDER.indexOf(step);
+  const currentIndex = currentStep ? STEP_ORDER.indexOf(currentStep) : -1;
+  const isDone = currentIndex > stepIndex;
+  const isActive = currentStep === step;
+  const isPending = currentIndex < stepIndex;
+
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium transition-all
+          ${isDone ? "bg-emerald-500 text-white" : ""}
+          ${isActive ? "bg-blue-500 text-white ring-4 ring-blue-100" : ""}
+          ${isPending ? "bg-gray-100 text-gray-400" : ""}
+        `}
+      >
+        {isDone ? "✓" : isActive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : stepIndex + 1}
+      </div>
+      <div>
+        <p className={`text-sm font-medium ${isPending ? "text-gray-400" : "text-gray-800"}`}>
+          {STEP_META[step].label}
+        </p>
+        {isActive && message && <p className="text-xs text-blue-500 mt-0.5">{message}</p>}
+      </div>
+    </div>
+  );
+}
+
+function AgentResultCard({
+  title,
+  icon,
+  content,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  content: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          {icon}
+          {title}
+        </div>
+        {expanded ? (
+          <ChevronUp className="w-4 h-4 text-gray-400" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-gray-400" />
+        )}
+      </button>
+      {expanded && (
+        <div className="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3 leading-relaxed prose prose-sm prose-gray max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Home() {
+  const [ticker, setTicker] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState<AgentStep | null>(null);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [userContext, setUserContext] = useState<UserContext>({ risk: "moderate", horizon: "long-term", goal: "growth" });
+  const [agentResults, setAgentResults] = useState<AgentResult>({});
+  const [report, setReport] = useState<ReportData | null>(null);
+  const [chartData, setChartData] = useState<ChartPoint[] | null>(null);
+  const [comparisonMd, setComparisonMd] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<(() => void) | null>(null);
+
+  const runResearch = async () => {
+    if (!ticker.trim()) return;
+
+    setLoading(true);
+    setCurrentStep("init");
+    setStatusMessage("");
+    setAgentResults({});
+    setReport(null);
+    setChartData(null);
+    setComparisonMd(null);
+    setError(null);
+
+    const params = new URLSearchParams({
+      risk: userContext.risk,
+      horizon: userContext.horizon,
+      goal: userContext.goal,
+    });
+    const url = `http://localhost:8000/research/${ticker.trim().toUpperCase()}?${params}`;
+    const controller = new AbortController();
+    abortRef.current = () => controller.abort();
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.type === "status") {
+              setCurrentStep(data.step as AgentStep);
+              setStatusMessage(data.message);
+            } else if (data.type === "agent_result") {
+              setAgentResults((prev) => ({ ...prev, [data.agent]: data.content }));
+            } else if (data.type === "chart_data") {
+              setChartData(data.data);
+            } else if (data.type === "comparison_data") {
+              setComparisonMd(data.markdown);
+            } else if (data.type === "report") {
+              setReport({ content: data.content, ticker: data.ticker, company: data.company });
+              setCurrentStep("done");
+            } else if (data.type === "error") {
+              setError(data.message);
+            }
+          } catch {}
+        }
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== "AbortError") {
+        setError(e.message || "Something went wrong.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+            <TrendingUp className="w-3.5 h-3.5" />
+            Multi-Agent Stock Research
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Stock Research Agent</h1>
+          <p className="text-gray-500 text-lg max-w-xl mx-auto">
+            AI agents analyze quantitative data and news sentiment to generate a balanced research report.
+          </p>
+        </div>
+
+        {/* Search */}
+        <div className="flex gap-3 mb-8">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && !loading && runResearch()}
+              placeholder="Enter a ticker — AAPL, NVDA, TSLA..."
+              className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+              disabled={loading}
+            />
+          </div>
+          <button
+            onClick={runResearch}
+            disabled={loading || !ticker.trim()}
+            className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loading ? "Researching..." : "Research"}
+          </button>
+        </div>
+
+        {/* Investor Profile */}
+        <div className="flex flex-wrap gap-4 mb-6 p-4 bg-white border border-gray-200 rounded-xl">
+          <ToggleGroup
+            label="Risk"
+            value={userContext.risk}
+            onChange={(v) => setUserContext((p) => ({ ...p, risk: v }))}
+            disabled={loading}
+            options={[
+              { value: "conservative", label: "Conservative" },
+              { value: "moderate", label: "Moderate" },
+              { value: "aggressive", label: "Aggressive" },
+            ]}
+          />
+          <ToggleGroup
+            label="Horizon"
+            value={userContext.horizon}
+            onChange={(v) => setUserContext((p) => ({ ...p, horizon: v }))}
+            disabled={loading}
+            options={[
+              { value: "short-term", label: "Short" },
+              { value: "medium-term", label: "Medium" },
+              { value: "long-term", label: "Long" },
+            ]}
+          />
+          <ToggleGroup
+            label="Goal"
+            value={userContext.goal}
+            onChange={(v) => setUserContext((p) => ({ ...p, goal: v }))}
+            disabled={loading}
+            options={[
+              { value: "growth", label: "Growth" },
+              { value: "income", label: "Income" },
+              { value: "value", label: "Value" },
+            ]}
+          />
+        </div>
+
+        {/* Agent Pipeline */}
+        {loading && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              Agent Pipeline
+            </p>
+            <div className="divide-y divide-gray-50">
+              {(["init", "quant", "news", "synthesis"] as AgentStep[]).map((step) => (
+                <StepIndicator
+                  key={step}
+                  step={step}
+                  currentStep={currentStep}
+                  message={currentStep === step ? statusMessage : undefined}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Agent Outputs (collapsible) */}
+        {(agentResults.quant || agentResults.news) && (
+          <div className="mb-6 space-y-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Agent Outputs
+            </p>
+            {agentResults.quant && (
+              <AgentResultCard
+                title="Quantitative Analysis"
+                icon={<BarChart3 className="w-4 h-4" />}
+                content={agentResults.quant}
+              />
+            )}
+            {agentResults.news && (
+              <AgentResultCard
+                title="News & Sentiment Analysis"
+                icon={<Newspaper className="w-4 h-4" />}
+                content={agentResults.news}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Price Chart */}
+        {chartData && report && (
+          <PriceChart data={chartData} ticker={report.ticker} />
+        )}
+
+        {/* Peer Comparison Table */}
+        {comparisonMd && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Peer Comparison</p>
+            <div className="prose prose-gray max-w-none prose-table:w-full prose-th:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:text-xs prose-th:font-semibold prose-th:text-gray-600 prose-td:px-3 prose-td:py-2 prose-td:text-sm prose-td:text-gray-700 prose-td:border-t prose-td:border-gray-100 overflow-x-auto">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{comparisonMd}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+
+        {/* Final Report */}
+        {report && (
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="prose prose-gray max-w-none prose-headings:font-semibold prose-h2:text-xl prose-h3:text-base prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800 prose-table:w-full prose-th:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:text-sm prose-th:font-semibold prose-th:text-gray-700 prose-td:px-3 prose-td:py-2 prose-td:text-sm prose-td:text-gray-600 prose-td:border-t prose-td:border-gray-100">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{report.content}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
