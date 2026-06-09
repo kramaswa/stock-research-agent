@@ -37,7 +37,7 @@ export default function PriceChart({ data, ticker }: { data: ChartPoint[]; ticke
           <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
           <YAxis domain={["auto", "auto"]} tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} width={60} />
           <Tooltip
-            formatter={(v: number) => [`$${v.toFixed(2)}`, "Price"]}
+            formatter={(v) => [`$${Number(v).toFixed(2)}`, "Price"]}
             labelStyle={{ fontSize: 12, color: "#374151" }}
             contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }}
           />
