@@ -4,11 +4,13 @@ import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Search, TrendingUp, Newspaper, BarChart3, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, TrendingUp, Newspaper, BarChart3, Loader2, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import DiscoveryCard, { type Recommendation } from "./DiscoveryCard";
 
 const PriceChart = dynamic(() => import("./PriceChart"), { ssr: false });
 
 type AgentStep = "init" | "quant" | "news" | "synthesis" | "done";
+type Mode = "research" | "discover";
 
 interface AgentResult {
   quant?: string;
@@ -70,7 +72,6 @@ function ToggleGroup({
     </div>
   );
 }
-
 
 const STEP_ORDER: AgentStep[] = ["init", "quant", "news", "synthesis", "done"];
 
@@ -155,20 +156,34 @@ function AgentResultCard({
 }
 
 export default function Home() {
+  const [mode, setMode] = useState<Mode>("research");
+
+  // Research state
   const [ticker, setTicker] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<AgentStep | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
-  const [userContext, setUserContext] = useState<UserContext>({ risk: "moderate", horizon: "long-term", goal: "growth" });
   const [agentResults, setAgentResults] = useState<AgentResult>({});
   const [report, setReport] = useState<ReportData | null>(null);
   const [chartData, setChartData] = useState<ChartPoint[] | null>(null);
   const [comparisonMd, setComparisonMd] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Discovery state
+  const [discoveryQuery, setDiscoveryQuery] = useState("");
+  const [discoveryResults, setDiscoveryResults] = useState<Recommendation[]>([]);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+
+  // Shared investor profile
+  const [userContext, setUserContext] = useState<UserContext>({ risk: "moderate", horizon: "long-term", goal: "growth" });
+
   const abortRef = useRef<(() => void) | null>(null);
 
-  const runResearch = async () => {
-    if (!ticker.trim()) return;
+  const runResearch = async (tickerArg?: string) => {
+    const t = (tickerArg ?? ticker).trim().toUpperCase();
+    if (!t || loading) return;
+    if (tickerArg) setTicker(tickerArg);
 
     setLoading(true);
     setCurrentStep("init");
@@ -185,7 +200,7 @@ export default function Home() {
       goal: userContext.goal,
     });
     const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-    const url = `${base}/research/${ticker.trim().toUpperCase()}?${params}`;
+    const url = `${base}/research/${t}?${params}`;
     const controller = new AbortController();
     abortRef.current = () => controller.abort();
 
@@ -237,6 +252,37 @@ export default function Home() {
     }
   };
 
+  const runDiscovery = async () => {
+    if (!discoveryQuery.trim()) return;
+    setDiscovering(true);
+    setDiscoveryResults([]);
+    setDiscoveryError(null);
+
+    const params = new URLSearchParams({
+      query: discoveryQuery.trim(),
+      risk: userContext.risk,
+      horizon: userContext.horizon,
+      goal: userContext.goal,
+    });
+    const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+    try {
+      const res = await fetch(`${base}/discover?${params}`);
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+      setDiscoveryResults(data.recommendations ?? []);
+    } catch (e: unknown) {
+      if (e instanceof Error) setDiscoveryError(e.message || "Discovery failed.");
+    } finally {
+      setDiscovering(false);
+    }
+  };
+
+  const handleResearchFromDiscover = (t: string) => {
+    setMode("research");
+    runResearch(t);
+  };
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -252,37 +298,98 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="flex gap-3 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={ticker}
-              onChange={(e) => setTicker(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === "Enter" && !loading && runResearch()}
-              placeholder="Enter a ticker — AAPL, NVDA, TSLA..."
-              className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
-              disabled={loading}
-            />
-          </div>
+        {/* Mode Tabs */}
+        <div className="flex border-b border-gray-200 mb-6">
           <button
-            onClick={runResearch}
-            disabled={loading || !ticker.trim()}
-            className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            onClick={() => setMode("research")}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              mode === "research"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
           >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {loading ? "Researching..." : "Research"}
+            <Search className="w-3.5 h-3.5" />
+            Research a Stock
+          </button>
+          <button
+            onClick={() => setMode("discover")}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              mode === "discover"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Discover Stocks
           </button>
         </div>
 
-        {/* Investor Profile */}
+        {/* Research Input */}
+        {mode === "research" && (
+          <div className="flex gap-3 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={ticker}
+                onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === "Enter" && !loading && runResearch()}
+                placeholder="Enter a ticker — AAPL, NVDA, TSLA..."
+                className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                disabled={loading}
+              />
+            </div>
+            <button
+              onClick={() => runResearch()}
+              disabled={loading || !ticker.trim()}
+              className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {loading ? "Researching..." : "Research"}
+            </button>
+          </div>
+        )}
+
+        {/* Discover Input */}
+        {mode === "discover" && (
+          <div className="mb-6">
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={discoveryQuery}
+                  onChange={(e) => setDiscoveryQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !discovering && runDiscovery()}
+                  placeholder="e.g. high-growth tech with low debt, undervalued dividend stocks..."
+                  className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                  disabled={discovering}
+                />
+              </div>
+              <button
+                onClick={runDiscovery}
+                disabled={discovering || !discoveryQuery.trim()}
+                className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {discovering && <Loader2 className="w-4 h-4 animate-spin" />}
+                {discovering ? "Searching..." : "Discover"}
+              </button>
+            </div>
+            {discovering && (
+              <p className="text-xs text-gray-400 mt-2 ml-1">
+                AI is fetching real data for candidates — this takes ~15 seconds...
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Investor Profile — visible in both modes */}
         <div className="flex flex-wrap gap-4 mb-6 p-4 bg-white border border-gray-200 rounded-xl">
           <ToggleGroup
             label="Risk"
             value={userContext.risk}
             onChange={(v) => setUserContext((p) => ({ ...p, risk: v }))}
-            disabled={loading}
+            disabled={loading || discovering}
             options={[
               { value: "conservative", label: "Conservative" },
               { value: "moderate", label: "Moderate" },
@@ -293,7 +400,7 @@ export default function Home() {
             label="Horizon"
             value={userContext.horizon}
             onChange={(v) => setUserContext((p) => ({ ...p, horizon: v }))}
-            disabled={loading}
+            disabled={loading || discovering}
             options={[
               { value: "short-term", label: "Short" },
               { value: "medium-term", label: "Medium" },
@@ -304,7 +411,7 @@ export default function Home() {
             label="Goal"
             value={userContext.goal}
             onChange={(v) => setUserContext((p) => ({ ...p, goal: v }))}
-            disabled={loading}
+            disabled={loading || discovering}
             options={[
               { value: "growth", label: "Growth" },
               { value: "income", label: "Income" },
@@ -313,77 +420,99 @@ export default function Home() {
           />
         </div>
 
-        {/* Agent Pipeline */}
-        {loading && (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Agent Pipeline
-            </p>
-            <div className="divide-y divide-gray-50">
-              {(["init", "quant", "news", "synthesis"] as AgentStep[]).map((step) => (
-                <StepIndicator
-                  key={step}
-                  step={step}
-                  currentStep={currentStep}
-                  message={currentStep === step ? statusMessage : undefined}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Agent Outputs (collapsible) */}
-        {(agentResults.quant || agentResults.news) && (
-          <div className="mb-6 space-y-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Agent Outputs
-            </p>
-            {agentResults.quant && (
-              <AgentResultCard
-                title="Quantitative Analysis"
-                icon={<BarChart3 className="w-4 h-4" />}
-                content={agentResults.quant}
-              />
+        {/* Discovery Results */}
+        {mode === "discover" && (
+          <>
+            {discoveryError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
+                {discoveryError}
+              </div>
             )}
-            {agentResults.news && (
-              <AgentResultCard
-                title="News & Sentiment Analysis"
-                icon={<Newspaper className="w-4 h-4" />}
-                content={agentResults.news}
-              />
+            {discoveryResults.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                  {discoveryResults.length} Stock{discoveryResults.length !== 1 ? "s" : ""} Found
+                </p>
+                <div className="space-y-3">
+                  {discoveryResults.map((rec) => (
+                    <DiscoveryCard key={rec.ticker} rec={rec} onResearch={handleResearchFromDiscover} />
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
+          </>
         )}
 
-        {/* Price Chart */}
-        {chartData && report && (
-          <PriceChart data={chartData} ticker={report.ticker} />
-        )}
+        {/* Research Results */}
+        {mode === "research" && (
+          <>
+            {loading && (
+              <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                  Agent Pipeline
+                </p>
+                <div className="divide-y divide-gray-50">
+                  {(["init", "quant", "news", "synthesis"] as AgentStep[]).map((step) => (
+                    <StepIndicator
+                      key={step}
+                      step={step}
+                      currentStep={currentStep}
+                      message={currentStep === step ? statusMessage : undefined}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Peer Comparison Table */}
-        {comparisonMd && (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Peer Comparison</p>
-            <div className="prose prose-gray max-w-none prose-table:w-full prose-th:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:text-xs prose-th:font-semibold prose-th:text-gray-600 prose-td:px-3 prose-td:py-2 prose-td:text-sm prose-td:text-gray-700 prose-td:border-t prose-td:border-gray-100 overflow-x-auto">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{comparisonMd}</ReactMarkdown>
-            </div>
-          </div>
-        )}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
+                {error}
+              </div>
+            )}
 
-        {/* Final Report */}
-        {report && (
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <div className="prose prose-gray max-w-none prose-headings:font-semibold prose-h2:text-xl prose-h3:text-base prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800 prose-table:w-full prose-th:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:text-sm prose-th:font-semibold prose-th:text-gray-700 prose-td:px-3 prose-td:py-2 prose-td:text-sm prose-td:text-gray-600 prose-td:border-t prose-td:border-gray-100">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{report.content}</ReactMarkdown>
-            </div>
-          </div>
+            {(agentResults.quant || agentResults.news) && (
+              <div className="mb-6 space-y-3">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Agent Outputs
+                </p>
+                {agentResults.quant && (
+                  <AgentResultCard
+                    title="Quantitative Analysis"
+                    icon={<BarChart3 className="w-4 h-4" />}
+                    content={agentResults.quant}
+                  />
+                )}
+                {agentResults.news && (
+                  <AgentResultCard
+                    title="News & Sentiment Analysis"
+                    icon={<Newspaper className="w-4 h-4" />}
+                    content={agentResults.news}
+                  />
+                )}
+              </div>
+            )}
+
+            {chartData && report && (
+              <PriceChart data={chartData} ticker={report.ticker} />
+            )}
+
+            {comparisonMd && (
+              <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Peer Comparison</p>
+                <div className="prose prose-gray max-w-none prose-table:w-full prose-th:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:text-xs prose-th:font-semibold prose-th:text-gray-600 prose-td:px-3 prose-td:py-2 prose-td:text-sm prose-td:text-gray-700 prose-td:border-t prose-td:border-gray-100 overflow-x-auto">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{comparisonMd}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+
+            {report && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="prose prose-gray max-w-none prose-headings:font-semibold prose-h2:text-xl prose-h3:text-base prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800 prose-table:w-full prose-th:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:text-sm prose-th:font-semibold prose-th:text-gray-700 prose-td:px-3 prose-td:py-2 prose-td:text-sm prose-td:text-gray-600 prose-td:border-t prose-td:border-gray-100">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{report.content}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </main>

@@ -12,6 +12,7 @@ from agents.quant_agent import run_quant_agent
 from agents.news_agent import run_news_agent
 from agents.synthesis_agent import run_synthesis_agent
 from agents.comparison_agent import run_comparison_agent, format_comparison_table
+from agents.discovery_agent import run_discovery_agent
 
 load_dotenv()
 
@@ -109,6 +110,21 @@ async def research(
     if not ticker or not ticker.replace("-", "").isalpha():
         raise HTTPException(status_code=400, detail="Invalid ticker symbol")
     return EventSourceResponse(research_stream(ticker, risk, horizon, goal))
+
+
+@app.get("/discover")
+async def discover(
+    query: str,
+    risk: str = "moderate",
+    horizon: str = "medium-term",
+    goal: str = "growth",
+):
+    if not query or len(query.strip()) < 3:
+        raise HTTPException(status_code=400, detail="Query too short")
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    user_context = {"risk": risk, "horizon": horizon, "goal": goal}
+    recommendations = await run_discovery_agent(query.strip(), user_context, client)
+    return {"recommendations": recommendations}
 
 
 @app.get("/health")
