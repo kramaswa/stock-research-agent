@@ -36,6 +36,8 @@ Does this stock match THIS investor's risk tolerance, time horizon, and goal RIG
 
 ## When to Change Your Signal
 2-3 concrete conditions that would move the signal up or down. Be specific.
+Format each as: "Upgrade to [signal name] if [condition]" or "Downgrade to [signal name] if [condition]".
+Only use signal names from this list: Strong Hold, Hold, Consider Trimming, Consider Exiting, Exit Signal.
 
 ---
 *This is not financial advice. Always do your own research.*"""
