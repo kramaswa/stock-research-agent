@@ -4,43 +4,28 @@ import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Search, TrendingUp, Newspaper, BarChart3, Loader2, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import {
+  Search, TrendingUp, Newspaper, BarChart3, Loader2,
+  ChevronDown, ChevronUp, Sparkles, ShieldCheck,
+} from "lucide-react";
 import DiscoveryCard, { type Recommendation } from "./DiscoveryCard";
 
 const PriceChart = dynamic(() => import("./PriceChart"), { ssr: false });
 
 type AgentStep = "init" | "quant" | "news" | "synthesis" | "done";
-type Mode = "research" | "discover";
+type Mode = "research" | "discover" | "hold";
 
-interface AgentResult {
-  quant?: string;
-  news?: string;
-}
-
-interface ReportData {
-  content: string;
-  ticker: string;
-  company: string;
-}
-
-interface ChartPoint {
-  label: string;
-  date: string;
-  price: number;
-}
-
-interface UserContext {
-  risk: string;
-  horizon: string;
-  goal: string;
+interface AgentResult { quant?: string; news?: string; }
+interface ReportData { content: string; ticker: string; company: string; }
+interface ChartPoint { label: string; date: string; price: number; }
+interface UserContext { risk: string; horizon: string; goal: string; }
+interface HoldResult {
+  content: string; ticker: string; company: string;
+  current_price: number; purchase_price: number;
 }
 
 function ToggleGroup({
-  label,
-  options,
-  value,
-  onChange,
-  disabled,
+  label, options, value, onChange, disabled,
 }: {
   label: string;
   options: { value: string; label: string }[];
@@ -58,12 +43,8 @@ function ToggleGroup({
             onClick={() => onChange(opt.value)}
             disabled={disabled}
             className={`px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap
-              ${value === opt.value
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-500 hover:bg-gray-50"
-              }
-              disabled:opacity-50 disabled:cursor-not-allowed
-              border-r border-gray-200 last:border-r-0`}
+              ${value === opt.value ? "bg-blue-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}
+              disabled:opacity-50 disabled:cursor-not-allowed border-r border-gray-200 last:border-r-0`}
           >
             {opt.label}
           </button>
@@ -74,7 +55,6 @@ function ToggleGroup({
 }
 
 const STEP_ORDER: AgentStep[] = ["init", "quant", "news", "synthesis", "done"];
-
 const STEP_META: Record<AgentStep, { label: string }> = {
   init: { label: "Looking up ticker" },
   quant: { label: "Quantitative analysis" },
@@ -83,30 +63,20 @@ const STEP_META: Record<AgentStep, { label: string }> = {
   done: { label: "Complete" },
 };
 
-function StepIndicator({
-  step,
-  currentStep,
-  message,
-}: {
-  step: AgentStep;
-  currentStep: AgentStep | null;
-  message?: string;
+function StepIndicator({ step, currentStep, message }: {
+  step: AgentStep; currentStep: AgentStep | null; message?: string;
 }) {
   const stepIndex = STEP_ORDER.indexOf(step);
   const currentIndex = currentStep ? STEP_ORDER.indexOf(currentStep) : -1;
   const isDone = currentIndex > stepIndex;
   const isActive = currentStep === step;
   const isPending = currentIndex < stepIndex;
-
   return (
     <div className="flex items-center gap-3 py-2">
-      <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium transition-all
-          ${isDone ? "bg-emerald-500 text-white" : ""}
-          ${isActive ? "bg-blue-500 text-white ring-4 ring-blue-100" : ""}
-          ${isPending ? "bg-gray-100 text-gray-400" : ""}
-        `}
-      >
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium transition-all
+        ${isDone ? "bg-emerald-500 text-white" : ""}
+        ${isActive ? "bg-blue-500 text-white ring-4 ring-blue-100" : ""}
+        ${isPending ? "bg-gray-100 text-gray-400" : ""}`}>
         {isDone ? "✓" : isActive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : stepIndex + 1}
       </div>
       <div>
@@ -119,32 +89,18 @@ function StepIndicator({
   );
 }
 
-function AgentResultCard({
-  title,
-  icon,
-  content,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  content: string;
+function AgentResultCard({ title, icon, content }: {
+  title: string; icon: React.ReactNode; content: string;
 }) {
   const [expanded, setExpanded] = useState(false);
-
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
       >
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          {icon}
-          {title}
-        </div>
-        {expanded ? (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        )}
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">{icon}{title}</div>
+        {expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
       {expanded && (
         <div className="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3 leading-relaxed prose prose-sm prose-gray max-w-none">
@@ -153,6 +109,38 @@ function AgentResultCard({
       )}
     </div>
   );
+}
+
+function ThesisStatusBanner({ content }: { content: string }) {
+  const lower = content.toLowerCase();
+  if (lower.includes("thesis status: intact")) {
+    return (
+      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-5">
+        <div className="w-3 h-3 rounded-full bg-emerald-500 flex-shrink-0" />
+        <span className="text-sm font-semibold text-emerald-700">Thesis Intact</span>
+        <span className="text-xs text-emerald-600">The core reasons you bought this still hold.</span>
+      </div>
+    );
+  }
+  if (lower.includes("thesis status: weakened")) {
+    return (
+      <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+        <div className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0" />
+        <span className="text-sm font-semibold text-amber-700">Thesis Weakened</span>
+        <span className="text-xs text-amber-600">Some key assumptions have changed — worth monitoring closely.</span>
+      </div>
+    );
+  }
+  if (lower.includes("thesis status: broken")) {
+    return (
+      <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
+        <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+        <span className="text-sm font-semibold text-red-700">Thesis Broken</span>
+        <span className="text-xs text-red-600">The fundamental reason for owning this no longer applies.</span>
+      </div>
+    );
+  }
+  return null;
 }
 
 export default function Home() {
@@ -174,6 +162,15 @@ export default function Home() {
   const [discoveryResults, setDiscoveryResults] = useState<Recommendation[]>([]);
   const [discovering, setDiscovering] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+
+  // Hold Check state
+  const [holdTicker, setHoldTicker] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [holdThesis, setHoldThesis] = useState("");
+  const [holdResult, setHoldResult] = useState<HoldResult | null>(null);
+  const [holdLoading, setHoldLoading] = useState(false);
+  const [holdStatusMsg, setHoldStatusMsg] = useState("");
+  const [holdError, setHoldError] = useState<string | null>(null);
 
   // Shared investor profile
   const [userContext, setUserContext] = useState<UserContext>({ risk: "moderate", horizon: "long-term", goal: "growth" });
@@ -207,7 +204,6 @@ export default function Home() {
     try {
       const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -215,38 +211,24 @@ export default function Home() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
-
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           try {
             const data = JSON.parse(line.slice(6));
-
-            if (data.type === "status") {
-              setCurrentStep(data.step as AgentStep);
-              setStatusMessage(data.message);
-            } else if (data.type === "agent_result") {
-              setAgentResults((prev) => ({ ...prev, [data.agent]: data.content }));
-            } else if (data.type === "chart_data") {
-              setChartData(data.data);
-            } else if (data.type === "comparison_data") {
-              setComparisonMd(data.markdown);
-            } else if (data.type === "report") {
-              setReport({ content: data.content, ticker: data.ticker, company: data.company });
-              setCurrentStep("done");
-            } else if (data.type === "error") {
-              setError(data.message);
-            }
+            if (data.type === "status") { setCurrentStep(data.step as AgentStep); setStatusMessage(data.message); }
+            else if (data.type === "agent_result") setAgentResults((prev) => ({ ...prev, [data.agent]: data.content }));
+            else if (data.type === "chart_data") setChartData(data.data);
+            else if (data.type === "comparison_data") setComparisonMd(data.markdown);
+            else if (data.type === "report") { setReport({ content: data.content, ticker: data.ticker, company: data.company }); setCurrentStep("done"); }
+            else if (data.type === "error") setError(data.message);
           } catch {}
         }
       }
     } catch (e: unknown) {
-      if (e instanceof Error && e.name !== "AbortError") {
-        setError(e.message || "Something went wrong.");
-      }
+      if (e instanceof Error && e.name !== "AbortError") setError(e.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -278,14 +260,67 @@ export default function Home() {
     }
   };
 
+  const runHoldCheck = async () => {
+    const t = holdTicker.trim().toUpperCase();
+    const price = parseFloat(purchasePrice);
+    if (!t || isNaN(price) || price <= 0) return;
+
+    setHoldLoading(true);
+    setHoldResult(null);
+    setHoldError(null);
+    setHoldStatusMsg("Starting analysis...");
+
+    const params = new URLSearchParams({
+      purchase_price: price.toString(),
+      thesis: holdThesis.trim(),
+      risk: userContext.risk,
+      horizon: userContext.horizon,
+      goal: userContext.goal,
+    });
+    const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const url = `${base}/holdcheck/${t}?${params}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === "status") setHoldStatusMsg(data.message);
+            else if (data.type === "hold_result") setHoldResult(data);
+            else if (data.type === "error") setHoldError(data.message);
+          } catch {}
+        }
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error) setHoldError(e.message || "Something went wrong.");
+    } finally {
+      setHoldLoading(false);
+    }
+  };
+
   const handleResearchFromDiscover = (t: string) => {
     setMode("research");
     runResearch(t);
   };
 
+  const isAnyLoading = loading || discovering || holdLoading;
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-12">
+
         {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
@@ -294,34 +329,30 @@ export default function Home() {
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Stock Research Agent</h1>
           <p className="text-gray-500 text-lg max-w-xl mx-auto">
-            AI agents analyze quantitative data and news sentiment to generate a balanced research report.
+            AI agents to help you find, analyze, and hold stocks with conviction.
           </p>
         </div>
 
         {/* Mode Tabs */}
         <div className="flex border-b border-gray-200 mb-6">
-          <button
-            onClick={() => setMode("research")}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              mode === "research"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <Search className="w-3.5 h-3.5" />
-            Research a Stock
-          </button>
-          <button
-            onClick={() => setMode("discover")}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              mode === "discover"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Discover Stocks
-          </button>
+          {([
+            { id: "research", label: "Research a Stock", icon: <Search className="w-3.5 h-3.5" /> },
+            { id: "discover", label: "Discover Stocks", icon: <Sparkles className="w-3.5 h-3.5" /> },
+            { id: "hold", label: "Hold Check", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+          ] as { id: Mode; label: string; icon: React.ReactNode }[]).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setMode(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                mode === tab.id
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Research Input */}
@@ -383,13 +414,67 @@ export default function Home() {
           </div>
         )}
 
-        {/* Investor Profile — visible in both modes */}
+        {/* Hold Check Input */}
+        {mode === "hold" && (
+          <div className="mb-6 bg-white border border-gray-200 rounded-xl p-5">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+              Is your thesis still intact?
+            </p>
+            <div className="flex gap-3 mb-3">
+              <div className="relative flex-1">
+                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={holdTicker}
+                  onChange={(e) => setHoldTicker(e.target.value.toUpperCase())}
+                  placeholder="Ticker — AAPL"
+                  className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  disabled={holdLoading}
+                />
+              </div>
+              <div className="relative w-44">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                <input
+                  type="number"
+                  value={purchasePrice}
+                  onChange={(e) => setPurchasePrice(e.target.value)}
+                  placeholder="Purchase price"
+                  min="0"
+                  step="0.01"
+                  className="w-full pl-7 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  disabled={holdLoading}
+                />
+              </div>
+              <button
+                onClick={runHoldCheck}
+                disabled={holdLoading || !holdTicker.trim() || !purchasePrice || parseFloat(purchasePrice) <= 0}
+                className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                {holdLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {holdLoading ? "Checking..." : "Check Thesis"}
+              </button>
+            </div>
+            <textarea
+              value={holdThesis}
+              onChange={(e) => setHoldThesis(e.target.value)}
+              placeholder="Why did you buy this? (optional) — e.g. Strong AI chip demand, expanding margins, dominant market position..."
+              rows={2}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+              disabled={holdLoading}
+            />
+            {holdLoading && (
+              <p className="text-xs text-blue-500 mt-2">{holdStatusMsg}</p>
+            )}
+          </div>
+        )}
+
+        {/* Investor Profile — visible in all modes */}
         <div className="flex flex-wrap gap-4 mb-6 p-4 bg-white border border-gray-200 rounded-xl">
           <ToggleGroup
             label="Risk"
             value={userContext.risk}
             onChange={(v) => setUserContext((p) => ({ ...p, risk: v }))}
-            disabled={loading || discovering}
+            disabled={isAnyLoading}
             options={[
               { value: "conservative", label: "Conservative" },
               { value: "moderate", label: "Moderate" },
@@ -400,7 +485,7 @@ export default function Home() {
             label="Horizon"
             value={userContext.horizon}
             onChange={(v) => setUserContext((p) => ({ ...p, horizon: v }))}
-            disabled={loading || discovering}
+            disabled={isAnyLoading}
             options={[
               { value: "short-term", label: "Short" },
               { value: "medium-term", label: "Medium" },
@@ -411,7 +496,7 @@ export default function Home() {
             label="Goal"
             value={userContext.goal}
             onChange={(v) => setUserContext((p) => ({ ...p, goal: v }))}
-            disabled={loading || discovering}
+            disabled={isAnyLoading}
             options={[
               { value: "growth", label: "Growth" },
               { value: "income", label: "Income" },
@@ -420,7 +505,7 @@ export default function Home() {
           />
         </div>
 
-        {/* Discovery Results */}
+        {/* ── Discovery Results ── */}
         {mode === "discover" && (
           <>
             {discoveryError && (
@@ -443,58 +528,85 @@ export default function Home() {
           </>
         )}
 
-        {/* Research Results */}
+        {/* ── Hold Check Results ── */}
+        {mode === "hold" && (
+          <>
+            {holdError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
+                {holdError}
+              </div>
+            )}
+            {holdResult && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Hold Check</p>
+                    <p className="text-xl font-bold text-gray-900 mt-0.5">
+                      {holdResult.ticker} — {holdResult.company}
+                    </p>
+                  </div>
+                  {holdResult.purchase_price > 0 && holdResult.current_price > 0 && (() => {
+                    const pct = ((holdResult.current_price - holdResult.purchase_price) / holdResult.purchase_price) * 100;
+                    const isUp = pct >= 0;
+                    return (
+                      <div className={`text-right ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+                        <p className="text-lg font-bold">${holdResult.current_price.toFixed(2)}</p>
+                        <p className="text-xs font-semibold">
+                          {isUp ? "+" : ""}{pct.toFixed(1)}% from ${holdResult.purchase_price.toFixed(2)}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <ThesisStatusBanner content={holdResult.content} />
+                <div className="prose prose-gray max-w-none prose-headings:font-semibold prose-h2:text-lg prose-h2:text-gray-800 prose-h3:text-base prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{holdResult.content}</ReactMarkdown>
+                </div>
+                <div className="mt-5 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => { setMode("research"); runResearch(holdResult.ticker); }}
+                    className="text-sm text-blue-600 font-medium hover:underline"
+                  >
+                    Run full research report for {holdResult.ticker} →
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Research Results ── */}
         {mode === "research" && (
           <>
             {loading && (
               <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                  Agent Pipeline
-                </p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Agent Pipeline</p>
                 <div className="divide-y divide-gray-50">
                   {(["init", "quant", "news", "synthesis"] as AgentStep[]).map((step) => (
-                    <StepIndicator
-                      key={step}
-                      step={step}
-                      currentStep={currentStep}
-                      message={currentStep === step ? statusMessage : undefined}
-                    />
+                    <StepIndicator key={step} step={step} currentStep={currentStep}
+                      message={currentStep === step ? statusMessage : undefined} />
                   ))}
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
-                {error}
-              </div>
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">{error}</div>
             )}
 
             {(agentResults.quant || agentResults.news) && (
               <div className="mb-6 space-y-3">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Agent Outputs
-                </p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Agent Outputs</p>
                 {agentResults.quant && (
-                  <AgentResultCard
-                    title="Quantitative Analysis"
-                    icon={<BarChart3 className="w-4 h-4" />}
-                    content={agentResults.quant}
-                  />
+                  <AgentResultCard title="Quantitative Analysis" icon={<BarChart3 className="w-4 h-4" />} content={agentResults.quant} />
                 )}
                 {agentResults.news && (
-                  <AgentResultCard
-                    title="News & Sentiment Analysis"
-                    icon={<Newspaper className="w-4 h-4" />}
-                    content={agentResults.news}
-                  />
+                  <AgentResultCard title="News & Sentiment Analysis" icon={<Newspaper className="w-4 h-4" />} content={agentResults.news} />
                 )}
               </div>
             )}
 
-            {chartData && report && (
-              <PriceChart data={chartData} ticker={report.ticker} />
-            )}
+            {chartData && report && <PriceChart data={chartData} ticker={report.ticker} />}
 
             {comparisonMd && (
               <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">

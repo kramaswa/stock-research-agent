@@ -13,6 +13,7 @@ from agents.news_agent import run_news_agent
 from agents.synthesis_agent import run_synthesis_agent
 from agents.comparison_agent import run_comparison_agent, format_comparison_table
 from agents.discovery_agent import run_discovery_agent
+from agents.hold_check_agent import run_hold_check_agent
 
 load_dotenv()
 
@@ -110,6 +111,66 @@ async def research(
     if not ticker or not ticker.replace("-", "").isalpha():
         raise HTTPException(status_code=400, detail="Invalid ticker symbol")
     return EventSourceResponse(research_stream(ticker, risk, horizon, goal))
+
+
+async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, risk: str, horizon: str, goal: str):
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    ticker = ticker.upper().strip()
+    user_context = {"risk": risk, "horizon": horizon, "goal": goal}
+
+    def event(type: str, payload: dict):
+        return {"data": json.dumps({"type": type, **payload})}
+
+    try:
+        yield event("status", {"message": f"Fetching current data for {ticker}...", "step": "quant"})
+        await asyncio.sleep(0)
+
+        quant_analysis, company_name, chart_data = await run_quant_agent(ticker, client)
+        await asyncio.sleep(0)
+
+        yield event("status", {"message": "Checking recent news...", "step": "news"})
+        await asyncio.sleep(0)
+
+        news_analysis = await run_news_agent(ticker, company_name, client)
+        await asyncio.sleep(0)
+
+        yield event("status", {"message": "Analyzing your thesis...", "step": "analyze"})
+        await asyncio.sleep(0)
+
+        current_price = chart_data[-1]["price"] if chart_data else 0.0
+
+        analysis = await run_hold_check_agent(
+            ticker, purchase_price, quant_analysis, news_analysis, client,
+            user_thesis=thesis,
+            current_price=current_price,
+            user_context=user_context,
+        )
+
+        yield event("hold_result", {
+            "content": analysis,
+            "ticker": ticker,
+            "company": company_name,
+            "current_price": current_price,
+            "purchase_price": purchase_price,
+        })
+        yield event("done", {"message": "Analysis complete."})
+
+    except Exception as e:
+        yield event("error", {"message": str(e)})
+
+
+@app.get("/holdcheck/{ticker}")
+async def hold_check(
+    ticker: str,
+    purchase_price: float = 0.0,
+    thesis: str = "",
+    risk: str = "moderate",
+    horizon: str = "medium-term",
+    goal: str = "growth",
+):
+    if not ticker or not ticker.replace("-", "").isalpha():
+        raise HTTPException(status_code=400, detail="Invalid ticker symbol")
+    return EventSourceResponse(hold_check_stream(ticker, purchase_price, thesis, risk, horizon, goal))
 
 
 @app.get("/discover")
