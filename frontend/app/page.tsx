@@ -262,8 +262,8 @@ export default function Home() {
 
   const runHoldCheck = async () => {
     const t = holdTicker.trim().toUpperCase();
-    const price = parseFloat(purchasePrice);
-    if (!t || isNaN(price) || price <= 0) return;
+    if (!t) return;
+    const price = purchasePrice ? parseFloat(purchasePrice) : 0;
 
     setHoldLoading(true);
     setHoldResult(null);
