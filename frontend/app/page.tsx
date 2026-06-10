@@ -111,36 +111,65 @@ function AgentResultCard({ title, icon, content }: {
   );
 }
 
+const SIGNALS = [
+  {
+    key: "strong hold",
+    label: "Strong Hold",
+    desc: "Thesis intact, business executing, good fit for your profile.",
+    style: "bg-emerald-50 border-emerald-200",
+    dot: "bg-emerald-500",
+    text: "text-emerald-700",
+    sub: "text-emerald-600",
+  },
+  {
+    key: "consider trimming",
+    label: "Consider Trimming",
+    desc: "Business is fine, but the stock no longer fits your profile or position size.",
+    style: "bg-amber-50 border-amber-200",
+    dot: "bg-amber-400",
+    text: "text-amber-700",
+    sub: "text-amber-600",
+  },
+  {
+    key: "consider exiting",
+    label: "Consider Exiting",
+    desc: "Thesis materially weakened or significant profile mismatch.",
+    style: "bg-orange-50 border-orange-200",
+    dot: "bg-orange-500",
+    text: "text-orange-700",
+    sub: "text-orange-600",
+  },
+  {
+    key: "exit signal",
+    label: "Exit Signal",
+    desc: "The original reason for owning this no longer applies.",
+    style: "bg-red-50 border-red-200",
+    dot: "bg-red-500",
+    text: "text-red-700",
+    sub: "text-red-600",
+  },
+  {
+    key: "hold",
+    label: "Hold",
+    desc: "Thesis intact with minor concerns — stay the course but monitor.",
+    style: "bg-blue-50 border-blue-200",
+    dot: "bg-blue-500",
+    text: "text-blue-700",
+    sub: "text-blue-600",
+  },
+];
+
 function ThesisStatusBanner({ content }: { content: string }) {
   const lower = content.toLowerCase();
-  if (lower.includes("thesis status: intact")) {
-    return (
-      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-5">
-        <div className="w-3 h-3 rounded-full bg-emerald-500 flex-shrink-0" />
-        <span className="text-sm font-semibold text-emerald-700">Thesis Intact</span>
-        <span className="text-xs text-emerald-600">The core reasons you bought this still hold.</span>
-      </div>
-    );
-  }
-  if (lower.includes("thesis status: weakened")) {
-    return (
-      <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
-        <div className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0" />
-        <span className="text-sm font-semibold text-amber-700">Thesis Weakened</span>
-        <span className="text-xs text-amber-600">Some key assumptions have changed — worth monitoring closely.</span>
-      </div>
-    );
-  }
-  if (lower.includes("thesis status: broken")) {
-    return (
-      <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
-        <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
-        <span className="text-sm font-semibold text-red-700">Thesis Broken</span>
-        <span className="text-xs text-red-600">The fundamental reason for owning this no longer applies.</span>
-      </div>
-    );
-  }
-  return null;
+  const match = SIGNALS.find((s) => lower.includes(`signal: ${s.key}`));
+  if (!match) return null;
+  return (
+    <div className={`flex items-center gap-3 border rounded-xl px-4 py-3 mb-5 ${match.style}`}>
+      <div className={`w-3 h-3 rounded-full flex-shrink-0 ${match.dot}`} />
+      <span className={`text-sm font-semibold ${match.text}`}>{match.label}</span>
+      <span className={`text-xs ${match.sub}`}>{match.desc}</span>
+    </div>
+  );
 }
 
 export default function Home() {
