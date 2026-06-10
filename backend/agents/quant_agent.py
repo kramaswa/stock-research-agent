@@ -1,6 +1,10 @@
 import anthropic
 import json
+from cachetools import TTLCache
 from tools.market_tools import MARKET_TOOLS, execute_market_tool
+
+# Cache quant results for 1 hour — avoids re-running the LLM for the same ticker
+_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
 
 SYSTEM_PROMPT = """You are a quantitative stock analyst. Your job is to gather and analyze numerical data for a given stock.
 
@@ -17,6 +21,10 @@ Format numbers clearly (e.g., "$X billion", "X%")."""
 
 async def run_quant_agent(ticker: str, client: anthropic.Anthropic) -> tuple[str, str, list]:
     """Run the quant agent. Returns (analysis_text, company_name, chart_data)."""
+    ticker = ticker.upper()
+    if ticker in _cache:
+        return _cache[ticker]
+
     messages = [
         {
             "role": "user",
@@ -39,8 +47,10 @@ async def run_quant_agent(ticker: str, client: anthropic.Anthropic) -> tuple[str
         if response.stop_reason == "end_turn":
             for block in response.content:
                 if hasattr(block, "text"):
-                    return block.text, company_name, chart_data
-            return "Quant analysis unavailable.", company_name, chart_data, chart_data
+                    result = (block.text, company_name, chart_data)
+                    _cache[ticker] = result
+                    return result
+            return "Quant analysis unavailable.", company_name, chart_data
 
         if response.stop_reason == "tool_use":
             tool_results = []

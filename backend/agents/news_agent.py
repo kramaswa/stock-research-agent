@@ -1,6 +1,10 @@
 import anthropic
 import json
+from cachetools import TTLCache
 from tools.news_tools import NEWS_TOOLS, execute_news_tool
+
+# Cache news results for 1 hour
+_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
 
 SYSTEM_PROMPT = """You are a financial news and sentiment analyst. Your job is to assess the qualitative picture for a stock.
 
@@ -19,6 +23,10 @@ Be concise and specific. Cite article titles where relevant. Do not make a buy/s
 
 async def run_news_agent(ticker: str, company_name: str, client: anthropic.Anthropic) -> str:
     """Run the news agent for a given ticker. Returns sentiment analysis text."""
+    ticker = ticker.upper()
+    if ticker in _cache:
+        return _cache[ticker]
+
     messages = [
         {
             "role": "user",
@@ -38,6 +46,7 @@ async def run_news_agent(ticker: str, company_name: str, client: anthropic.Anthr
         if response.stop_reason == "end_turn":
             for block in response.content:
                 if hasattr(block, "text"):
+                    _cache[ticker] = block.text
                     return block.text
             return "News analysis unavailable."
 
