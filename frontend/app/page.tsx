@@ -113,6 +113,15 @@ function AgentResultCard({ title, icon, content }: {
 
 const SIGNALS = [
   {
+    key: "add to position",
+    label: "Add to Position",
+    desc: "Business accelerating, valuation reasonable — a signal to buy more.",
+    style: "bg-emerald-100 border-emerald-300",
+    dot: "bg-emerald-600",
+    text: "text-emerald-800",
+    sub: "text-emerald-700",
+  },
+  {
     key: "strong hold",
     label: "Strong Hold",
     desc: "Thesis intact, business executing, good fit for your profile.",
