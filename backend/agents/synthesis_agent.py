@@ -24,7 +24,7 @@ One or two sentences on what the company does and its market position.
 A markdown table with the most important numbers (price, P/E, revenue growth, margins, analyst consensus).
 
 ### Peer Comparison
-If a peer comparison table was provided, include it here with 2-3 sentences of commentary on how the stock compares (cheaper/more expensive, faster/slower growth, stronger/weaker margins). If no peer data was provided, omit this section.
+If peer comparison data was provided, write 2-3 sentences of commentary on how the stock compares to peers (valuation, growth, margins). Do NOT reproduce the table — it is already shown above this report in the interface.
 
 ### Analyst Consensus
 What are analysts saying? Include the buy/hold/sell breakdown.

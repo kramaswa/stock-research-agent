@@ -14,6 +14,7 @@ from agents.synthesis_agent import run_synthesis_agent
 from agents.comparison_agent import run_comparison_agent, format_comparison_table
 from agents.discovery_agent import run_discovery_agent
 from agents.hold_check_agent import run_hold_check_agent
+from tools.market_tools import get_all_stock_data
 
 load_dotenv()
 
@@ -60,23 +61,20 @@ async def research_stream(ticker: str, risk: str, horizon: str, goal: str):
         yield event("status", {"message": "Running news & competitor analysis in parallel...", "step": "news"})
         await asyncio.sleep(0)
 
-        (news_analysis, (peer_data, peer_tickers)) = await asyncio.gather(
+        loop = asyncio.get_event_loop()
+        (news_analysis, (peer_data, peer_tickers), target_stock_data) = await asyncio.gather(
             run_news_agent(ticker, company_name, client),
             run_comparison_agent(ticker),
+            loop.run_in_executor(None, get_all_stock_data, ticker),
         )
 
         yield event("agent_result", {"agent": "news", "content": news_analysis})
         await asyncio.sleep(0)
 
-        # Build comparison table and send to frontend
+        # Build comparison table using full target metrics (not just price)
         comparison_md = ""
         if peer_data:
-            # We need the target stock's own data for the table header row
-            target_data = {"ticker": ticker, "company_name": company_name}
-            # Pull key metrics from quant_analysis context — use chart_data's price for now
-            if chart_data:
-                target_data["current_price"] = chart_data[-1]["price"] if chart_data else None
-            comparison_md = format_comparison_table(target_data, peer_data)
+            comparison_md = format_comparison_table(target_stock_data, peer_data)
             yield event("comparison_data", {
                 "markdown": comparison_md,
                 "peers": peer_tickers,

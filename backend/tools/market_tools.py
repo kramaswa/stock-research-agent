@@ -2,6 +2,9 @@ import os
 import json
 import httpx
 from datetime import datetime, timedelta
+from cachetools import TTLCache
+
+_data_cache: TTLCache = TTLCache(maxsize=100, ttl=3600)
 
 
 def _get(path: str, params: dict) -> dict | list:
@@ -17,6 +20,8 @@ def _get(path: str, params: dict) -> dict | list:
 def get_all_stock_data(ticker: str) -> dict:
     """Fetch comprehensive stock data from Finnhub."""
     ticker = ticker.upper()
+    if ticker in _data_cache:
+        return _data_cache[ticker]
 
     quote = _get("/quote", {"symbol": ticker})
     profile = _get("/stock/profile2", {"symbol": ticker})
@@ -60,7 +65,7 @@ def get_all_stock_data(ticker: str) -> dict:
         if chart_data:
             chart_data[-1]["price"] = round(current, 2)
 
-    return {
+    result = {
         "ticker": ticker,
         "company_name": profile.get("name", ticker),
         "sector": profile.get("finnhubIndustry"),
@@ -111,6 +116,8 @@ def get_all_stock_data(ticker: str) -> dict:
         "recent_recommendations": recent_recs,
         "chart_data": chart_data,
     }
+    _data_cache[ticker] = result
+    return result
 
 
 MARKET_TOOLS = [
