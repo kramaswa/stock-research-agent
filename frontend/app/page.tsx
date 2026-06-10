@@ -438,7 +438,7 @@ export default function Home() {
                   type="number"
                   value={purchasePrice}
                   onChange={(e) => setPurchasePrice(e.target.value)}
-                  placeholder="Purchase price"
+                  placeholder="Buy price (optional)"
                   min="0"
                   step="0.01"
                   className="w-full pl-7 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -447,7 +447,7 @@ export default function Home() {
               </div>
               <button
                 onClick={runHoldCheck}
-                disabled={holdLoading || !holdTicker.trim() || !purchasePrice || parseFloat(purchasePrice) <= 0}
+                disabled={holdLoading || !holdTicker.trim()}
                 className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 whitespace-nowrap"
               >
                 {holdLoading && <Loader2 className="w-4 h-4 animate-spin" />}
