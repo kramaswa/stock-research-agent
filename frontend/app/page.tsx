@@ -353,6 +353,11 @@ export default function Home() {
     runResearch(t);
   };
 
+  const handleHoldCheckFromDiscover = (t: string) => {
+    setMode("hold");
+    setHoldTicker(t);
+  };
+
   const isAnyLoading = loading || discovering || holdLoading;
 
   return (
@@ -558,7 +563,7 @@ export default function Home() {
                 </p>
                 <div className="space-y-3">
                   {discoveryResults.map((rec) => (
-                    <DiscoveryCard key={rec.ticker} rec={rec} onResearch={handleResearchFromDiscover} />
+                    <DiscoveryCard key={rec.ticker} rec={rec} onResearch={handleResearchFromDiscover} onHoldCheck={handleHoldCheckFromDiscover} />
                   ))}
                 </div>
               </div>

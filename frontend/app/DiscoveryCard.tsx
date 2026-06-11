@@ -9,21 +9,19 @@ export interface Recommendation {
 }
 
 const matchStyle: Record<string, string> = {
-  "Add to Position": "bg-emerald-100 text-emerald-800",
-  "Strong Hold":     "bg-emerald-50 text-emerald-600",
-  "Hold":            "bg-blue-50 text-blue-600",
-  "Partial Match":   "bg-gray-100 text-gray-500",
-  // legacy
-  "Strong Match":    "bg-emerald-50 text-emerald-600",
-  "Good Match":      "bg-blue-50 text-blue-600",
+  "Strong Match": "bg-emerald-50 text-emerald-600",
+  "Good Match":   "bg-blue-50 text-blue-600",
+  "Partial Match": "bg-gray-100 text-gray-500",
 };
 
 export default function DiscoveryCard({
   rec,
   onResearch,
+  onHoldCheck,
 }: {
   rec: Recommendation;
   onResearch: (ticker: string) => void;
+  onHoldCheck?: (ticker: string) => void;
 }) {
   const style = matchStyle[rec.match] ?? matchStyle["Partial Match"];
 
@@ -43,12 +41,22 @@ export default function DiscoveryCard({
         <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2.5 py-1 rounded-full">
           ✦ {rec.highlight}
         </span>
-        <button
-          onClick={() => onResearch(rec.ticker)}
-          className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1 ml-3"
-        >
-          Research this →
-        </button>
+        <div className="flex items-center gap-3 ml-3">
+          <button
+            onClick={() => onResearch(rec.ticker)}
+            className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors whitespace-nowrap"
+          >
+            Research →
+          </button>
+          {onHoldCheck && (
+            <button
+              onClick={() => onHoldCheck(rec.ticker)}
+              className="text-xs font-semibold text-gray-400 hover:text-emerald-600 transition-colors whitespace-nowrap"
+            >
+              Hold Check →
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
