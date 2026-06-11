@@ -200,6 +200,7 @@ export default function Home() {
   const [discoveryResults, setDiscoveryResults] = useState<Recommendation[]>([]);
   const [discovering, setDiscovering] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+  const [discoveryAttempted, setDiscoveryAttempted] = useState(false);
 
   // Hold Check state
   const [holdTicker, setHoldTicker] = useState("");
@@ -282,6 +283,7 @@ export default function Home() {
     setDiscovering(true);
     setDiscoveryResults([]);
     setDiscoveryError(null);
+    setDiscoveryAttempted(false);
 
     const params = new URLSearchParams({
       query: discoveryQuery.trim(),
@@ -300,6 +302,7 @@ export default function Home() {
       if (e instanceof Error) setDiscoveryError(e.message || "Discovery failed.");
     } finally {
       setDiscovering(false);
+      setDiscoveryAttempted(true);
     }
   };
 
@@ -572,6 +575,11 @@ export default function Home() {
                     <DiscoveryCard key={rec.ticker} rec={rec} onResearch={handleResearchFromDiscover} onHoldCheck={handleHoldCheckFromDiscover} />
                   ))}
                 </div>
+              </div>
+            )}
+            {discoveryAttempted && !discovering && discoveryResults.length === 0 && !discoveryError && (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-center text-sm text-gray-500">
+                No stocks found for that query. Try something more specific — e.g. <span className="font-medium text-gray-700">"high growth tech with low debt"</span> or <span className="font-medium text-gray-700">"undervalued dividend stocks"</span>.
               </div>
             )}
           </>
