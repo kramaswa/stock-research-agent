@@ -52,6 +52,11 @@ async def research_stream(ticker: str, risk: str, horizon: str, goal: str):
         await asyncio.sleep(0)
 
         quant_analysis, company_name, chart_data = await run_quant_agent(ticker, client)
+
+        if company_name == ticker and not chart_data:
+            yield event("error", {"message": f"'{ticker}' doesn't appear to be a valid stock ticker. Please check the symbol and try again (e.g. AAPL, NVDA, TSLA)."})
+            return
+
         yield event("agent_result", {"agent": "quant", "content": quant_analysis})
         if chart_data:
             yield event("chart_data", {"data": chart_data, "ticker": ticker})
@@ -124,6 +129,11 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         await asyncio.sleep(0)
 
         quant_analysis, company_name, chart_data = await run_quant_agent(ticker, client)
+
+        if company_name == ticker and not chart_data:
+            yield event("error", {"message": f"'{ticker}' doesn't appear to be a valid stock ticker. Please check the symbol and try again."})
+            return
+
         await asyncio.sleep(0)
 
         yield event("status", {"message": "Checking recent news...", "step": "news"})
