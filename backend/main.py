@@ -2,10 +2,14 @@ import os
 import json
 import asyncio
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import anthropic
 
 from agents.quant_agent import run_quant_agent
@@ -18,7 +22,10 @@ from tools.market_tools import get_all_stock_data
 
 load_dotenv()
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Stock Research Agent API")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
@@ -105,7 +112,9 @@ async def research_stream(ticker: str, risk: str, horizon: str, goal: str):
 
 
 @app.get("/research/{ticker}")
+@limiter.limit("10/hour")
 async def research(
+    request: Request,
     ticker: str,
     risk: str = "moderate",
     horizon: str = "medium-term",
@@ -168,7 +177,9 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
 
 
 @app.get("/holdcheck/{ticker}")
+@limiter.limit("10/hour")
 async def hold_check(
+    request: Request,
     ticker: str,
     purchase_price: float = 0.0,
     thesis: str = "",
@@ -182,7 +193,9 @@ async def hold_check(
 
 
 @app.get("/discover")
+@limiter.limit("10/hour")
 async def discover(
+    request: Request,
     query: str,
     risk: str = "moderate",
     horizon: str = "medium-term",

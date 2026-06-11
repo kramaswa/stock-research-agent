@@ -247,6 +247,7 @@ export default function Home() {
     try {
       const response = await fetch(url, { signal: controller.signal });
       if (response.status === 400) throw new Error("Invalid ticker symbol. Please enter a valid ticker (e.g. AAPL, NVDA, TSLA).");
+      if (response.status === 429) throw new Error("You've hit the rate limit (10 requests/hour). Please wait a bit before trying again.");
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
@@ -295,6 +296,7 @@ export default function Home() {
 
     try {
       const res = await fetch(`${base}/discover?${params}`);
+      if (res.status === 429) throw new Error("You've hit the rate limit (10 requests/hour). Please wait a bit before trying again.");
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
       setDiscoveryResults(data.recommendations ?? []);
@@ -329,6 +331,7 @@ export default function Home() {
     try {
       const response = await fetch(url);
       if (response.status === 400) throw new Error("Invalid ticker symbol. Please enter a valid ticker (e.g. AAPL, NVDA, TSLA).");
+      if (response.status === 429) throw new Error("You've hit the rate limit (10 requests/hour). Please wait a bit before trying again.");
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
