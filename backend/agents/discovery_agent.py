@@ -14,20 +14,28 @@ Steps:
 3. Call get_stock_data for each candidate to verify with real current data
 4. Select and rank the top 3-5 based on actual fit with the query AND the investor profile
 
+For each recommendation, assign a signal based on the data you fetched and the investor's profile:
+- "Add to Position" — accelerating fundamentals, valuation still reasonable, strong analyst conviction, good profile fit
+- "Strong Hold" — great business, executing well, but fully valued or not a compelling add right now
+- "Hold" — solid but with minor concerns or slight profile mismatch
+- "Partial Match" — fits some criteria but not ideal
+
+If the user is asking for stocks to buy or add to, only include stocks that genuinely qualify as "Add to Position" — do not include stocks that are merely "Strong Hold" or lower just to fill the list.
+
 Return ONLY a raw JSON object (no markdown, no code blocks, no explanation outside JSON):
 {
   "recommendations": [
     {
       "ticker": "TICKER",
       "company": "Full Company Name",
-      "match": "Strong Match",
+      "match": "Add to Position",
       "rationale": "2-3 sentences explaining why this fits the user's query using real data you fetched",
       "highlight": "The single most compelling data point (e.g. '47% revenue growth YoY' or 'Fwd P/E of 12x vs sector avg 22x')"
     }
   ]
 }
 
-match values must be exactly one of: "Strong Match", "Good Match", "Partial Match"."""
+match values must be exactly one of: "Add to Position", "Strong Hold", "Hold", "Partial Match"."""
 
 
 async def run_discovery_agent(query: str, user_context: dict, client: anthropic.Anthropic) -> list[dict]:

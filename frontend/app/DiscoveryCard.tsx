@@ -9,9 +9,13 @@ export interface Recommendation {
 }
 
 const matchStyle: Record<string, string> = {
-  "Strong Match": "bg-emerald-50 text-emerald-600",
-  "Good Match": "bg-blue-50 text-blue-600",
-  "Partial Match": "bg-gray-100 text-gray-500",
+  "Add to Position": "bg-emerald-100 text-emerald-800",
+  "Strong Hold":     "bg-emerald-50 text-emerald-600",
+  "Hold":            "bg-blue-50 text-blue-600",
+  "Partial Match":   "bg-gray-100 text-gray-500",
+  // legacy
+  "Strong Match":    "bg-emerald-50 text-emerald-600",
+  "Good Match":      "bg-blue-50 text-blue-600",
 };
 
 export default function DiscoveryCard({
