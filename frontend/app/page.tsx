@@ -218,6 +218,10 @@ export default function Home() {
   const runResearch = async (tickerArg?: string) => {
     const t = (tickerArg ?? ticker).trim().toUpperCase();
     if (!t || loading) return;
+    if (!/^[A-Z]{1,5}(-[A-Z]{1,2})?$/.test(t)) {
+      setError("Please enter a valid stock ticker (e.g. AAPL, NVDA, TSLA).");
+      return;
+    }
     if (tickerArg) setTicker(tickerArg);
 
     setLoading(true);
@@ -241,6 +245,7 @@ export default function Home() {
 
     try {
       const response = await fetch(url, { signal: controller.signal });
+      if (response.status === 400) throw new Error("Invalid ticker symbol. Please enter a valid ticker (e.g. AAPL, NVDA, TSLA).");
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
@@ -320,6 +325,7 @@ export default function Home() {
 
     try {
       const response = await fetch(url);
+      if (response.status === 400) throw new Error("Invalid ticker symbol. Please enter a valid ticker (e.g. AAPL, NVDA, TSLA).");
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
