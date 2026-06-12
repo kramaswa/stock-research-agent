@@ -214,7 +214,7 @@ function HowItWorks() {
           <p className="text-xs text-gray-500 leading-relaxed">Already own a stock? The agent checks if your original thesis still holds and gives a clear signal: Add to Position, Strong Hold, Consider Trimming, or Exit.</p>
         </div>
       </div>
-      <p className="text-xs text-gray-300 mt-1">
+      <p className="text-xs text-blue-400 mt-1">
         Claude Sonnet · Finnhub · NewsAPI · FastAPI · Next.js
       </p>
     </div>
