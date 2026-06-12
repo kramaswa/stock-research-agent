@@ -221,6 +221,13 @@ function HowItWorks() {
   );
 }
 
+function friendlyError(e: unknown): string {
+  if (!(e instanceof Error) || e.name === "AbortError") return "";
+  if (e.message === "Failed to fetch" || e.message.toLowerCase().includes("networkerror") || e.message.toLowerCase().includes("failed to fetch"))
+    return "Unable to reach the server. Please check your connection and try again.";
+  return e.message || "Something went wrong. Please try again.";
+}
+
 export default function Home() {
   const [mode, setMode] = useState<Mode>("research");
 
@@ -288,10 +295,13 @@ export default function Home() {
       const response = await fetch(url, { signal: controller.signal });
       if (response.status === 400) throw new Error("Invalid ticker symbol. Please enter a valid ticker (e.g. AAPL, NVDA, TSLA).");
       if (response.status === 429) throw new Error("You've hit the rate limit (10 requests/hour). Please wait a bit before trying again.");
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
-      const reader = response.body!.getReader();
+      if (!response.ok) throw new Error("The server encountered an error. Please try again in a moment.");
+      if (!response.body) throw new Error("Unable to reach the server. Please try again.");
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let completed = false;
+      let streamError = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -307,13 +317,16 @@ export default function Home() {
             else if (data.type === "agent_result") setAgentResults((prev) => ({ ...prev, [data.agent]: data.content }));
             else if (data.type === "chart_data") setChartData(data.data);
             else if (data.type === "comparison_data") setComparisonMd(data.markdown);
-            else if (data.type === "report") { setReport({ content: data.content, ticker: data.ticker, company: data.company }); setCurrentStep("done"); }
-            else if (data.type === "error") setError(data.message);
+            else if (data.type === "report") { setReport({ content: data.content, ticker: data.ticker, company: data.company }); setCurrentStep("done"); completed = true; }
+            else if (data.type === "done") completed = true;
+            else if (data.type === "error") { setError(data.message); streamError = true; }
           } catch {}
         }
       }
+      if (!completed && !streamError) setError("Analysis was interrupted. Please try again.");
     } catch (e: unknown) {
-      if (e instanceof Error && e.name !== "AbortError") setError(e.message || "Something went wrong.");
+      const msg = friendlyError(e);
+      if (msg) setError(msg);
     } finally {
       setLoading(false);
     }
@@ -337,11 +350,12 @@ export default function Home() {
     try {
       const res = await fetch(`${base}/discover?${params}`);
       if (res.status === 429) throw new Error("You've hit the rate limit (10 requests/hour). Please wait a bit before trying again.");
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      if (!res.ok) throw new Error("The server encountered an error. Please try again in a moment.");
       const data = await res.json();
       setDiscoveryResults(data.recommendations ?? []);
     } catch (e: unknown) {
-      if (e instanceof Error) setDiscoveryError(e.message || "Discovery failed.");
+      const msg = friendlyError(e);
+      if (msg) setDiscoveryError(msg);
     } finally {
       setDiscovering(false);
       setDiscoveryAttempted(true);
@@ -351,6 +365,10 @@ export default function Home() {
   const runHoldCheck = async () => {
     const t = holdTicker.trim().toUpperCase();
     if (!t) return;
+    if (!/^[A-Z]{1,5}(-[A-Z]{1,2})?$/.test(t)) {
+      setHoldError("Please enter a valid stock ticker (e.g. AAPL, NVDA, TSLA).");
+      return;
+    }
     const price = purchasePrice ? parseFloat(purchasePrice) : 0;
 
     setHoldLoading(true);
@@ -372,10 +390,13 @@ export default function Home() {
       const response = await fetch(url);
       if (response.status === 400) throw new Error("Invalid ticker symbol. Please enter a valid ticker (e.g. AAPL, NVDA, TSLA).");
       if (response.status === 429) throw new Error("You've hit the rate limit (10 requests/hour). Please wait a bit before trying again.");
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
-      const reader = response.body!.getReader();
+      if (!response.ok) throw new Error("The server encountered an error. Please try again in a moment.");
+      if (!response.body) throw new Error("Unable to reach the server. Please try again.");
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let completed = false;
+      let streamError = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -388,13 +409,16 @@ export default function Home() {
           try {
             const data = JSON.parse(line.slice(6));
             if (data.type === "status") setHoldStatusMsg(data.message);
-            else if (data.type === "hold_result") setHoldResult(data);
-            else if (data.type === "error") setHoldError(data.message);
+            else if (data.type === "hold_result") { setHoldResult(data); completed = true; }
+            else if (data.type === "done") completed = true;
+            else if (data.type === "error") { setHoldError(data.message); streamError = true; }
           } catch {}
         }
       }
+      if (!completed && !streamError) setHoldError("Analysis was interrupted. Please try again.");
     } catch (e: unknown) {
-      if (e instanceof Error) setHoldError(e.message || "Something went wrong.");
+      const msg = friendlyError(e);
+      if (msg) setHoldError(msg);
     } finally {
       setHoldLoading(false);
     }
@@ -607,8 +631,9 @@ export default function Home() {
         {mode === "discover" && (
           <>
             {discoveryError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
-                {discoveryError}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm flex items-start justify-between gap-3">
+                <p className="text-red-700">{discoveryError}</p>
+                <button onClick={runDiscovery} className="text-red-600 font-semibold underline whitespace-nowrap flex-shrink-0 hover:text-red-700">Try again</button>
               </div>
             )}
             {discoveryResults.length > 0 && (
@@ -635,8 +660,9 @@ export default function Home() {
         {mode === "hold" && (
           <>
             {holdError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
-                {holdError}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm flex items-start justify-between gap-3">
+                <p className="text-red-700">{holdError}</p>
+                <button onClick={runHoldCheck} className="text-red-600 font-semibold underline whitespace-nowrap flex-shrink-0 hover:text-red-700">Try again</button>
               </div>
             )}
             {holdResult && (
@@ -694,7 +720,10 @@ export default function Home() {
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">{error}</div>
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm flex items-start justify-between gap-3">
+                <p className="text-red-700">{error}</p>
+                <button onClick={() => runResearch()} className="text-red-600 font-semibold underline whitespace-nowrap flex-shrink-0 hover:text-red-700">Try again</button>
+              </div>
             )}
 
             {(agentResults.quant || agentResults.news) && (
