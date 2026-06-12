@@ -214,13 +214,9 @@ function HowItWorks() {
           <p className="text-xs text-gray-500 leading-relaxed">Already own a stock? The agent checks if your original thesis still holds and gives a clear signal: Add to Position, Strong Hold, Consider Trimming, or Exit.</p>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 mt-1">
-        {["Claude Sonnet", "Finnhub", "NewsAPI", "FastAPI + SSE", "Next.js"].map((tech) => (
-          <span key={tech} className="text-xs text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full">
-            {tech}
-          </span>
-        ))}
-      </div>
+      <p className="text-xs text-gray-300 mt-1">
+        Claude Sonnet · Finnhub · NewsAPI · FastAPI · Next.js
+      </p>
     </div>
   );
 }
