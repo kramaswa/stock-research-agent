@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Search, TrendingUp, Newspaper, BarChart3, Loader2,
-  ChevronDown, ChevronUp, Sparkles, ShieldCheck,
+  ChevronDown, ChevronUp, Sparkles, ShieldCheck, Info,
 } from "lucide-react";
 import DiscoveryCard, { type Recommendation } from "./DiscoveryCard";
 
@@ -185,16 +185,21 @@ function HowItWorks() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="mb-6 border border-gray-200 rounded-xl bg-white overflow-hidden">
+    <div className="mb-6 border border-blue-100 rounded-xl bg-blue-50 overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-blue-100 transition-colors"
       >
-        <span className="text-sm font-semibold text-gray-700">How it works</span>
-        {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+        <div className="flex items-center gap-2">
+          <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />
+          <span className="text-sm font-semibold text-blue-800">How it works</span>
+        </div>
+        {open
+          ? <ChevronUp className="w-4 h-4 text-blue-400" />
+          : <ChevronDown className="w-4 h-4 text-blue-400" />}
       </button>
       {open && (
-        <div className="px-5 pb-5 border-t border-gray-100 pt-4 space-y-4">
+        <div className="px-5 pb-5 border-t border-blue-100 pt-4 space-y-4">
           <p className="text-sm text-gray-600">
             This app uses a <span className="font-medium text-gray-800">multi-agent AI pipeline</span> to help you find stocks, analyze them with real data, and hold them with conviction — the three biggest challenges for individual investors.
           </p>
