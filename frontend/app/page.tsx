@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Search, TrendingUp, Newspaper, BarChart3, Loader2,
-  ChevronDown, ChevronUp, Sparkles, ShieldCheck, Info,
+  ChevronDown, ChevronUp, Sparkles, ShieldCheck,
 } from "lucide-react";
 import DiscoveryCard, { type Recommendation } from "./DiscoveryCard";
 
@@ -182,55 +182,41 @@ function ThesisStatusBanner({ content }: { content: string }) {
 }
 
 function HowItWorks() {
-  const [open, setOpen] = useState(false);
-
   return (
-    <div className="mb-6 border border-blue-100 rounded-xl bg-blue-50 overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-blue-100 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />
-          <span className="text-sm font-semibold text-blue-800">How it works</span>
-        </div>
-        {open
-          ? <ChevronUp className="w-4 h-4 text-blue-400" />
-          : <ChevronDown className="w-4 h-4 text-blue-400" />}
-      </button>
-      {open && (
-        <div className="px-5 pb-5 border-t border-blue-100 pt-4 space-y-4">
-          <p className="text-sm text-gray-600">
-            This app uses a <span className="font-medium text-gray-800">multi-agent AI pipeline</span> to help you find stocks, analyze them with real data, and hold them with conviction — the three biggest challenges for individual investors.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-blue-500" />
-                <span className="text-sm font-semibold text-gray-800">Discover</span>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed">Describe what you&apos;re looking for in plain English. An AI agent interprets your query, fetches real market data for 6–8 candidates via tool use, and returns the best matches with supporting evidence.</p>
+    <div className="mb-8">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">How it works</p>
+      <div className="grid gap-3 sm:grid-cols-3 mb-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-blue-500" />
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Search className="w-4 h-4 text-blue-500" />
-                <span className="text-sm font-semibold text-gray-800">Research</span>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed">Enter a ticker and 4 agents run in sequence: a quant agent pulls fundamentals from Finnhub, a news agent analyzes sentiment, a comparison agent benchmarks peers — all fed into a synthesis agent that writes the final report.</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck className="w-4 h-4 text-blue-500" />
-                <span className="text-sm font-semibold text-gray-800">Hold Check</span>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed">Already own a stock? Enter the ticker and optionally why you bought it. The agent checks whether your original thesis still holds using current fundamentals and news, and returns a clear signal: Add to Position, Strong Hold, Consider Trimming, or Exit.</p>
-            </div>
+            <span className="text-sm font-semibold text-gray-800">Discover</span>
           </div>
-          <p className="text-xs text-gray-400 pt-1">
-            Built with <span className="font-medium">Claude Sonnet</span> (Anthropic) · <span className="font-medium">Finnhub</span> for market data · <span className="font-medium">NewsAPI</span> for sentiment · <span className="font-medium">FastAPI</span> backend with SSE streaming · <span className="font-medium">Next.js</span> frontend
-          </p>
+          <p className="text-xs text-gray-500 leading-relaxed">Describe what you&apos;re looking for in plain English. An AI agent fetches real data for candidates and returns the best matches with supporting evidence.</p>
         </div>
-      )}
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <Search className="w-3.5 h-3.5 text-blue-500" />
+            </div>
+            <span className="text-sm font-semibold text-gray-800">Research</span>
+          </div>
+          <p className="text-xs text-gray-500 leading-relaxed">Enter a ticker and 4 agents run: quant pulls fundamentals, news analyzes sentiment, comparison benchmarks peers — all synthesized into a personalized report.</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+            </div>
+            <span className="text-sm font-semibold text-gray-800">Hold Check</span>
+          </div>
+          <p className="text-xs text-gray-500 leading-relaxed">Already own a stock? The agent checks if your original thesis still holds and gives a clear signal: Add to Position, Strong Hold, Consider Trimming, or Exit.</p>
+        </div>
+      </div>
+      <p className="text-xs text-gray-400">
+        Built with <span className="font-medium text-gray-500">Claude Sonnet</span> · <span className="font-medium text-gray-500">Finnhub</span> · <span className="font-medium text-gray-500">NewsAPI</span> · <span className="font-medium text-gray-500">FastAPI + SSE</span> · <span className="font-medium text-gray-500">Next.js</span>
+      </p>
     </div>
   );
 }
