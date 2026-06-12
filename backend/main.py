@@ -137,24 +137,32 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         yield event("status", {"message": f"Fetching current data for {ticker}...", "step": "quant"})
         await asyncio.sleep(0)
 
-        quant_analysis, company_name, chart_data = await run_quant_agent(ticker, client)
+        # Fetch raw Finnhub data first (fast, cached) to get company_name and validate ticker
+        loop = asyncio.get_event_loop()
+        raw_data = await loop.run_in_executor(None, get_all_stock_data, ticker)
+        company_name = raw_data.get("company_name", ticker)
+        raw_chart = raw_data.get("chart_data", [])
 
-        if company_name == ticker and not chart_data:
+        if company_name == ticker and not raw_chart:
             yield event("error", {"message": f"'{ticker}' doesn't appear to be a valid stock ticker. Please check the symbol and try again."})
             return
 
+        # Run quant analysis and news in parallel — raw data is now cached so quant won't re-hit Finnhub
+        yield event("status", {"message": "Running quant analysis and news check in parallel...", "step": "news"})
         await asyncio.sleep(0)
 
-        yield event("status", {"message": "Checking recent news...", "step": "news"})
-        await asyncio.sleep(0)
-
-        news_analysis = await run_news_agent(ticker, company_name, client)
-        await asyncio.sleep(0)
+        (quant_result, news_analysis) = await asyncio.gather(
+            run_quant_agent(ticker, client),
+            run_news_agent(ticker, company_name, client),
+        )
+        quant_analysis, quant_company, chart_data = quant_result
+        if quant_company != ticker:
+            company_name = quant_company
 
         yield event("status", {"message": "Analyzing your thesis...", "step": "analyze"})
         await asyncio.sleep(0)
 
-        current_price = chart_data[-1]["price"] if chart_data else 0.0
+        current_price = chart_data[-1]["price"] if chart_data else (raw_chart[-1]["price"] if raw_chart else 0.0)
 
         analysis = await run_hold_check_agent(
             ticker, purchase_price, quant_analysis, news_analysis, client,
