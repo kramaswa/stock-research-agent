@@ -54,46 +54,42 @@ async def research_stream(ticker: str, risk: str, horizon: str, goal: str):
         yield event("status", {"message": f"Starting research for {ticker}...", "step": "init"})
         await asyncio.sleep(0)
 
-        # Step 1: Quant agent
-        yield event("status", {"message": "Running quantitative analysis...", "step": "quant"})
-        await asyncio.sleep(0)
+        # Step 1: Fast raw data fetch to get company_name and validate ticker (cached)
+        loop = asyncio.get_event_loop()
+        raw_data = await loop.run_in_executor(None, get_all_stock_data, ticker)
+        company_name = raw_data.get("company_name", ticker)
+        raw_chart = raw_data.get("chart_data", [])
 
-        quant_analysis, company_name, chart_data = await run_quant_agent(ticker, client)
-
-        if company_name == ticker and not chart_data:
+        if company_name == ticker and not raw_chart:
             yield event("error", {"message": f"'{ticker}' doesn't appear to be a valid stock ticker. Please check the symbol and try again (e.g. AAPL, NVDA, TSLA)."})
             return
+
+        # Step 2: Quant + News + Comparison all in parallel — raw data is cached so quant won't re-hit Finnhub
+        yield event("status", {"message": "Running quant, news & comparison in parallel...", "step": "quant"})
+        await asyncio.sleep(0)
+
+        (quant_result, news_analysis, (peer_data, peer_tickers)) = await asyncio.gather(
+            run_quant_agent(ticker, client),
+            run_news_agent(ticker, company_name, client),
+            run_comparison_agent(ticker),
+        )
+        quant_analysis, quant_company, chart_data = quant_result
+        if quant_company != ticker:
+            company_name = quant_company
 
         yield event("agent_result", {"agent": "quant", "content": quant_analysis})
         if chart_data:
             yield event("chart_data", {"data": chart_data, "ticker": ticker})
-        await asyncio.sleep(0)
-
-        # Step 2: News agent + Comparison agent run in parallel (fan-out)
-        yield event("status", {"message": "Running news & competitor analysis in parallel...", "step": "news"})
-        await asyncio.sleep(0)
-
-        loop = asyncio.get_event_loop()
-        (news_analysis, (peer_data, peer_tickers), target_stock_data) = await asyncio.gather(
-            run_news_agent(ticker, company_name, client),
-            run_comparison_agent(ticker),
-            loop.run_in_executor(None, get_all_stock_data, ticker),
-        )
-
         yield event("agent_result", {"agent": "news", "content": news_analysis})
         await asyncio.sleep(0)
 
-        # Build comparison table using full target metrics (not just price)
         comparison_md = ""
         if peer_data:
-            comparison_md = format_comparison_table(target_stock_data, peer_data)
-            yield event("comparison_data", {
-                "markdown": comparison_md,
-                "peers": peer_tickers,
-            })
+            comparison_md = format_comparison_table(raw_data, peer_data)
+            yield event("comparison_data", {"markdown": comparison_md, "peers": peer_tickers})
         await asyncio.sleep(0)
 
-        # Step 3: Synthesis agent — gets quant + news + comparison
+        # Step 3: Synthesis
         yield event("status", {"message": "Synthesizing final report...", "step": "synthesis"})
         await asyncio.sleep(0)
 

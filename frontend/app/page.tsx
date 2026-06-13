@@ -57,8 +57,8 @@ function ToggleGroup({
 const STEP_ORDER: AgentStep[] = ["init", "quant", "news", "synthesis", "done"];
 const STEP_META: Record<AgentStep, { label: string }> = {
   init: { label: "Looking up ticker" },
-  quant: { label: "Quantitative analysis" },
-  news: { label: "News & competitors (parallel)" },
+  quant: { label: "Quant · News · Comparison (parallel)" },
+  news: { label: "News & competitors" },
   synthesis: { label: "Synthesizing report" },
   done: { label: "Complete" },
 };
