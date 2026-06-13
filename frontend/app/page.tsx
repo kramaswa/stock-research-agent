@@ -54,11 +54,11 @@ function ToggleGroup({
   );
 }
 
-const STEP_ORDER: AgentStep[] = ["init", "quant", "news", "synthesis", "done"];
+const STEP_ORDER: AgentStep[] = ["init", "quant", "synthesis", "done"];
 const STEP_META: Record<AgentStep, { label: string }> = {
   init: { label: "Looking up ticker" },
-  quant: { label: "Quant · News · Comparison (parallel)" },
-  news: { label: "News & competitors" },
+  quant: { label: "Running agents in parallel" },
+  news: { label: "Running agents in parallel" },
   synthesis: { label: "Synthesizing report" },
   done: { label: "Complete" },
 };
@@ -711,7 +711,7 @@ export default function Home() {
               <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Agent Pipeline</p>
                 <div className="divide-y divide-gray-50">
-                  {(["init", "quant", "news", "synthesis"] as AgentStep[]).map((step) => (
+                  {(["init", "quant", "synthesis"] as AgentStep[]).map((step) => (
                     <StepIndicator key={step} step={step} currentStep={currentStep}
                       message={currentStep === step ? statusMessage : undefined} />
                   ))}
