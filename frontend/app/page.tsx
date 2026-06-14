@@ -458,21 +458,22 @@ export default function Home() {
         {/* Mode Tabs */}
         <div className="flex border-b border-gray-200 mb-6">
           {([
-            { id: "research", label: "Research a Stock", icon: <Search className="w-3.5 h-3.5" /> },
-            { id: "discover", label: "Discover Stocks", icon: <Sparkles className="w-3.5 h-3.5" /> },
-            { id: "hold", label: "Hold Check", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-          ] as { id: Mode; label: string; icon: React.ReactNode }[]).map((tab) => (
+            { id: "research", label: "Research", fullLabel: "Research a Stock", icon: <Search className="w-3.5 h-3.5" /> },
+            { id: "discover", label: "Discover", fullLabel: "Discover Stocks", icon: <Sparkles className="w-3.5 h-3.5" /> },
+            { id: "hold", label: "Hold Check", fullLabel: "Hold Check", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+          ] as { id: Mode; label: string; fullLabel: string; icon: React.ReactNode }[]).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setMode(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
                 mode === tab.id
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               {tab.icon}
-              {tab.label}
+              <span className="sm:hidden">{tab.label}</span>
+              <span className="hidden sm:inline">{tab.fullLabel}</span>
             </button>
           ))}
         </div>
@@ -487,7 +488,7 @@ export default function Home() {
                 value={ticker}
                 onChange={(e) => setTicker(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === "Enter" && !loading && runResearch()}
-                placeholder="Enter a ticker — AAPL, NVDA, TSLA..."
+                placeholder="Ticker — AAPL, NVDA, TSLA..."
                 className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
                 disabled={loading}
               />
@@ -542,35 +543,37 @@ export default function Home() {
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
               Is your thesis still intact?
             </p>
-            <div className="flex gap-3 mb-3">
-              <div className="relative flex-1">
-                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={holdTicker}
-                  onChange={(e) => setHoldTicker(e.target.value.toUpperCase())}
-                  placeholder="Ticker — AAPL"
-                  className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  disabled={holdLoading}
-                />
-              </div>
-              <div className="relative w-44">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <input
-                  type="number"
-                  value={purchasePrice}
-                  onChange={(e) => setPurchasePrice(e.target.value)}
-                  placeholder="Buy price (optional)"
-                  min="0"
-                  step="0.01"
-                  className="w-full pl-7 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  disabled={holdLoading}
-                />
+            <div className="flex flex-col sm:flex-row gap-3 mb-3">
+              <div className="flex gap-3 flex-1">
+                <div className="relative flex-1">
+                  <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={holdTicker}
+                    onChange={(e) => setHoldTicker(e.target.value.toUpperCase())}
+                    placeholder="Ticker — AAPL"
+                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    disabled={holdLoading}
+                  />
+                </div>
+                <div className="relative w-36">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    value={purchasePrice}
+                    onChange={(e) => setPurchasePrice(e.target.value)}
+                    placeholder="Buy price"
+                    min="0"
+                    step="0.01"
+                    className="w-full pl-7 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    disabled={holdLoading}
+                  />
+                </div>
               </div>
               <button
                 onClick={runHoldCheck}
                 disabled={holdLoading || !holdTicker.trim()}
-                className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 whitespace-nowrap"
+                className="w-full sm:w-auto px-6 py-3.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 {holdLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {holdLoading ? "Checking..." : "Check Thesis"}
