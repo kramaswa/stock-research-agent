@@ -1,0 +1,24 @@
+# Stock Research Agent
+
+> A multi-agent AI stock research tool for individual investors. Live at https://stockresearch-ai.vercel.app
+
+## What it does
+
+Three tools that cover the full investing journey:
+
+- **Discover**: Describe what you're looking for in plain English (e.g. "high-growth tech with low debt") and AI agents fetch real market data for candidates and return the best matches with supporting evidence.
+- **Research**: Enter a stock ticker and a 4-agent pipeline runs — quant agent pulls Finnhub fundamentals, news agent analyzes sentiment, comparison agent benchmarks peers, synthesis agent writes a personalized report. Results stream in real time.
+- **Hold Check**: Enter a stock you already own and optionally why you bought it. The agent checks whether your thesis still holds using current fundamentals and news, returning a clear signal: Add to Position, Strong Hold, Consider Trimming, Consider Exiting, or Exit Signal.
+
+## How it works
+
+- LLM: Claude Sonnet (Anthropic) for all agent reasoning
+- Market data: Finnhub API (price, fundamentals, analyst ratings)
+- News sentiment: NewsAPI
+- Backend: FastAPI with SSE streaming (Railway)
+- Frontend: Next.js (Vercel)
+- Agents run in parallel where possible to minimize latency
+
+## Built by
+
+Kishore Ramaswa — AI PM Portfolio project

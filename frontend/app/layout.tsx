@@ -30,6 +30,23 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Stock Research Agent",
+  "url": "https://stockresearch-ai.vercel.app",
+  "description": "A multi-agent AI system that helps individual investors find stocks, research them with real data, and know when to hold or sell.",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "featureList": [
+    "AI-powered stock discovery from natural language queries",
+    "Multi-agent research pipeline with real-time market data",
+    "Hold Check thesis validation with actionable buy/sell signals"
+  ],
+  "author": { "@type": "Person", "name": "Kishore Ramaswa" }
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,7 +57,13 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </body>
     </html>
   );
 }
