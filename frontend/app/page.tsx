@@ -223,8 +223,8 @@ function HowItWorks() {
 
 function friendlyError(e: unknown): string {
   if (!(e instanceof Error) || e.name === "AbortError") return "";
-  if (e.message === "Failed to fetch" || e.message.toLowerCase().includes("networkerror") || e.message.toLowerCase().includes("failed to fetch"))
-    return "Unable to reach the server. Please check your connection and try again.";
+  if (e.message === "Failed to fetch" || e.message.toLowerCase().includes("network") || e.message.toLowerCase().includes("failed to fetch"))
+    return "Unable to reach the server. Please try again in a moment.";
   return e.message || "Something went wrong. Please try again.";
 }
 
