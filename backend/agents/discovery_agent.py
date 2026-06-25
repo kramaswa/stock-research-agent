@@ -20,10 +20,12 @@ Assigning match labels:
 - "Good Match" — fits most criteria with minor caveats
 - "Partial Match" — fits some criteria but not ideal
 
-If the query asks for stocks suitable to "add to position" or "buy more":
-- Prioritize stocks where analyst consensus is majority Buy/Strong Buy
-- Deprioritize or exclude stocks where EPS is declining, valuation is extreme (e.g. P/E > 100x with no earnings growth), or analyst sentiment is mixed
-- Be honest in the rationale if a stock is a hold rather than an add
+If the query asks for stocks suitable to "add to position", "buy more", or "strong hold":
+- Analyst consensus alone is NOT sufficient — a stock can have 50 Buy ratings and still be a Hold if valuation is extreme
+- For moderate or conservative risk profiles: downgrade or exclude stocks where forward P/E > 80x AND EPS growth is flat or negative — these are priced for perfection and not suitable to add to for a moderate-risk investor
+- For aggressive risk profiles: forward P/E > 120x AND declining EPS is the threshold
+- Only assign "Strong Match" if the stock passes BOTH the sector/style fit AND the valuation/earnings test
+- Be honest in the rationale — if a stock is a great business but too expensive to add at current prices, say so and assign "Good Match" or "Partial Match"
 
 Return ONLY a raw JSON object (no markdown, no code blocks, no explanation outside JSON):
 {
