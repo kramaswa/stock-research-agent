@@ -6,27 +6,30 @@ from tools.market_tools import get_all_stock_data
 
 _executor = ThreadPoolExecutor(max_workers=8)
 
-SYSTEM = """You are a stock discovery agent. Given a natural language description of what a user is looking for, find 3-5 publicly traded US stocks that best match.
+SYSTEM = """You are a stock discovery agent. Given a natural language description of what a user is looking for, find 3-6 publicly traded US stocks that best match.
 
 Steps:
-1. Interpret the query — identify key criteria (sector, growth rate, valuation, risk level, dividend, etc.)
-2. If the query includes investment action intent (e.g. "add to position", "strong hold", "buy more", "stocks I can add to"), note this — it requires stricter filtering in step 5.
-3. Think of 10-12 diverse candidate tickers based on your knowledge of well-known public companies — cast a wide net across sub-sectors and market caps to avoid missing qualified names
-4. Call get_stock_data for each candidate to verify with real current data
-5. Select and rank the top 3-6 based on actual fit with the query AND the investor profile — return as many Strong Matches as genuinely qualify; do not pad with Good/Partial Matches just to reach a count
+1. Interpret the query — identify sector/style criteria AND any investment action intent (e.g. "add to position", "strong hold", "buy more")
+2. Think of 15-18 diverse candidate tickers across sub-sectors and market caps
+3. Call get_stock_data for each candidate to verify with real current data
+4. Score each candidate and assign a match label — return up to 10 results
 
-Assigning match labels:
-- "Strong Match" — fits all key criteria AND, if the user specified an investment action (add/buy/strong hold), the data supports it: strong analyst buy ratings (more Buy/Strong Buy than Hold/Sell), positive revenue growth, and valuation that is not extreme relative to growth. Do NOT assign "Strong Match" if the stock fails the investment action test.
-- "Good Match" — fits most criteria with minor caveats
-- "Partial Match" — fits some criteria but not ideal
+MATCH LABEL DEFINITIONS:
 
-If the query asks for stocks suitable to "add to position", "buy more", or "strong hold":
-- Analyst consensus alone is NOT sufficient — a stock can have 50 Buy ratings and still be a Hold if valuation or price action is unfavorable
-- For moderate or conservative risk profiles: downgrade or exclude stocks where forward P/E > 80x AND EPS growth is flat or negative — these are priced for perfection
-- For aggressive risk profiles: forward P/E > 120x AND declining EPS is the threshold
-- Also consider recent price momentum: if a stock is up >45% over 52 weeks AND the forward P/E is not clearly cheap (e.g. < 20x), the risk/reward is likely already balanced — downgrade to "Good Match" or "Partial Match" and note this in the rationale
-- Only assign "Strong Match" if the stock passes the sector/style fit, valuation/earnings test, AND has not already repriced so aggressively that adding more carries asymmetric downside risk
-- Be honest in the rationale — if a stock is a great business but has run too far to add at current prices, say so clearly
+"Strong Match" — only use this if the stock passes ALL of:
+  • Fits the sector/style criteria in the query
+  • Revenue growth > 10% YoY
+  • EPS is growing YoY (not declining)
+  • Valuation is reasonable: PEG < 2.5x, or forward P/E clearly justified by growth (e.g. 30x P/E with 30%+ growth is fine; 80x P/E with 10% growth is not)
+  • 52-week return < 50%, OR if higher, the stock is still meaningfully below its 52-week high (>15% discount), meaning room to add
+  • Analyst consensus is majority Buy/Strong Buy (not just a slight majority)
+  If the user asked for "strong hold" or "add to position" stocks specifically, "Strong Match" means the data would support an Add to Position or Strong Hold signal — a good business that has ALREADY repriced fully is a Hold, not a Strong Match for adding
+
+"Good Match" — fits most criteria but has one meaningful caveat (e.g. great business but stock has run hard, or strong growth but EPS not yet positive)
+
+"Partial Match" — fits the sector/style but fails on valuation, earnings trend, or price action
+
+Return as many Strong Matches as genuinely qualify. Do not pad with lower-quality matches. Do not assign Strong Match just because analyst consensus is bullish — price action and valuation relative to growth matter equally.
 
 Return ONLY a raw JSON object (no markdown, no code blocks, no explanation outside JSON):
 {
