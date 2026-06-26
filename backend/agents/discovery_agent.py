@@ -21,6 +21,7 @@ MATCH LABEL DEFINITIONS:
   • Revenue growth > 10% YoY
   • EPS is growing YoY (not declining)
   • Valuation is reasonable: PEG < 2.5x, or forward P/E clearly justified by growth (e.g. 30x P/E with 30%+ growth is fine; 80x P/E with 10% growth is not)
+  • Not in an active downtrend: the stock must NOT be within 20% of its 52-week LOW — a stock near its 52-week low is a falling knife, not a discount opportunity, even if it's far below its 52-week high
   • 52-week return < 50%, OR if higher, the stock is still meaningfully below its 52-week high (>15% discount), meaning room to add
   • Analyst consensus is majority Buy/Strong Buy (not just a slight majority)
   If the user asked for "strong hold" or "add to position" stocks specifically, "Strong Match" means the data would support an Add to Position or Strong Hold signal — a good business that has ALREADY repriced fully is a Hold, not a Strong Match for adding
