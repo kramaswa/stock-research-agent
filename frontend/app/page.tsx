@@ -89,6 +89,17 @@ function StepIndicator({ step, currentStep, message }: {
   );
 }
 
+function ProgressBar({ progress }: { progress: number }) {
+  return (
+    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mt-3">
+      <div
+        className="h-full bg-blue-500 rounded-full transition-all duration-700 ease-out"
+        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+      />
+    </div>
+  );
+}
+
 function AgentResultCard({ title, icon, content }: {
   title: string; icon: React.ReactNode; content: string;
 }) {
@@ -258,10 +269,16 @@ export default function Home() {
   const [holdStatusMsg, setHoldStatusMsg] = useState("");
   const [holdError, setHoldError] = useState<string | null>(null);
 
+  // Progress bars
+  const [researchProgress, setResearchProgress] = useState(0);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const [discoveryProgress, setDiscoveryProgress] = useState(0);
+
   // Shared investor profile
   const [userContext, setUserContext] = useState<UserContext>({ risk: "moderate", horizon: "long-term", goal: "growth" });
 
   const abortRef = useRef<(() => void) | null>(null);
+  const discoveryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const runResearch = async (tickerArg?: string) => {
     const t = (tickerArg ?? ticker).trim().toUpperCase();
@@ -280,6 +297,7 @@ export default function Home() {
     setChartData(null);
     setComparisonMd(null);
     setError(null);
+    setResearchProgress(5);
 
     const params = new URLSearchParams({
       risk: userContext.risk,
@@ -313,12 +331,25 @@ export default function Home() {
           if (!line.startsWith("data: ")) continue;
           try {
             const data = JSON.parse(line.slice(6));
-            if (data.type === "status") { setCurrentStep(data.step as AgentStep); setStatusMessage(data.message); }
-            else if (data.type === "agent_result") setAgentResults((prev) => ({ ...prev, [data.agent]: data.content }));
+            if (data.type === "status") {
+              setCurrentStep(data.step as AgentStep);
+              setStatusMessage(data.message);
+              if (data.step === "init") setResearchProgress(10);
+              else if (data.step === "quant") setResearchProgress(30);
+              else if (data.step === "synthesis") setResearchProgress(72);
+            }
+            else if (data.type === "agent_result") {
+              setAgentResults((prev) => {
+                const updated = { ...prev, [data.agent]: data.content };
+                const count = Object.keys(updated).length;
+                setResearchProgress(count === 1 ? 50 : 62);
+                return updated;
+              });
+            }
             else if (data.type === "chart_data") setChartData(data.data);
             else if (data.type === "comparison_data") setComparisonMd(data.markdown);
-            else if (data.type === "report") { setReport({ content: data.content, ticker: data.ticker, company: data.company }); setCurrentStep("done"); completed = true; }
-            else if (data.type === "done") completed = true;
+            else if (data.type === "report") { setReport({ content: data.content, ticker: data.ticker, company: data.company }); setCurrentStep("done"); setResearchProgress(100); completed = true; }
+            else if (data.type === "done") { setResearchProgress(100); completed = true; }
             else if (data.type === "error") { setError(data.message); streamError = true; }
           } catch {}
         }
@@ -338,6 +369,16 @@ export default function Home() {
     setDiscoveryResults([]);
     setDiscoveryError(null);
     setDiscoveryAttempted(false);
+    setDiscoveryProgress(3);
+
+    // Easing timer: starts fast, slows near 92% to avoid "stuck at 99%" feel
+    if (discoveryTimerRef.current) clearInterval(discoveryTimerRef.current);
+    discoveryTimerRef.current = setInterval(() => {
+      setDiscoveryProgress((prev) => {
+        if (prev >= 92) return prev;
+        return prev + (92 - prev) * 0.055;
+      });
+    }, 1200);
 
     const params = new URLSearchParams({
       query: discoveryQuery.trim(),
@@ -357,6 +398,8 @@ export default function Home() {
       const msg = friendlyError(e);
       if (msg) setDiscoveryError(msg);
     } finally {
+      if (discoveryTimerRef.current) clearInterval(discoveryTimerRef.current);
+      setDiscoveryProgress(100);
       setDiscovering(false);
       setDiscoveryAttempted(true);
     }
@@ -375,6 +418,7 @@ export default function Home() {
     setHoldResult(null);
     setHoldError(null);
     setHoldStatusMsg("Starting analysis...");
+    setHoldProgress(5);
 
     const params = new URLSearchParams({
       purchase_price: price.toString(),
@@ -408,9 +452,14 @@ export default function Home() {
           if (!line.startsWith("data: ")) continue;
           try {
             const data = JSON.parse(line.slice(6));
-            if (data.type === "status") setHoldStatusMsg(data.message);
-            else if (data.type === "hold_result") { setHoldResult(data); completed = true; }
-            else if (data.type === "done") completed = true;
+            if (data.type === "status") {
+              setHoldStatusMsg(data.message);
+              if (data.step === "quant") setHoldProgress(20);
+              else if (data.step === "news") setHoldProgress(42);
+              else if (data.step === "analyze") setHoldProgress(70);
+            }
+            else if (data.type === "hold_result") { setHoldResult(data); setHoldProgress(100); completed = true; }
+            else if (data.type === "done") { setHoldProgress(100); completed = true; }
             else if (data.type === "error") { setHoldError(data.message); streamError = true; }
           } catch {}
         }
@@ -530,9 +579,12 @@ export default function Home() {
               </button>
             </div>
             {discovering && (
-              <p className="text-xs text-gray-400 mt-2 ml-1">
-                AI is fetching real data for candidates — this takes ~15 seconds...
-              </p>
+              <div className="mt-2 ml-1">
+                <p className="text-xs text-gray-400">
+                  AI is screening candidates, then running quant + news analysis — this takes ~45 seconds...
+                </p>
+                <ProgressBar progress={discoveryProgress} />
+              </div>
             )}
           </div>
         )}
@@ -588,7 +640,10 @@ export default function Home() {
               disabled={holdLoading}
             />
             {holdLoading && (
-              <p className="text-xs text-blue-500 mt-2">{holdStatusMsg}</p>
+              <div className="mt-2">
+                <p className="text-xs text-blue-500">{holdStatusMsg}</p>
+                <ProgressBar progress={holdProgress} />
+              </div>
             )}
           </div>
         )}
@@ -719,6 +774,7 @@ export default function Home() {
                       message={currentStep === step ? statusMessage : undefined} />
                   ))}
                 </div>
+                <ProgressBar progress={researchProgress} />
               </div>
             )}
 
