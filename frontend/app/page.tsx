@@ -240,7 +240,7 @@ function friendlyError(e: unknown): string {
 }
 
 export default function Home() {
-  const [mode, setMode] = useState<Mode>("research");
+  const [mode, setMode] = useState<Mode>("hold");
 
   // Research state
   const [ticker, setTicker] = useState("");
@@ -507,9 +507,9 @@ export default function Home() {
         {/* Mode Tabs */}
         <div className="flex border-b border-gray-200 mb-6">
           {([
+            { id: "hold", label: "Hold Check", fullLabel: "Hold Check", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
             { id: "research", label: "Research", fullLabel: "Research a Stock", icon: <Search className="w-3.5 h-3.5" /> },
             { id: "discover", label: "Discover", fullLabel: "Discover Stocks", icon: <Sparkles className="w-3.5 h-3.5" /> },
-            { id: "hold", label: "Hold Check", fullLabel: "Hold Check", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
           ] as { id: Mode; label: string; fullLabel: string; icon: React.ReactNode }[]).map((tab) => (
             <button
               key={tab.id}
