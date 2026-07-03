@@ -48,9 +48,21 @@ Do not rely on P/E alone. Assess on multiple frameworks and give an explicit fai
 - **Margin of safety**: Is the current price offering a discount to fair value (buy zone), trading at fair value (hold zone), or pricing in optimistic assumptions (trim zone)?
 
 ## Growth & Earnings Quality
-- Is revenue growth accelerating or decelerating? Compare the 1Y, 3Y, and 5Y growth rates if available.
-- Are forward EPS estimates available? Quote the consensus forward EPS and what YoY growth that implies. Are analysts revising estimates up or down (look at the trend across recommendation periods)?
-- **Earnings quality check**: Are EPS growing faster than revenue (operating leverage), slower (margin compression), or at the same rate? Is net income growth backed by FCF growth, or is there a divergence?
+- Is revenue growth accelerating or decelerating? Compare the 1Y, 3Y, and 5Y growth rates if available. Do the same for forward revenue estimates if present.
+- **Earnings beat/miss track record**: Review the earnings surprise history. Does management consistently beat estimates (credibility signal) or miss (execution risk)? What is the average surprise %?
+- Are forward EPS and revenue estimates available? Quote the consensus numbers and what YoY growth they imply. Are analysts revising estimates up or down across the last 4 recommendation periods?
+- **Short interest**: Quote the short ratio (days to cover) and whether it is rising or falling. Rising short interest from sophisticated investors is a meaningful risk signal worth explaining.
+- **Earnings quality check**: Are EPS growing faster than revenue (operating leverage) or slower (margin compression)? Is net income backed by FCF, or is there a divergence?
+
+## Bear Case
+Steelman the short thesis. If a disciplined short seller were writing a research note on this stock today, what would their 3 strongest arguments be? Be genuinely adversarial — surface the real vulnerabilities, not generic risks. This section should force the bull case to work harder. Format as 3 numbered arguments, each 2–3 sentences.
+
+## Price Scenarios (12-month view)
+Give three explicit price scenarios anchored to specific multiples and assumptions. Do not give vague ranges — commit to numbers.
+- **Bull case ($X)**: [key assumption that drives upside] at [Y× multiple on forward metric] = $X
+- **Base case ($X)**: [most probable outcome] at [Y× multiple] = $X
+- **Bear case ($X)**: [key assumption that drives downside] at [Y× multiple] = $X
+Then state: "The current price of $X implies the market is pricing in approximately the [bull/base/bear] scenario."
 
 ## Thesis Check
 [Include this section only if the investor provided their original buy thesis. Skip entirely if not.]
@@ -146,8 +158,8 @@ async def run_hold_check_agent(
     )
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4000,
+        model="claude-opus-4-8",
+        max_tokens=5000,
         system=SYSTEM,
         messages=[{"role": "user", "content": user_message}],
     )

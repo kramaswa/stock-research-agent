@@ -29,6 +29,11 @@ def get_all_stock_data(ticker: str) -> dict:
     rec = _get("/stock/recommendation", {"symbol": ticker})
     price_target_resp = _get("/stock/price-target", {"symbol": ticker})
     eps_estimate_resp = _get("/stock/eps-estimate", {"symbol": ticker, "freq": "annual"})
+    revenue_estimate_resp = _get("/stock/revenue-estimate", {"symbol": ticker, "freq": "annual"})
+    earnings_resp = _get("/stock/earnings", {"symbol": ticker, "limit": 5})
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    six_months_ago = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
+    short_interest_resp = _get("/stock/short-interest", {"symbol": ticker, "from": six_months_ago, "to": today_str})
 
     m = metrics_resp.get("metric", {}) if isinstance(metrics_resp, dict) else {}
 
@@ -59,6 +64,41 @@ def get_all_stock_data(ticker: str) -> dict:
                 "eps_high": e.get("epsHigh"),
                 "eps_low": e.get("epsLow"),
                 "num_analysts": e.get("numberAnalysts"),
+            })
+
+    # Forward revenue estimates (next 2 annual periods)
+    revenue_estimates = []
+    if isinstance(revenue_estimate_resp, dict) and revenue_estimate_resp.get("data"):
+        for e in revenue_estimate_resp["data"][:2]:
+            rev_avg = e.get("revenueAvg")
+            revenue_estimates.append({
+                "period": e.get("period"),
+                "revenue_avg_billions": round(rev_avg / 1e9, 2) if rev_avg else None,
+                "revenue_high_billions": round(e["revenueHigh"] / 1e9, 2) if e.get("revenueHigh") else None,
+                "revenue_low_billions": round(e["revenueLow"] / 1e9, 2) if e.get("revenueLow") else None,
+                "num_analysts": e.get("numberAnalysts"),
+            })
+
+    # Earnings surprise history (last 4 quarters — shows management credibility)
+    earnings_history = []
+    if isinstance(earnings_resp, list):
+        for e in earnings_resp[:4]:
+            surprise_pct = e.get("surprisePercent")
+            earnings_history.append({
+                "period": e.get("period"),
+                "actual_eps": e.get("actual"),
+                "estimated_eps": e.get("estimate"),
+                "surprise_pct": round(surprise_pct, 2) if surprise_pct is not None else None,
+            })
+
+    # Short interest — most recent 2 data points to show trend
+    short_interest = []
+    if isinstance(short_interest_resp, dict) and short_interest_resp.get("data"):
+        for s in short_interest_resp["data"][-2:]:
+            short_interest.append({
+                "date": s.get("date"),
+                "short_interest_shares": s.get("shortInterest"),
+                "short_ratio_days_to_cover": s.get("shortRatio"),
             })
 
     # Build approximate price history from return percentages
@@ -144,8 +184,13 @@ def get_all_stock_data(ticker: str) -> dict:
         "analyst_target_mean": price_target_resp.get("targetMean") if isinstance(price_target_resp, dict) else None,
         "analyst_target_high": price_target_resp.get("targetHigh") if isinstance(price_target_resp, dict) else None,
         "analyst_target_low": price_target_resp.get("targetLow") if isinstance(price_target_resp, dict) else None,
-        # Forward EPS estimates
+        # Forward estimates
         "eps_estimates": eps_estimates,
+        "revenue_estimates": revenue_estimates,
+        # Earnings surprise history (management credibility)
+        "earnings_history": earnings_history,
+        # Short interest (risk signal — high or rising = caution)
+        "short_interest": short_interest,
         "chart_data": chart_data,
     }
     _data_cache[ticker] = result
