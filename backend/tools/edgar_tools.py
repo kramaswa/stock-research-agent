@@ -73,53 +73,55 @@ def _fetch_8k(ticker: str) -> str | None:
         accessions = recent.get("accessionNumber", [])
         primary_docs = recent.get("primaryDocument", [])
 
-        for i, form in enumerate(forms):
-            if form != "8-K":
-                continue
-            if i >= len(dates) or dates[i] < cutoff:
-                break  # Filings are newest-first; stop after cutoff
+        # Try 8-K first (US domestic filers), then 6-K (foreign private issuers)
+        for target_form in ("8-K", "6-K"):
+            for i, form in enumerate(forms):
+                if form != target_form:
+                    continue
+                if i >= len(dates) or dates[i] < cutoff:
+                    break  # Filings are newest-first; stop after cutoff
 
-            accession = accessions[i]
-            accession_nodash = accession.replace("-", "")
+                accession = accessions[i]
+                accession_nodash = accession.replace("-", "")
 
-            # Try to find EX-99.1 (earnings press release) in the filing index
-            doc_url = None
-            try:
-                idx_url = (
-                    f"https://www.sec.gov/Archives/edgar/data/{cik_int}/"
-                    f"{accession_nodash}/{accession}-index.htm"
-                )
-                idx_r = httpx.get(idx_url, headers=_HEADERS, timeout=8)
-                for line in idx_r.text.split("\n"):
-                    if "EX-99" in line.upper():
-                        href = re.search(
-                            r'href="(/Archives/edgar/data/[^"]+)"', line, re.IGNORECASE
-                        )
-                        if href:
-                            doc_url = "https://www.sec.gov" + href.group(1)
-                            break
-            except Exception:
-                pass
-
-            # Fall back to the primary 8-K document
-            if not doc_url and i < len(primary_docs) and primary_docs[i]:
-                doc_url = (
-                    f"https://www.sec.gov/Archives/edgar/data/{cik_int}/"
-                    f"{accession_nodash}/{primary_docs[i]}"
-                )
-
-            if doc_url:
+                # Try to find EX-99 (earnings press release) in the filing index
+                doc_url = None
                 try:
-                    doc_r = httpx.get(doc_url, headers=_HEADERS, timeout=15)
-                    text = _strip_html(doc_r.text)
-                    if len(text) > 150:
-                        if len(text) > 3500:
-                            text = text[:3500] + "... [truncated]"
-                        return f"[SEC 8-K filed {dates[i]}]\n{text}"
+                    idx_url = (
+                        f"https://www.sec.gov/Archives/edgar/data/{cik_int}/"
+                        f"{accession_nodash}/{accession}-index.htm"
+                    )
+                    idx_r = httpx.get(idx_url, headers=_HEADERS, timeout=8)
+                    for line in idx_r.text.split("\n"):
+                        if "EX-99" in line.upper():
+                            href = re.search(
+                                r'href="(/Archives/edgar/data/[^"]+)"', line, re.IGNORECASE
+                            )
+                            if href:
+                                doc_url = "https://www.sec.gov" + href.group(1)
+                                break
                 except Exception:
                     pass
 
-            break  # Only try the most recent 8-K
+                # Fall back to the primary document
+                if not doc_url and i < len(primary_docs) and primary_docs[i]:
+                    doc_url = (
+                        f"https://www.sec.gov/Archives/edgar/data/{cik_int}/"
+                        f"{accession_nodash}/{primary_docs[i]}"
+                    )
+
+                if doc_url:
+                    try:
+                        doc_r = httpx.get(doc_url, headers=_HEADERS, timeout=15)
+                        text = _strip_html(doc_r.text)
+                        if len(text) > 150:
+                            if len(text) > 3500:
+                                text = text[:3500] + "... [truncated]"
+                            return f"[SEC {target_form} filed {dates[i]}]\n{text}"
+                    except Exception:
+                        pass
+
+                break  # Only try the most recent filing of this form type
 
     except Exception:
         pass

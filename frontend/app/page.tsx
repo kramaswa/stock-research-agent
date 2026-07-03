@@ -268,6 +268,7 @@ export default function Home() {
   const [holdLoading, setHoldLoading] = useState(false);
   const [holdStatusMsg, setHoldStatusMsg] = useState("");
   const [holdError, setHoldError] = useState<string | null>(null);
+  const [holdSources, setHoldSources] = useState<string[]>([]);
 
   // Progress bars
   const [researchProgress, setResearchProgress] = useState(0);
@@ -417,6 +418,7 @@ export default function Home() {
     setHoldLoading(true);
     setHoldResult(null);
     setHoldError(null);
+    setHoldSources([]);
     setHoldStatusMsg("Starting analysis...");
     setHoldProgress(5);
 
@@ -458,6 +460,7 @@ export default function Home() {
               else if (data.step === "news") setHoldProgress(42);
               else if (data.step === "analyze") setHoldProgress(70);
             }
+            else if (data.type === "data_sources") { setHoldSources(data.sources ?? []); }
             else if (data.type === "hold_result") { setHoldResult(data); setHoldProgress(100); completed = true; }
             else if (data.type === "done") { setHoldProgress(100); completed = true; }
             else if (data.type === "error") { setHoldError(data.message); streamError = true; }
@@ -745,6 +748,16 @@ export default function Home() {
                     );
                   })()}
                 </div>
+                {holdSources.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                    <span className="text-xs text-gray-400">Context:</span>
+                    {holdSources.map((s) => (
+                      <span key={s} className="px-2 py-0.5 text-xs bg-blue-50 text-blue-600 rounded-full border border-blue-100">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <ThesisStatusBanner content={holdResult.content} />
                 <div className="prose prose-gray max-w-none prose-headings:font-semibold prose-h2:text-lg prose-h2:text-gray-800 prose-h3:text-base prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{holdResult.content}</ReactMarkdown>

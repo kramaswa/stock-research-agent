@@ -165,6 +165,21 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         if peer_data:
             comparison_md = format_comparison_table(raw_data, peer_data)
 
+        # Emit data sources so the UI can show what context was fed to Opus
+        sources = ["Finnhub"]
+        insider_count = len(raw_data.get("insider_transactions") or [])
+        if insider_count:
+            sources.append(f"{insider_count} insider transaction{'s' if insider_count != 1 else ''}")
+        if edgar_text:
+            bracket_end = edgar_text.find("]")
+            if bracket_end > 0:
+                label = edgar_text[1:bracket_end]  # e.g. "SEC 8-K filed 2025-01-23"
+                parts = label.split(" filed ")
+                sources.append(f"{parts[0]} ({parts[1]})" if len(parts) == 2 else label)
+            else:
+                sources.append("SEC filing")
+        yield event("data_sources", {"sources": sources})
+
         yield event("status", {"message": "Analyzing your thesis...", "step": "analyze"})
         await asyncio.sleep(0)
 
