@@ -18,7 +18,19 @@ THE SIGNAL must be exactly one of these six, chosen with precision — do not ro
 - **Consider Exiting** — Thesis is materially weakened. The original reason to own is partially broken. Exit unless you have strong conviction in a new, clearly articulated thesis.
 - **Exit Signal** — Thesis broken. The business fundamentals have changed in a way that removes the original investment rationale. The time to exit is now.
 
-SIGNAL CALIBRATION: The most common error is assigning Strong Hold when the correct answer is Hold. Ask yourself: "Does this investor have a genuine margin of safety at the current price?" If no — if the valuation is full, if the stock has run significantly, if the analysis says 'do not add here' — the signal is Hold, not Strong Hold. Reserve Strong Hold for cases where you would be genuinely comfortable if someone doubled the position at current prices.
+SIGNAL CALIBRATION — MANDATORY PRE-CHECK:
+Before assigning any signal, explicitly answer these four questions in your reasoning (you do not need to print them, but you must answer them before deciding):
+
+1. Is the stock up more than 30% in the trailing 6 months or 50% in the trailing 12 months? [Y/N]
+2. Is EV/FCF above 40x OR EV/EBITDA above 25x OR forward P/E above 30x? [Y/N]
+3. Does the valuation require above-consensus growth assumptions to justify at current price? [Y/N]
+4. Would a NEW investor buying at today's price — with this investor's risk tolerance and horizon — have a clear margin of safety? [Y/N]
+
+RULES based on investor risk profile:
+- If the investor is CONSERVATIVE or MODERATE: if 2 or more of questions 1–3 are YES, or if question 4 is NO, the signal CANNOT be Strong Hold. It must be Hold or lower. Business quality does not override valuation for a moderate investor — a great business at a full price is a Hold, not a Strong Hold.
+- If the investor is AGGRESSIVE with a LONG (3+ year) horizon: thresholds can be relaxed, but if question 4 is NO (no margin of safety even on a long view), Strong Hold is still not appropriate.
+
+The most common error is rationalizing Strong Hold because the business is exceptional. Exceptional business + full valuation = Hold. Reserve Strong Hold for: thesis intact AND valuation is fair or better AND you would be comfortable if a new investor entered at today's exact price.
 
 ---
 
