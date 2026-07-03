@@ -143,17 +143,22 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             yield event("error", {"message": f"'{ticker}' doesn't appear to be a valid stock ticker. Please check the symbol and try again."})
             return
 
-        # Run quant analysis and news in parallel — raw data is now cached so quant won't re-hit Finnhub
-        yield event("status", {"message": "Running quant analysis and news check in parallel...", "step": "news"})
+        # Run quant, news, and peer comparison in parallel
+        yield event("status", {"message": "Running quant analysis, news, and peer comparison in parallel...", "step": "news"})
         await asyncio.sleep(0)
 
-        (quant_result, news_analysis) = await asyncio.gather(
+        (quant_result, news_analysis, (peer_data, peer_tickers)) = await asyncio.gather(
             run_quant_agent(ticker, client),
             run_news_agent(ticker, company_name, client),
+            run_comparison_agent(ticker),
         )
         quant_analysis, quant_company, chart_data = quant_result
         if quant_company != ticker:
             company_name = quant_company
+
+        comparison_md = ""
+        if peer_data:
+            comparison_md = format_comparison_table(raw_data, peer_data)
 
         yield event("status", {"message": "Analyzing your thesis...", "step": "analyze"})
         await asyncio.sleep(0)
@@ -165,6 +170,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             user_thesis=thesis,
             current_price=current_price,
             user_context=user_context,
+            comparison_table=comparison_md,
         )
 
         yield event("hold_result", {

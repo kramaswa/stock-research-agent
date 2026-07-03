@@ -27,6 +27,8 @@ def get_all_stock_data(ticker: str) -> dict:
     profile = _get("/stock/profile2", {"symbol": ticker})
     metrics_resp = _get("/stock/metric", {"symbol": ticker, "metric": "all"})
     rec = _get("/stock/recommendation", {"symbol": ticker})
+    price_target_resp = _get("/stock/price-target", {"symbol": ticker})
+    eps_estimate_resp = _get("/stock/eps-estimate", {"symbol": ticker, "freq": "annual"})
 
     m = metrics_resp.get("metric", {}) if isinstance(metrics_resp, dict) else {}
 
@@ -34,17 +36,30 @@ def get_all_stock_data(ticker: str) -> dict:
     prev_close = quote.get("pc")
     change_pct_1d = round(((current - prev_close) / prev_close) * 100, 2) if current and prev_close else None
 
+    # Last 4 analyst recommendation periods to show trend (not just snapshot)
     recent_recs = []
-    if isinstance(rec, list) and rec:
-        r0 = rec[0]
-        recent_recs = [{
-            "period": r0.get("period"),
-            "strongBuy": r0.get("strongBuy"),
-            "buy": r0.get("buy"),
-            "hold": r0.get("hold"),
-            "sell": r0.get("sell"),
-            "strongSell": r0.get("strongSell"),
-        }]
+    if isinstance(rec, list):
+        for r in rec[:4]:
+            recent_recs.append({
+                "period": r.get("period"),
+                "strongBuy": r.get("strongBuy"),
+                "buy": r.get("buy"),
+                "hold": r.get("hold"),
+                "sell": r.get("sell"),
+                "strongSell": r.get("strongSell"),
+            })
+
+    # Forward EPS estimates (next 2 annual periods)
+    eps_estimates = []
+    if isinstance(eps_estimate_resp, dict) and eps_estimate_resp.get("data"):
+        for e in eps_estimate_resp["data"][:2]:
+            eps_estimates.append({
+                "period": e.get("period"),
+                "eps_avg": e.get("epsAvg"),
+                "eps_high": e.get("epsHigh"),
+                "eps_low": e.get("epsLow"),
+                "num_analysts": e.get("numberAnalysts"),
+            })
 
     # Build approximate price history from return percentages
     chart_data = []
@@ -110,10 +125,27 @@ def get_all_stock_data(ticker: str) -> dict:
         "roa_ttm": m.get("roaTTM"),
         # Financial health
         "debt_to_equity": m.get("totalDebt/totalEquityAnnual"),
+        "long_term_debt_to_equity": m.get("longTermDebt/totalEquityAnnual"),
         "current_ratio": m.get("currentRatioAnnual"),
+        "quick_ratio": m.get("quickRatioAnnual"),
+        "interest_coverage": m.get("netInterestCoverageAnnual"),
         "dividend_yield": m.get("dividendYieldIndicatedAnnual"),
-        # Analyst consensus
+        # Free cash flow (real earnings power)
+        "fcf_per_share_ttm": m.get("freeCashFlowPerShareTTM"),
+        "ev_to_fcf_ttm": m.get("currentEv/freeCashFlowTTM"),
+        # Capital efficiency
+        "roic_ttm": m.get("roicTTM"),
+        "roic_5y_avg": m.get("roic5Y"),
+        "revenue_growth_5y": m.get("revenueGrowth5Y"),
+        "eps_growth_3y": m.get("epsGrowth3Y"),
+        # Analyst consensus (last 4 periods — shows trend)
         "recent_recommendations": recent_recs,
+        # Analyst price target
+        "analyst_target_mean": price_target_resp.get("targetMean") if isinstance(price_target_resp, dict) else None,
+        "analyst_target_high": price_target_resp.get("targetHigh") if isinstance(price_target_resp, dict) else None,
+        "analyst_target_low": price_target_resp.get("targetLow") if isinstance(price_target_resp, dict) else None,
+        # Forward EPS estimates
+        "eps_estimates": eps_estimates,
         "chart_data": chart_data,
     }
     _data_cache[ticker] = result
