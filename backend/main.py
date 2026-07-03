@@ -19,6 +19,7 @@ from agents.comparison_agent import run_comparison_agent, format_comparison_tabl
 from agents.discovery_agent import run_discovery_agent
 from agents.hold_check_agent import run_hold_check_agent
 from tools.market_tools import get_all_stock_data
+from tools.edgar_tools import get_recent_8k_text
 
 load_dotenv()
 
@@ -143,14 +144,18 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             yield event("error", {"message": f"'{ticker}' doesn't appear to be a valid stock ticker. Please check the symbol and try again."})
             return
 
-        # Run quant, news, and peer comparison in parallel
+        # Run quant, news, peer comparison, and EDGAR 8-K fetch in parallel
         yield event("status", {"message": "Running quant analysis, news, and peer comparison in parallel...", "step": "news"})
         await asyncio.sleep(0)
 
-        (quant_result, news_analysis, (peer_data, peer_tickers)) = await asyncio.gather(
+        async def fetch_edgar():
+            return await loop.run_in_executor(None, get_recent_8k_text, ticker)
+
+        (quant_result, news_analysis, (peer_data, peer_tickers), edgar_text) = await asyncio.gather(
             run_quant_agent(ticker, client),
             run_news_agent(ticker, company_name, client),
             run_comparison_agent(ticker),
+            fetch_edgar(),
         )
         quant_analysis, quant_company, chart_data = quant_result
         if quant_company != ticker:
@@ -171,6 +176,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             current_price=current_price,
             user_context=user_context,
             comparison_table=comparison_md,
+            earnings_release=edgar_text or "",
         )
 
         yield event("hold_result", {

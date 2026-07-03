@@ -33,7 +33,9 @@ def get_all_stock_data(ticker: str) -> dict:
     earnings_resp = _get("/stock/earnings", {"symbol": ticker, "limit": 5})
     today_str = datetime.now().strftime("%Y-%m-%d")
     six_months_ago = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
+    ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
     short_interest_resp = _get("/stock/short-interest", {"symbol": ticker, "from": six_months_ago, "to": today_str})
+    insider_resp = _get("/stock/insider-transactions", {"symbol": ticker, "from": ninety_days_ago, "to": today_str})
 
     m = metrics_resp.get("metric", {}) if isinstance(metrics_resp, dict) else {}
 
@@ -100,6 +102,21 @@ def get_all_stock_data(ticker: str) -> dict:
                 "short_interest_shares": s.get("shortInterest"),
                 "short_ratio_days_to_cover": s.get("shortRatio"),
             })
+
+    # Insider buy/sell transactions (last 90 days)
+    insider_transactions = []
+    if isinstance(insider_resp, dict) and insider_resp.get("data"):
+        for t in insider_resp["data"][:10]:
+            code = t.get("transactionCode", "")
+            if code in ("P", "S"):
+                insider_transactions.append({
+                    "name": t.get("name"),
+                    "type": "Buy" if code == "P" else "Sell",
+                    "shares": t.get("change"),
+                    "price": t.get("transactionPrice"),
+                    "transaction_date": t.get("transactionDate"),
+                    "filing_date": t.get("filingDate"),
+                })
 
     # Build approximate price history from return percentages
     chart_data = []
@@ -191,6 +208,8 @@ def get_all_stock_data(ticker: str) -> dict:
         "earnings_history": earnings_history,
         # Short interest (risk signal — high or rising = caution)
         "short_interest": short_interest,
+        # Insider buy/sell activity (strong buy signal when insiders buy)
+        "insider_transactions": insider_transactions,
         "chart_data": chart_data,
     }
     _data_cache[ticker] = result

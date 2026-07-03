@@ -121,6 +121,7 @@ async def run_hold_check_agent(
     current_price: float = 0.0,
     user_context: dict | None = None,
     comparison_table: str = "",
+    earnings_release: str = "",
 ) -> str:
     price_context = ""
     if purchase_price > 0 and current_price > 0:
@@ -156,6 +157,12 @@ async def run_hold_check_agent(
         else ""
     )
 
+    edgar_section = (
+        f"\n## SEC Earnings Release (Most Recent 8-K)\n{earnings_release}\n"
+        if earnings_release
+        else ""
+    )
+
     user_message = (
         f"Analyze the hold thesis for {ticker.upper()}.\n\n"
         f"## Entry Context\n"
@@ -167,17 +174,19 @@ async def run_hold_check_agent(
         f"\n## Recent News & Sentiment\n"
         f"{news_analysis}"
         f"{peer_section}"
+        f"{edgar_section}"
     )
 
     response = client.messages.create(
         model="claude-opus-4-8",
-        max_tokens=5000,
+        max_tokens=16000,
+        thinking={"type": "adaptive"},
         system=SYSTEM,
         messages=[{"role": "user", "content": user_message}],
     )
 
     for block in response.content:
-        if hasattr(block, "text"):
+        if block.type == "text":
             return block.text
 
     return "Hold check unavailable."
