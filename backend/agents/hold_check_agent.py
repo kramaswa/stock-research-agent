@@ -26,12 +26,12 @@ Before assigning any signal, explicitly answer these four questions in your reas
 
 RULES based on investor risk profile AND time horizon:
 - If the investor is CONSERVATIVE or MODERATE (any horizon): if 2 or more of questions 1–3 are YES, or if question 4 is NO, the signal CANNOT be Strong Hold. It must be Hold or lower.
-- If the investor has a SHORT horizon (under 1 year), regardless of risk tolerance: apply the same thresholds as MODERATE above. A short-term investor cannot wait for a stretched multiple to compress or for the long-term thesis to compound — time horizon is the binding constraint, not risk appetite. A 70%-run stock at 26x EV/EBITDA with a 25% bear-case probability of -30% is a Consider Trimming for a short-term holder, not a Hold, even if they are aggressive.
-- If the investor is AGGRESSIVE with a LONG (3+ year) horizon: valuation thresholds can be relaxed, but if question 4 is NO (no margin of safety even on a long view), Strong Hold is still not appropriate.
+- If the investor has a SHORT horizon (under 1 year), regardless of risk tolerance: Strong Hold is NOT available when question 4 is NO or when 2+ of questions 1–3 are YES. Short-term investors do not get the relaxed thresholds of long-horizon investors — you cannot wait years for a stretched multiple to normalize. However, an aggressive short-term investor in a great business at a fair (not cheap) price should still be Hold, not pushed to Consider Trimming — their risk tolerance means they accept the volatility. The direction of the signal should be informed by risk tolerance: aggressive investors hold through discomfort, conservative investors trim into it.
+- If the investor is AGGRESSIVE with a LONG (3+ year) horizon: valuation thresholds can be relaxed for Strong Hold only when question 4 is borderline (the stock is at fair value, not clearly above it). If question 4 is clearly NO (stock is materially above fair value), Strong Hold is still not appropriate.
 
 The most common errors:
 1. Rationalizing Strong Hold because the business is exceptional. Exceptional business + full valuation = Hold. Reserve Strong Hold for: thesis intact AND valuation is fair or better AND you would be comfortable if a new investor entered at today's exact price.
-2. Giving a short-term holder the same signal as a long-term holder on a fully-valued stock. Short horizon + full valuation = tighter signal, because there is no time to let compounding rescue a stretched entry price.
+2. Treating all investor profiles identically. The signal that correctly describes risk/reward for a conservative investor may be Consider Trimming; for an aggressive investor at the same price, Hold is often the right answer — same business, same valuation, different tolerance for sitting through drawdowns.
 
 ---
 
