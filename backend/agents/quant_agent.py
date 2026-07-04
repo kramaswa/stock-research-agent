@@ -12,7 +12,8 @@ Call get_all_stock_data once to retrieve all available data, then provide a stru
 1. Price & momentum summary (current price, 6mo return, vs 52-week range)
 2. Fundamental health (P/E vs sector norms, revenue growth, margins, debt load)
 3. Analyst consensus (rating, price target range, upside/downside from current)
-4. Key quantitative risks or red flags in the numbers
+4. Estimate revision momentum: count upgrades vs downgrades from rating_changes_90d. State the net balance (e.g., "5 upgrades, 2 downgrades in past 90 days") and name any notable firms. Also review quarterly EPS estimates (eps_estimates_quarterly) for trajectory — are near-term estimates stepping up or flat?
+5. Key quantitative risks or red flags in the numbers
 
 If certain data fields are null or missing, note it briefly and move on — do not halt or repeat the tool call.
 Be factual and data-driven. Do not make a buy/sell recommendation — that is the synthesis agent's job.

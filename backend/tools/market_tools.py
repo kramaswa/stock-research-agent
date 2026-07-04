@@ -29,6 +29,7 @@ def get_all_stock_data(ticker: str) -> dict:
     rec = _get("/stock/recommendation", {"symbol": ticker})
     price_target_resp = _get("/stock/price-target", {"symbol": ticker})
     eps_estimate_resp = _get("/stock/eps-estimate", {"symbol": ticker, "freq": "annual"})
+    eps_estimate_quarterly_resp = _get("/stock/eps-estimate", {"symbol": ticker, "freq": "quarterly"})
     revenue_estimate_resp = _get("/stock/revenue-estimate", {"symbol": ticker, "freq": "annual"})
     earnings_resp = _get("/stock/earnings", {"symbol": ticker, "limit": 5})
     today_str = datetime.now().strftime("%Y-%m-%d")
@@ -36,6 +37,7 @@ def get_all_stock_data(ticker: str) -> dict:
     ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
     short_interest_resp = _get("/stock/short-interest", {"symbol": ticker, "from": six_months_ago, "to": today_str})
     insider_resp = _get("/stock/insider-transactions", {"symbol": ticker, "from": ninety_days_ago, "to": today_str})
+    upgrade_downgrade_resp = _get("/stock/upgrade-downgrade", {"symbol": ticker, "from": ninety_days_ago, "to": today_str})
 
     m = metrics_resp.get("metric", {}) if isinstance(metrics_resp, dict) else {}
 
@@ -117,6 +119,33 @@ def get_all_stock_data(ticker: str) -> dict:
                     "transaction_date": t.get("transactionDate"),
                     "filing_date": t.get("filingDate"),
                 })
+
+    # Analyst rating changes (upgrade/downgrade) — past 90 days
+    # Best available proxy for estimate revision momentum on the free tier
+    rating_changes = []
+    if isinstance(upgrade_downgrade_resp, list):
+        for item in upgrade_downgrade_resp[:15]:
+            action = (item.get("action") or "").lower()
+            if action in ("upgrade", "downgrade", "init", "reit"):
+                rating_changes.append({
+                    "date": item.get("gradeDate"),
+                    "firm": item.get("company"),
+                    "from_grade": item.get("fromGrade"),
+                    "to_grade": item.get("toGrade"),
+                    "action": item.get("action"),
+                })
+
+    # Quarterly EPS estimates — near-term trajectory (next 4 quarters)
+    eps_estimates_quarterly = []
+    if isinstance(eps_estimate_quarterly_resp, dict) and eps_estimate_quarterly_resp.get("data"):
+        for e in eps_estimate_quarterly_resp["data"][:4]:
+            eps_estimates_quarterly.append({
+                "period": e.get("period"),
+                "eps_avg": e.get("epsAvg"),
+                "eps_high": e.get("epsHigh"),
+                "eps_low": e.get("epsLow"),
+                "num_analysts": e.get("numberAnalysts"),
+            })
 
     # Build approximate price history from return percentages
     chart_data = []
@@ -210,6 +239,10 @@ def get_all_stock_data(ticker: str) -> dict:
         "short_interest": short_interest,
         # Insider buy/sell activity (strong buy signal when insiders buy)
         "insider_transactions": insider_transactions,
+        # Analyst rating changes past 90 days (proxy for estimate revision momentum)
+        "rating_changes_90d": rating_changes,
+        # Quarterly EPS estimates — near-term trajectory
+        "eps_estimates_quarterly": eps_estimates_quarterly,
         "chart_data": chart_data,
     }
     _data_cache[ticker] = result
