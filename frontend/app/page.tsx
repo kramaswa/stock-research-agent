@@ -222,7 +222,7 @@ function HowItWorks() {
             </div>
             <span className="text-sm font-semibold text-gray-800">Hold Check</span>
           </div>
-          <p className="text-xs text-gray-500 leading-relaxed">Already own a stock? The agent checks if your original thesis still holds and gives a clear signal: Add to Position, Strong Hold, Consider Trimming, or Exit.</p>
+          <p className="text-xs text-gray-500 leading-relaxed">Already own a stock? The agent checks if your original thesis still holds and gives a clear signal: Add to Position, Strong Hold, Hold, Consider Trimming, Consider Exiting, or Exit Signal.</p>
         </div>
       </div>
       <p className="text-xs text-blue-400 mt-1">
