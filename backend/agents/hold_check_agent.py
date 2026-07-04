@@ -40,6 +40,16 @@ Use this exact structure:
 ## Signal: [exact signal from the list above]
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
+## Conditional Signal
+[Include this section only when one specific, identifiable assumption is the primary driver of the current signal — meaning changing that single assumption would shift the signal one step up. Skip if the signal reflects multiple equally-weighted factors with no dominant one, or if the business fundamentals alone justify the signal regardless of any contestable assumption.]
+
+This section surfaces what the signal would be for an investor who genuinely and rigorously disagrees with the dominant assumption. It is not a backdoor to rationalize a better signal — it is transparency about what is load-bearing the verdict.
+
+Structure it as follows:
+1. **The dominant assumption**: "The [signal] is primarily driven by [specific risk or assumption], which is suppressing what would otherwise be a [stronger signal]."
+2. **The conditional signal**: "If you assign a materially lower probability to [that specific risk] — or believe [that assumption] does not apply to your holding horizon — the signal would likely be [one step up] for [specific investor profile]. Be precise about which profiles this applies to and which it does not: for example, removing a geopolitical discount might unlock Strong Hold for an aggressive long-term investor (whose relaxed thresholds and long horizon absorb the remaining valuation stretch), but leave a moderate investor at Hold anyway because 2+ pre-check valuation flags (price run + EV/EBITDA) remain regardless. Name the profile explicitly."
+3. **Honest calibration**: State the specific criteria an investor must honestly meet to apply the alternative signal — not just 'if you're optimistic,' but a genuine self-assessment: e.g., "To apply this: you assign less than X% probability to [the risk] within your holding period, you have sized the position to survive being wrong (i.e., a 40-50% drawdown would not be catastrophic), and you have a specific reason — not just hope — for your lower probability estimate."
+
 ## Business Quality
 Assess the underlying business across four dimensions. Use specific numbers from the data.
 
