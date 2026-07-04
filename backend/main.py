@@ -19,7 +19,8 @@ from agents.comparison_agent import run_comparison_agent, format_comparison_tabl
 from agents.discovery_agent import run_discovery_agent
 from agents.hold_check_agent import run_hold_check_agent
 from tools.market_tools import get_all_stock_data
-from tools.edgar_tools import get_recent_8k_text
+from tools.edgar_tools import get_recent_8k_text, get_recent_10q_mda
+from tools.macro_tools import get_treasury_yield_10y
 
 load_dotenv()
 
@@ -151,11 +152,26 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         async def fetch_edgar():
             return await loop.run_in_executor(None, get_recent_8k_text, ticker)
 
-        (quant_result, news_analysis, (peer_data, peer_tickers), edgar_text) = await asyncio.gather(
+        async def fetch_10q():
+            return await loop.run_in_executor(None, get_recent_10q_mda, ticker)
+
+        async def fetch_yield():
+            return await loop.run_in_executor(None, get_treasury_yield_10y)
+
+        (
+            quant_result,
+            news_analysis,
+            (peer_data, peer_tickers),
+            edgar_text,
+            mda_text,
+            treasury_yield,
+        ) = await asyncio.gather(
             run_quant_agent(ticker, client),
             run_news_agent(ticker, company_name, client),
             run_comparison_agent(ticker),
             fetch_edgar(),
+            fetch_10q(),
+            fetch_yield(),
         )
         quant_analysis, quant_company, chart_data = quant_result
         if quant_company != ticker:
@@ -170,14 +186,15 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         insider_count = len(raw_data.get("insider_transactions") or [])
         if insider_count:
             sources.append(f"{insider_count} insider transaction{'s' if insider_count != 1 else ''}")
-        if edgar_text:
-            bracket_end = edgar_text.find("]")
-            if bracket_end > 0:
-                label = edgar_text[1:bracket_end]  # e.g. "SEC 8-K filed 2025-01-23"
-                parts = label.split(" filed ")
-                sources.append(f"{parts[0]} ({parts[1]})" if len(parts) == 2 else label)
-            else:
-                sources.append("SEC filing")
+        if treasury_yield is not None:
+            sources.append(f"10Y yield ({treasury_yield}%)")
+        for sec_text in (edgar_text, mda_text):
+            if sec_text:
+                bracket_end = sec_text.find("]")
+                if bracket_end > 0:
+                    label = sec_text[1:bracket_end]
+                    parts = label.split(" filed ")
+                    sources.append(f"{parts[0]} ({parts[1]})" if len(parts) == 2 else label)
         yield event("data_sources", {"sources": sources})
 
         yield event("status", {"message": "Analyzing your thesis...", "step": "analyze"})
@@ -192,6 +209,8 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             user_context=user_context,
             comparison_table=comparison_md,
             earnings_release=edgar_text or "",
+            mda_text=mda_text or "",
+            treasury_yield=treasury_yield,
         )
 
         yield event("hold_result", {
