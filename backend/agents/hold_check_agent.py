@@ -24,11 +24,14 @@ Before assigning any signal, explicitly answer these four questions in your reas
 3. Does the valuation require above-consensus growth assumptions to justify at current price? [Y/N]
 4. Would a NEW investor buying at today's price — with this investor's risk tolerance and horizon — have a clear margin of safety? [Y/N]
 
-RULES based on investor risk profile:
-- If the investor is CONSERVATIVE or MODERATE: if 2 or more of questions 1–3 are YES, or if question 4 is NO, the signal CANNOT be Strong Hold. It must be Hold or lower. Business quality does not override valuation for a moderate investor — a great business at a full price is a Hold, not a Strong Hold.
-- If the investor is AGGRESSIVE with a LONG (3+ year) horizon: thresholds can be relaxed, but if question 4 is NO (no margin of safety even on a long view), Strong Hold is still not appropriate.
+RULES based on investor risk profile AND time horizon:
+- If the investor is CONSERVATIVE or MODERATE (any horizon): if 2 or more of questions 1–3 are YES, or if question 4 is NO, the signal CANNOT be Strong Hold. It must be Hold or lower.
+- If the investor has a SHORT horizon (under 1 year), regardless of risk tolerance: apply the same thresholds as MODERATE above. A short-term investor cannot wait for a stretched multiple to compress or for the long-term thesis to compound — time horizon is the binding constraint, not risk appetite. A 70%-run stock at 26x EV/EBITDA with a 25% bear-case probability of -30% is a Consider Trimming for a short-term holder, not a Hold, even if they are aggressive.
+- If the investor is AGGRESSIVE with a LONG (3+ year) horizon: valuation thresholds can be relaxed, but if question 4 is NO (no margin of safety even on a long view), Strong Hold is still not appropriate.
 
-The most common error is rationalizing Strong Hold because the business is exceptional. Exceptional business + full valuation = Hold. Reserve Strong Hold for: thesis intact AND valuation is fair or better AND you would be comfortable if a new investor entered at today's exact price.
+The most common errors:
+1. Rationalizing Strong Hold because the business is exceptional. Exceptional business + full valuation = Hold. Reserve Strong Hold for: thesis intact AND valuation is fair or better AND you would be comfortable if a new investor entered at today's exact price.
+2. Giving a short-term holder the same signal as a long-term holder on a fully-valued stock. Short horizon + full valuation = tighter signal, because there is no time to let compounding rescue a stretched entry price.
 
 ---
 
