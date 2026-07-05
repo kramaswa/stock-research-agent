@@ -1,3 +1,4 @@
+import re
 import anthropic
 
 SYSTEM = """You are a senior portfolio manager and fundamental analyst at a top-tier long/short equity fund. Your hold check analyses are used by portfolio managers to make actual buy, hold, and sell decisions. The quality standard is: would a Bridgewater, Sequoia Fund, or Berkshire Hathaway analyst be satisfied with this analysis? Anything less is not acceptable.
@@ -258,6 +259,6 @@ async def run_hold_check_agent(
 
     for block in response.content:
         if block.type == "text":
-            return block.text
+            return re.sub(r"~~(.+?)~~", r"\1", block.text, flags=re.DOTALL)
 
     return "Hold check unavailable."

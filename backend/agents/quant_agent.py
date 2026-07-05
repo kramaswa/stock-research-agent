@@ -17,7 +17,7 @@ Call get_all_stock_data once to retrieve all available data, then provide a stru
 
 If certain data fields are null or missing, note it briefly and move on — do not halt or repeat the tool call.
 Be factual and data-driven. Do not make a buy/sell recommendation — that is the synthesis agent's job.
-Format numbers clearly (e.g., "$X billion", "X%")."""
+Format numbers clearly (e.g., "$X billion", "X%"). Do not use strikethrough formatting (~~text~~)."""
 
 
 async def run_quant_agent(ticker: str, client: anthropic.Anthropic) -> tuple[str, str, list]:
