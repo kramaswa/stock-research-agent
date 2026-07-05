@@ -160,6 +160,144 @@ def _fetch_mda(ticker: str) -> str | None:
     return None
 
 
+def get_earnings_transcript(ticker: str) -> str | None:
+    """Fetch earnings call transcript from SEC EDGAR 8-K/6-K EX-99 exhibits."""
+    key = f"transcript_{ticker.upper()}"
+    if key in _edgar_cache:
+        return _edgar_cache[key]
+    result = _fetch_transcript(ticker)
+    _edgar_cache[key] = result
+    return result
+
+
+def _is_earnings_transcript(text: str) -> bool:
+    lower = text.lower()
+    markers = [
+        "operator", "question-and-answer", "ladies and gentlemen",
+        "your lines are now open", "earnings call", "conference call",
+    ]
+    return sum(1 for m in markers if m in lower) >= 2
+
+
+def _extract_transcript_key_sections(text: str, max_chars: int = 4500) -> str:
+    """Return the prepared remarks intro + Q&A, prioritising the unscripted section."""
+    lower = text.lower()
+    qa_markers = [
+        "question-and-answer session", "questions and answers",
+        "we will now begin the question", "we will now open",
+        "open the floor to questions", "operator: our first question",
+    ]
+    qa_idx = -1
+    for marker in qa_markers:
+        idx = lower.find(marker)
+        if idx != -1 and (qa_idx == -1 or idx < qa_idx):
+            qa_idx = idx
+
+    if qa_idx == -1:
+        result = text[:max_chars]
+        if len(text) > max_chars:
+            result += "\n... [truncated]"
+        return result
+
+    intro_chars = min(2000, qa_idx)
+    intro = text[:intro_chars]
+    qa_chars = max_chars - intro_chars
+    qa = text[qa_idx : qa_idx + qa_chars]
+    sep = "\n\n[...prepared remarks continued — jumping to Q&A...]\n\n" if qa_idx > intro_chars else ""
+    result = intro + sep + qa
+    if (qa_idx + qa_chars) < len(text):
+        result += "\n... [truncated]"
+    return result
+
+
+def _fetch_transcript(ticker: str) -> str | None:
+    try:
+        cik = _get_cik(ticker)
+        if not cik:
+            return None
+
+        cik_int = str(int(cik))
+        cutoff = (datetime.now() - timedelta(days=120)).strftime("%Y-%m-%d")
+
+        r = httpx.get(
+            f"https://data.sec.gov/submissions/CIK{cik}.json",
+            headers=_HEADERS,
+            timeout=10,
+        )
+        r.raise_for_status()
+        recent = r.json().get("filings", {}).get("recent", {})
+
+        forms = recent.get("form", [])
+        dates = recent.get("filingDate", [])
+        accessions = recent.get("accessionNumber", [])
+
+        for target_form in ("8-K", "6-K"):
+            checked = 0
+            for i, form in enumerate(forms):
+                if form != target_form:
+                    continue
+                if i >= len(dates) or dates[i] < cutoff:
+                    break
+                if checked >= 3:  # check up to 3 recent filings (transcript may be a standalone 8-K)
+                    break
+                checked += 1
+
+                accession = accessions[i]
+                accession_nodash = accession.replace("-", "")
+
+                try:
+                    idx_url = (
+                        f"https://www.sec.gov/Archives/edgar/data/{cik_int}/"
+                        f"{accession_nodash}/{accession}-index.htm"
+                    )
+                    idx_r = httpx.get(idx_url, headers=_HEADERS, timeout=8)
+                except Exception:
+                    continue
+
+                # Collect all EX-99 exhibits; flag any explicitly labeled as transcript
+                ex99_urls = []
+                transcript_url = None
+                for line in idx_r.text.split("\n"):
+                    if "EX-99" not in line.upper():
+                        continue
+                    href = re.search(
+                        r'href="(/Archives/edgar/data/[^"]+)"', line, re.IGNORECASE
+                    )
+                    if not href:
+                        continue
+                    url = "https://www.sec.gov" + href.group(1)
+                    if "transcript" in line.lower():
+                        transcript_url = url
+                        break
+                    ex99_urls.append(url)
+
+                # No explicit label — sniff content of EX-99.2+ (skip [0] = press release)
+                if not transcript_url:
+                    for ex_url in ex99_urls[1:3]:
+                        try:
+                            doc_r = httpx.get(ex_url, headers=_HEADERS, timeout=12)
+                            sniff = _strip_html(doc_r.text)
+                            if _is_earnings_transcript(sniff):
+                                transcript_url = ex_url
+                                break
+                        except Exception:
+                            pass
+
+                if transcript_url:
+                    try:
+                        doc_r = httpx.get(transcript_url, headers=_HEADERS, timeout=15)
+                        text = _strip_html(doc_r.text)
+                        if len(text) > 300 and _is_earnings_transcript(text):
+                            extracted = _extract_transcript_key_sections(text)
+                            return f"[SEC {target_form} Earnings Call Transcript filed {dates[i]}]\n{extracted}"
+                    except Exception:
+                        pass
+
+    except Exception:
+        pass
+    return None
+
+
 def get_recent_8k_text(ticker: str) -> str | None:
     """Fetch text from the most recent 8-K earnings press release via SEC EDGAR."""
     key = f"8k_{ticker.upper()}"

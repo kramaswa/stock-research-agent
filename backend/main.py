@@ -19,7 +19,7 @@ from agents.comparison_agent import run_comparison_agent, format_comparison_tabl
 from agents.discovery_agent import run_discovery_agent
 from agents.hold_check_agent import run_hold_check_agent
 from tools.market_tools import get_all_stock_data
-from tools.edgar_tools import get_recent_8k_text, get_recent_10q_mda
+from tools.edgar_tools import get_recent_8k_text, get_recent_10q_mda, get_earnings_transcript
 from tools.macro_tools import get_treasury_yield_10y
 
 load_dotenv()
@@ -158,6 +158,9 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         async def fetch_yield():
             return await loop.run_in_executor(None, get_treasury_yield_10y)
 
+        async def fetch_transcript():
+            return await loop.run_in_executor(None, get_earnings_transcript, ticker)
+
         (
             quant_result,
             news_analysis,
@@ -165,6 +168,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             edgar_text,
             mda_text,
             treasury_yield,
+            transcript_text,
         ) = await asyncio.gather(
             run_quant_agent(ticker, client),
             run_news_agent(ticker, company_name, client),
@@ -172,6 +176,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             fetch_edgar(),
             fetch_10q(),
             fetch_yield(),
+            fetch_transcript(),
         )
         quant_analysis, quant_company, chart_data = quant_result
         if quant_company != ticker:
@@ -188,7 +193,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             sources.append(f"{insider_count} insider transaction{'s' if insider_count != 1 else ''}")
         if treasury_yield is not None:
             sources.append(f"10Y yield ({treasury_yield}%)")
-        for sec_text in (edgar_text, mda_text):
+        for sec_text in (edgar_text, mda_text, transcript_text):
             if sec_text:
                 bracket_end = sec_text.find("]")
                 if bracket_end > 0:
@@ -211,6 +216,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             earnings_release=edgar_text or "",
             mda_text=mda_text or "",
             treasury_yield=treasury_yield,
+            transcript=transcript_text or "",
         )
 
         yield event("hold_result", {

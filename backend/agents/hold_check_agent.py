@@ -97,6 +97,18 @@ For each of the 3 arguments:
 
 This section should genuinely pressure-test the bull thesis. If you cannot write a genuinely adversarial bear case, say so explicitly — a weak bear case is itself useful information for the investor.
 
+## Earnings Call Analysis
+[Include this section only if an earnings call transcript is provided. Skip entirely if not.]
+The transcript is primary-source evidence from management — weight it at least as heavily as the press release. Analyze four things:
+
+**Management Tone**: Has the tone shifted from what you would expect given the reported numbers? Note specific language. Words like "uncertain," "challenging," "cautious," or "we are monitoring" appearing where prior language was "confident," "accelerating," or "strong" are meaningful leading indicators — even when the headline numbers look fine. Quote specific phrasing if notable.
+
+**Forward Guidance Quality**: Did management raise, hold, or effectively lower guidance? Quote the exact guidance language. Vague or range-widening language ("we expect revenue to be broadly in line") is often a soft warning dressed as neutral. Conservative but specific guidance ("we expect $X–$Y, with upside if Z executes") reflects genuine management credibility.
+
+**Q&A Deflection**: Which analyst questions did management answer directly vs. deflect or redirect? Repeated avoidance of a specific topic — a margin question, a specific customer, a product line — is a signal worth naming. If deflection was apparent, name the topic.
+
+**Delta from Press Release**: What did management say in the call that was NOT in the press release? The press release is curated; the Q&A is where unscripted, pressure-tested information emerges. Even a single candid admission in Q&A about pricing pressure, customer pushback, or competitive intensity can be more valuable than an entire page of polished press release language.
+
 ## Price Scenarios (12-month view)
 Give three explicit price scenarios anchored to specific multiples and assumptions. Commit to numbers.
 - **Bull case ($X — P%)**: [key assumption that drives upside] at [Y× multiple on forward metric] = $X
@@ -155,6 +167,7 @@ async def run_hold_check_agent(
     earnings_release: str = "",
     mda_text: str = "",
     treasury_yield: float | None = None,
+    transcript: str = "",
 ) -> str:
     price_context = ""
     if purchase_price > 0 and current_price > 0:
@@ -202,6 +215,12 @@ async def run_hold_check_agent(
         else ""
     )
 
+    transcript_section = (
+        f"\n## Earnings Call Transcript (Most Recent)\n{transcript}\n"
+        if transcript
+        else ""
+    )
+
     macro_section = (
         f"\n## Macro Context\n"
         f"Current 10-Year US Treasury yield: {treasury_yield:.2f}% — use this as the risk-free rate "
@@ -224,6 +243,7 @@ async def run_hold_check_agent(
         f"{peer_section}"
         f"{edgar_section}"
         f"{mda_section}"
+        f"{transcript_section}"
     )
 
     response = client.messages.create(
