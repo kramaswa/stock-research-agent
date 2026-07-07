@@ -580,7 +580,7 @@ export default function Home() {
                 sources: holdSourcesRef.current,
               };
               setHoldHistory((prev) => {
-                const updated = [entry, ...prev.filter((h) => h.id !== entry.id)].slice(0, 10);
+                const updated = [entry, ...prev.filter((h) => h.id !== entry.id)].slice(0, 20);
                 try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
                 return updated;
               });
