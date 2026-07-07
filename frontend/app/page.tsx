@@ -23,6 +23,93 @@ interface HoldResult {
   content: string; ticker: string; company: string;
   current_price: number; purchase_price: number;
 }
+interface HoldHistoryEntry {
+  id: string;
+  ticker: string;
+  company: string;
+  signal: string;
+  signalKey: string;
+  risk: string;
+  horizon: string;
+  goal: string;
+  purchasePrice: number;
+  currentPrice: number;
+  timestamp: string;
+  content: string;
+  sources: string[];
+}
+
+function extractSignal(content: string): { label: string; key: string } {
+  const match = content.match(/^##\s+Signal:\s+(.+)$/m);
+  if (!match) return { label: "Unknown", key: "unknown" };
+  const label = match[1].trim();
+  return { label, key: label.toLowerCase() };
+}
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function formatHorizon(h: string) {
+  if (h === "short-term") return "Short";
+  if (h === "medium-term") return "Medium";
+  if (h === "long-term") return "Long";
+  return h;
+}
+
+function formatHistoryDate(ts: string) {
+  const d = new Date(ts);
+  const diff = Date.now() - d.getTime();
+  if (diff < 86400000) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (diff < 172800000) return "Yesterday";
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function HoldCheckHistory({
+  history, onSelect, onRemove, onClear,
+}: {
+  history: HoldHistoryEntry[];
+  onSelect: (entry: HoldHistoryEntry) => void;
+  onRemove: (id: string) => void;
+  onClear: () => void;
+}) {
+  if (history.length === 0) return null;
+  return (
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Hold Checks</p>
+        <button onClick={onClear} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Clear all</button>
+      </div>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-50">
+        {history.map((entry) => {
+          const sig = SIGNALS.find((s) => s.key === entry.signalKey);
+          return (
+            <div
+              key={entry.id}
+              onClick={() => onSelect(entry)}
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer group transition-colors"
+            >
+              <span className="font-bold text-sm text-gray-900 w-14 flex-shrink-0 font-mono">{entry.ticker}</span>
+              <span className={`flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0 ${sig?.style ?? "bg-gray-50 border-gray-200"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sig?.dot ?? "bg-gray-400"}`} />
+                <span className={sig?.text ?? "text-gray-600"}>{entry.signal}</span>
+              </span>
+              <span className="text-xs text-gray-400 flex-1 truncate">
+                {capitalize(entry.risk)} · {formatHorizon(entry.horizon)} · {capitalize(entry.goal)}
+              </span>
+              <span className="text-xs text-gray-400 flex-shrink-0 tabular-nums">{formatHistoryDate(entry.timestamp)}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onRemove(entry.id); }}
+                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-500 transition-opacity text-base leading-none ml-1 flex-shrink-0"
+                aria-label="Remove"
+              >×</button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function ToggleGroup({
   label, options, value, onChange, disabled,
@@ -278,8 +365,14 @@ export default function Home() {
   // Shared investor profile
   const [userContext, setUserContext] = useState<UserContext>({ risk: "moderate", horizon: "long-term", goal: "growth" });
 
+  // Hold Check history (persisted in localStorage)
+  const [holdHistory, setHoldHistory] = useState<HoldHistoryEntry[]>(() => {
+    try { return JSON.parse(localStorage.getItem("holdCheckHistory") ?? "[]"); } catch { return []; }
+  });
+
   const abortRef = useRef<(() => void) | null>(null);
   const discoveryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdSourcesRef = useRef<string[]>([]);
 
   const runResearch = async (tickerArg?: string) => {
     const t = (tickerArg ?? ticker).trim().toUpperCase();
@@ -419,6 +512,7 @@ export default function Home() {
     setHoldResult(null);
     setHoldError(null);
     setHoldSources([]);
+    holdSourcesRef.current = [];
     setHoldStatusMsg("Starting analysis...");
     setHoldProgress(5);
 
@@ -460,8 +554,37 @@ export default function Home() {
               else if (data.step === "news") setHoldProgress(42);
               else if (data.step === "analyze") setHoldProgress(70);
             }
-            else if (data.type === "data_sources") { setHoldSources(data.sources ?? []); }
-            else if (data.type === "hold_result") { setHoldResult(data); setHoldProgress(100); completed = true; }
+            else if (data.type === "data_sources") {
+              const srcs = data.sources ?? [];
+              setHoldSources(srcs);
+              holdSourcesRef.current = srcs;
+            }
+            else if (data.type === "hold_result") {
+              setHoldResult(data);
+              setHoldProgress(100);
+              completed = true;
+              const { label: sigLabel, key: sigKey } = extractSignal(data.content);
+              const entry: HoldHistoryEntry = {
+                id: Date.now().toString(),
+                ticker: data.ticker,
+                company: data.company,
+                signal: sigLabel,
+                signalKey: sigKey,
+                risk: userContext.risk,
+                horizon: userContext.horizon,
+                goal: userContext.goal,
+                purchasePrice: price,
+                currentPrice: data.current_price,
+                timestamp: new Date().toISOString(),
+                content: data.content,
+                sources: holdSourcesRef.current,
+              };
+              setHoldHistory((prev) => {
+                const updated = [entry, ...prev.filter((h) => h.id !== entry.id)].slice(0, 10);
+                try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
+                return updated;
+              });
+            }
             else if (data.type === "done") { setHoldProgress(100); completed = true; }
             else if (data.type === "error") { setHoldError(data.message); streamError = true; }
           } catch {}
@@ -474,6 +597,32 @@ export default function Home() {
     } finally {
       setHoldLoading(false);
     }
+  };
+
+  const handleHistorySelect = (entry: HoldHistoryEntry) => {
+    setHoldTicker(entry.ticker);
+    setPurchasePrice(entry.purchasePrice > 0 ? entry.purchasePrice.toString() : "");
+    setHoldSources(entry.sources);
+    setHoldResult({
+      content: entry.content,
+      ticker: entry.ticker,
+      company: entry.company,
+      current_price: entry.currentPrice,
+      purchase_price: entry.purchasePrice,
+    });
+  };
+
+  const handleHistoryRemove = (id: string) => {
+    setHoldHistory((prev) => {
+      const updated = prev.filter((h) => h.id !== id);
+      try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  const handleHistoryClear = () => {
+    setHoldHistory([]);
+    try { localStorage.removeItem("holdCheckHistory"); } catch {}
   };
 
   const handleResearchFromDiscover = (t: string) => {
@@ -594,6 +743,13 @@ export default function Home() {
 
         {/* Hold Check Input */}
         {mode === "hold" && (
+          <>
+          <HoldCheckHistory
+            history={holdHistory}
+            onSelect={handleHistorySelect}
+            onRemove={handleHistoryRemove}
+            onClear={handleHistoryClear}
+          />
           <div className="mb-6 bg-white border border-gray-200 rounded-xl p-5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
               Is your thesis still intact?
@@ -649,6 +805,7 @@ export default function Home() {
               </div>
             )}
           </div>
+          </>
         )}
 
         {/* Investor Profile — visible in all modes */}
