@@ -120,7 +120,7 @@ async def research(
 ):
     if not ticker or not ticker.replace("-", "").isalpha():
         raise HTTPException(status_code=400, detail="Invalid ticker symbol")
-    return EventSourceResponse(research_stream(ticker, risk, horizon, goal))
+    return EventSourceResponse(research_stream(ticker, risk, horizon, goal), ping=10)
 
 
 async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, risk: str, horizon: str, goal: str):
@@ -265,7 +265,7 @@ async def hold_check(
 ):
     if not ticker or not ticker.replace("-", "").isalpha():
         raise HTTPException(status_code=400, detail="Invalid ticker symbol")
-    return EventSourceResponse(hold_check_stream(ticker, purchase_price, thesis, risk, horizon, goal))
+    return EventSourceResponse(hold_check_stream(ticker, purchase_price, thesis, risk, horizon, goal), ping=10)
 
 
 @app.get("/discover")
