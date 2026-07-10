@@ -36,7 +36,7 @@ async def run_news_agent(ticker: str, company_name: str, client: anthropic.Anthr
 
     while True:
         response = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-haiku-4-5-20251001",
             max_tokens=4096,
             system=SYSTEM_PROMPT,
             tools=NEWS_TOOLS,
