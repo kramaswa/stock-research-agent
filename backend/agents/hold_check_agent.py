@@ -280,7 +280,6 @@ async def run_hold_check_agent(
         thinking={"type": "adaptive"},
         system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_message}],
-        betas=["prompt-caching-2024-07-31"],
     )
 
     for block in response.content:
