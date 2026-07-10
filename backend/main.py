@@ -150,16 +150,36 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         await asyncio.sleep(0)
 
         async def fetch_edgar():
-            return await loop.run_in_executor(None, get_recent_8k_text, ticker)
+            try:
+                return await asyncio.wait_for(
+                    loop.run_in_executor(None, get_recent_8k_text, ticker), timeout=15
+                )
+            except (asyncio.TimeoutError, Exception):
+                return None
 
         async def fetch_10q():
-            return await loop.run_in_executor(None, get_recent_10q_mda, ticker)
+            try:
+                return await asyncio.wait_for(
+                    loop.run_in_executor(None, get_recent_10q_mda, ticker), timeout=15
+                )
+            except (asyncio.TimeoutError, Exception):
+                return None
 
         async def fetch_yield():
-            return await loop.run_in_executor(None, get_treasury_yield_10y)
+            try:
+                return await asyncio.wait_for(
+                    loop.run_in_executor(None, get_treasury_yield_10y), timeout=10
+                )
+            except (asyncio.TimeoutError, Exception):
+                return None
 
         async def fetch_transcript():
-            return await loop.run_in_executor(None, get_earnings_transcript, ticker)
+            try:
+                return await asyncio.wait_for(
+                    loop.run_in_executor(None, get_earnings_transcript, ticker), timeout=20
+                )
+            except (asyncio.TimeoutError, Exception):
+                return None
 
         (
             quant_result,

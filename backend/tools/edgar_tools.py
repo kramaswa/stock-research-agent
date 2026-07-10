@@ -275,7 +275,7 @@ def _fetch_transcript(ticker: str) -> str | None:
                 if not transcript_url:
                     for ex_url in ex99_urls[1:3]:
                         try:
-                            doc_r = httpx.get(ex_url, headers=_HEADERS, timeout=12)
+                            doc_r = httpx.get(ex_url, headers=_HEADERS, timeout=5)
                             sniff = _strip_html(doc_r.text)
                             if _is_earnings_transcript(sniff):
                                 transcript_url = ex_url
