@@ -1,5 +1,18 @@
 import re
+import hashlib
 import anthropic
+from cachetools import TTLCache
+
+_hold_cache: TTLCache = TTLCache(maxsize=100, ttl=3600)
+
+
+def _cache_key(
+    ticker: str, risk: str, horizon: str, goal: str,
+    purchase_price: float, user_thesis: str,
+) -> str:
+    price_bucket = round(purchase_price / 5) * 5 if purchase_price else 0
+    raw = f"{ticker.upper()}|{risk}|{horizon}|{goal}|{price_bucket}|{user_thesis[:100].strip()}"
+    return hashlib.md5(raw.encode()).hexdigest()
 
 SYSTEM = """You are a senior portfolio manager and fundamental analyst at a top-tier long/short equity fund. Your hold check analyses are used by portfolio managers to make actual buy, hold, and sell decisions. The quality standard is: would a Bridgewater, Sequoia Fund, or Berkshire Hathaway analyst be satisfied with this analysis? Anything less is not acceptable.
 
@@ -172,6 +185,18 @@ async def run_hold_check_agent(
     treasury_yield: float | None = None,
     transcript: str = "",
 ) -> str:
+    ctx = user_context or {}
+    ck = _cache_key(
+        ticker,
+        ctx.get("risk", "moderate"),
+        ctx.get("horizon", "medium-term"),
+        ctx.get("goal", "growth"),
+        purchase_price,
+        user_thesis,
+    )
+    if ck in _hold_cache:
+        return _hold_cache[ck]
+
     price_context = ""
     if purchase_price > 0 and current_price > 0:
         pct = ((current_price - purchase_price) / purchase_price) * 100
@@ -251,14 +276,17 @@ async def run_hold_check_agent(
 
     response = client.messages.create(
         model="claude-opus-4-8",
-        max_tokens=16000,
+        max_tokens=8192,
         thinking={"type": "adaptive"},
-        system=SYSTEM,
+        system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_message}],
+        betas=["prompt-caching-2024-07-31"],
     )
 
     for block in response.content:
         if block.type == "text":
-            return re.sub(r"~~(.+?)~~", r"\1", block.text, flags=re.DOTALL)
+            result = re.sub(r"~~(.+?)~~", r"\1", block.text, flags=re.DOTALL)
+            _hold_cache[ck] = result
+            return result
 
     return "Hold check unavailable."
