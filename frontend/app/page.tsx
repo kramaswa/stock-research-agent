@@ -40,10 +40,12 @@ interface HoldHistoryEntry {
 }
 
 function extractSignal(content: string): { label: string; key: string } {
-  const match = content.match(/^##\s+Signal:\s+(.+)$/m);
-  if (!match) return { label: "Unknown", key: "unknown" };
-  const label = match[1].trim();
-  return { label, key: label.toLowerCase() };
+  // Strip bold markers then scan for each signal key — same logic as ThesisStatusBanner
+  const cleaned = content.toLowerCase().replace(/\*+/g, "");
+  for (const s of SIGNALS) {
+    if (cleaned.includes(`signal: ${s.key}`)) return { label: s.label, key: s.key };
+  }
+  return { label: "Unknown", key: "unknown" };
 }
 
 function capitalize(s: string) {
