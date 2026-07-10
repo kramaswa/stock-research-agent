@@ -285,7 +285,10 @@ async def run_hold_check_agent(
     for block in response.content:
         if block.type == "text":
             result = re.sub(r"~~(.+?)~~", r"\1", block.text, flags=re.DOTALL)
-            _hold_cache[ck] = result
+            # Only cache complete results — truncated outputs from token-limit hits
+            # must not be served to future requests
+            if len(result) > 1500 and "signal:" in result.lower():
+                _hold_cache[ck] = result
             return result
 
     return "Hold check unavailable."
