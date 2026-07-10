@@ -1,4 +1,5 @@
 import re
+import asyncio
 import hashlib
 import anthropic
 from cachetools import TTLCache
@@ -274,12 +275,18 @@ async def run_hold_check_agent(
         f"{transcript_section}"
     )
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
-        system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
-        messages=[{"role": "user", "content": user_message}],
+    system_payload = [{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}]
+    messages_payload = [{"role": "user", "content": user_message}]
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=16000,
+            thinking={"type": "adaptive"},
+            system=system_payload,
+            messages=messages_payload,
+        ),
     )
 
     for block in response.content:
