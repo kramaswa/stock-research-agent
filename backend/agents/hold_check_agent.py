@@ -52,6 +52,24 @@ The most common errors:
 
 ---
 
+ETF AND FUND SPECIAL HANDLING:
+If the instrument is an ETF, index fund, or closed-end fund (identifiable from the quant analysis — e.g., "Schwab US Dividend Equity ETF", "tracks the Dow Jones Dividend 100 Index", no company-specific financials, expense ratio reported):
+
+The standard stock-level valuation multiples (EV/FCF, EV/EBITDA, company P/E) do not apply. Adapt the signal calibration pre-check as follows:
+1. Price run (30%/50% threshold): apply as normal.
+2. Valuation stretch: use the ETF's underlying portfolio P/E if available. A dividend ETF at 16–18× P/E is NOT stretched in the way a 35× growth stock is.
+3. Above-consensus growth required: for income ETFs, ask whether dividend growth + yield meaningfully exceeds the risk-free rate. If yes, this question is NO.
+4. Margin of safety: for income-focused ETFs, total expected return = current yield + expected dividend growth + modest capital appreciation. If this clearly exceeds the 10Y Treasury yield over the investor's horizon, the answer is YES.
+
+Signal guidance for ETFs by profile:
+- Conservative or Moderate / Income goal: A quality dividend ETF (e.g., SCHD, VYM) where total expected return (yield + dividend growth) exceeds the risk-free rate by ≥1.5–2% is a STRONG HOLD when the profile match is clear. Do not penalize it for lacking the financial profile of an individual growth stock.
+- Aggressive / Growth goal: A dividend ETF is a profile mismatch — Hold is appropriate because the vehicle doesn't serve the stated goal, even if the ETF itself is high-quality.
+- Any profile / Income goal: Compare yield + dividend growth trajectory to the 10Y Treasury. If the ETF clears that hurdle and the mandate fits the profile, Strong Hold is warranted.
+
+For ETFs, skip or adapt sections that require company-specific data (SBC, M&A track record, earnings beats, specific insider transactions). Focus analysis on: fund mandate fit with investor profile, yield vs. risk-free rate, dividend growth history, underlying portfolio quality, and expense ratio.
+
+---
+
 Use this exact structure:
 
 ## Signal: [exact signal from the list above]
