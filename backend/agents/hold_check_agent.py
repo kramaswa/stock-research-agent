@@ -281,7 +281,7 @@ async def run_hold_check_agent(
     response = await loop.run_in_executor(
         None,
         lambda: client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-opus-4-8",
             max_tokens=8192,
             system=system_payload,
             messages=messages_payload,
