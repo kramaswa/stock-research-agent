@@ -19,6 +19,31 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
     fcf_ps = raw.get("fcf_per_share_ttm")
     fcf_line = f"${fcf_ps:.2f}" if fcf_ps is not None else "N/A (null — FCF may be consumed by capex or unavailable)"
 
+    # Format insider transactions directly so the hold check agent sees raw data
+    # regardless of what the quant agent narrative says
+    insider_txns = raw.get("insider_transactions") or []
+    if insider_txns:
+        insider_lines = []
+        for t in insider_txns:
+            name = t.get("name", "Unknown")
+            ttype = t.get("type", "?")
+            shares = t.get("shares")
+            price = t.get("price")
+            date = t.get("transaction_date", "")
+            share_str = f"{int(shares):,}" if shares is not None else "?"
+            price_str = f"${price:.2f}" if price is not None else "?"
+            insider_lines.append(f"  {date}  {ttype:4s}  {share_str} shares @ {price_str}  ({name})")
+        insider_section = (
+            f"\n## Ground Truth Insider Transactions (past 90 days — {len(insider_txns)} total)\n"
+            "These are sourced directly from the raw data. "
+            "Do NOT state that insider transactions are empty or unavailable if this list is non-empty. "
+            "For ADR stocks, transaction prices may be in the local-listing currency (e.g., NT$ for TSM); "
+            "cite them and note the exchange — the direction (buy vs. sell) is the relevant signal.\n"
+            + "\n".join(insider_lines) + "\n"
+        )
+    else:
+        insider_section = "\n## Ground Truth Insider Transactions\nNo transactions in the past 90 days.\n"
+
     return (
         "## Ground Truth Valuation Metrics\n"
         "These figures come directly from the data provider (Finnhub). "
@@ -38,6 +63,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         f"- Revenue growth TTM YoY:{fx(raw.get('revenue_growth_ttm_yoy'), '%')}\n"
         f"- Gross margin TTM:      {fx(raw.get('gross_margin_ttm'), '%')}\n"
         f"- Operating margin TTM:  {fx(raw.get('operating_margin_ttm'), '%')}\n"
+        + insider_section
     )
 
 _hold_cache: TTLCache = TTLCache(maxsize=100, ttl=3600)
@@ -193,11 +219,11 @@ The transcript is primary-source evidence from management — weight it at least
 
 ## Price Scenarios (12-month view)
 Give three explicit price scenarios anchored to specific multiples and assumptions. Commit to numbers.
-- **Bull case ($X — P%)**: [key assumption that drives upside] at [Y× multiple on forward metric] = $X
-- **Base case ($X — P%)**: [most probable outcome] at [Y× multiple] = $X
-- **Bear case ($X — P%)**: [key assumption that drives downside] at [Y× multiple] = $X
+- **Bull case ($X)**: [key assumption that drives upside] at [Y× multiple on forward metric] = $X — probability: P%
+- **Base case ($X)**: [most probable outcome] at [Y× multiple] = $X — probability: P%
+- **Bear case ($X)**: [key assumption that drives downside] at [Y× multiple] = $X — probability: P%
 
-Assign a probability to each scenario (P%) that sums to 100%. The probability distribution reveals how you are actually thinking about risk/reward: a 60/30/10 split implies very different conviction than a 35/35/30 split.
+The probability (P%) belongs at the end of each line, not in the header. Probabilities must sum to exactly 100%. The distribution reveals how you are actually thinking about risk/reward: a 60/30/10 split implies very different conviction than a 35/35/30 split.
 
 State: "The current price of $X implies the market is pricing in approximately the [bull/base/bear] scenario."
 
