@@ -18,6 +18,7 @@ from agents.synthesis_agent import run_synthesis_agent
 from agents.comparison_agent import run_comparison_agent, format_comparison_table
 from agents.discovery_agent import run_discovery_agent
 from agents.hold_check_agent import run_hold_check_agent
+from agents.eval_agent import run_eval_agent
 from tools.market_tools import get_all_stock_data
 from tools.edgar_tools import get_recent_8k_text, get_recent_10q_mda, get_earnings_transcript
 from tools.macro_tools import get_treasury_yield_10y
@@ -283,6 +284,43 @@ async def discover(
     user_context = {"risk": risk, "horizon": horizon, "goal": goal}
     recommendations = await run_discovery_agent(query.strip(), user_context, client)
     return {"recommendations": recommendations}
+
+
+class EvalRequest(BaseModel):
+    ticker: str
+    hold_check_output: str
+    risk: str = "moderate"
+    horizon: str = "medium-term"
+    goal: str = "growth"
+    purchase_price: float = 0.0
+
+
+@app.post("/holdcheck/eval")
+@limiter.limit("20/hour")
+async def hold_check_eval(request: Request, body: EvalRequest):
+    ticker = body.ticker.upper().strip()
+    if not ticker or not ticker.replace("-", "").isalpha():
+        raise HTTPException(status_code=400, detail="Invalid ticker symbol")
+    if not body.hold_check_output or len(body.hold_check_output) < 500:
+        raise HTTPException(status_code=400, detail="hold_check_output is too short to evaluate")
+
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    investor_profile = {"risk": body.risk, "horizon": body.horizon, "goal": body.goal}
+
+    loop = asyncio.get_event_loop()
+    raw_data = await loop.run_in_executor(None, get_all_stock_data, ticker)
+
+    try:
+        result = await run_eval_agent(
+            ticker=ticker,
+            hold_check_output=body.hold_check_output,
+            raw_quant_data=raw_data,
+            investor_profile=investor_profile,
+            client=client,
+        )
+        return JSONResponse(content=result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
 
 
 @app.get("/health")

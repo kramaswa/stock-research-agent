@@ -39,6 +39,25 @@ interface HoldHistoryEntry {
   sources: string[];
 }
 
+interface PreCheckAnswer { answer: "YES" | "NO" | "BORDERLINE"; evidence: string; }
+interface EvalIssue { severity: "critical" | "major" | "minor"; section: string; description: string; }
+interface EvalResult {
+  overall_grade: "A" | "B" | "C" | "D" | "F";
+  signal_verdict: "correct" | "likely_correct" | "overcautious" | "overaggressive" | "rule_violation";
+  signal_explanation: string;
+  pre_check: {
+    q1: PreCheckAnswer; q2: PreCheckAnswer; q3: PreCheckAnswer; q4: PreCheckAnswer;
+    profile_rule: string; signal_allowed: string; violation: string | null;
+  };
+  issues: EvalIssue[];
+  bear_case_grade: "A" | "B" | "C" | "D";
+  bear_case_feedback: string;
+  section_scores: Record<string, string>;
+  strengths: string[];
+  improvements: string[];
+  summary: string;
+}
+
 function extractSignal(content: string): { label: string; key: string } {
   // Strip bold markers then scan for each signal key — same logic as ThesisStatusBanner
   const cleaned = content.toLowerCase().replace(/\*+/g, "");
@@ -65,6 +84,210 @@ function formatHistoryDate(ts: string) {
   if (diff < 86400000) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   if (diff < 172800000) return "Yesterday";
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+const GRADE_COLOR: Record<string, string> = {
+  A: "text-emerald-600", B: "text-blue-600", C: "text-amber-600", D: "text-orange-600", F: "text-red-600",
+};
+const GRADE_BG: Record<string, string> = {
+  A: "bg-emerald-50 border-emerald-200 text-emerald-800",
+  B: "bg-blue-50 border-blue-200 text-blue-800",
+  C: "bg-amber-50 border-amber-200 text-amber-800",
+  D: "bg-orange-50 border-orange-200 text-orange-800",
+  F: "bg-red-50 border-red-200 text-red-800",
+};
+const VERDICT_STYLE: Record<string, string> = {
+  correct: "bg-emerald-50 border-emerald-200 text-emerald-800",
+  likely_correct: "bg-emerald-50 border-emerald-200 text-emerald-700",
+  overcautious: "bg-blue-50 border-blue-200 text-blue-800",
+  overaggressive: "bg-red-50 border-red-200 text-red-800",
+  rule_violation: "bg-red-50 border-red-200 text-red-800",
+};
+const VERDICT_LABEL: Record<string, string> = {
+  correct: "Signal Correct",
+  likely_correct: "Signal Likely Correct",
+  overcautious: "Signal Overcautious",
+  overaggressive: "Signal Overaggressive",
+  rule_violation: "Signal Rule Violation",
+};
+const SEVERITY_STYLE: Record<string, string> = {
+  critical: "bg-red-50 border-red-200 text-red-700",
+  major: "bg-amber-50 border-amber-200 text-amber-700",
+  minor: "bg-gray-50 border-gray-200 text-gray-600",
+};
+const SEVERITY_ICON: Record<string, string> = { critical: "✕", major: "!", minor: "·" };
+const ANSWER_STYLE: Record<string, string> = {
+  YES: "bg-red-50 text-red-700 font-semibold",
+  NO: "bg-emerald-50 text-emerald-700 font-semibold",
+  BORDERLINE: "bg-amber-50 text-amber-700 font-semibold",
+};
+
+function EvalPanel({
+  result, loading, error, onEvaluate,
+}: {
+  result: EvalResult | null; loading: boolean; error: string | null; onEvaluate: () => void;
+}) {
+  const [showStrengths, setShowStrengths] = useState(false);
+
+  if (!result && !loading && !error) {
+    return (
+      <button
+        onClick={onEvaluate}
+        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-blue-600 transition-colors font-medium"
+      >
+        <span className="text-base">⚖</span> Evaluate analysis quality
+      </button>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Running quality evaluation (~20s)...
+      </div>
+    );
+  }
+  if (error) {
+    return <p className="text-sm text-red-500">{error}</p>;
+  }
+  if (!result) return null;
+
+  const criticalIssues = result.issues.filter((i) => i.severity === "critical");
+  const majorIssues = result.issues.filter((i) => i.severity === "major");
+  const minorIssues = result.issues.filter((i) => i.severity === "minor");
+  const sectionEntries = Object.entries(result.section_scores);
+
+  return (
+    <div className="mt-2 border border-gray-200 rounded-xl bg-gray-50 p-4 space-y-4 text-sm">
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Quality Evaluation</p>
+          <p className="text-gray-600 leading-snug max-w-lg">{result.signal_explanation}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={`text-3xl font-bold tabular-nums ${GRADE_COLOR[result.overall_grade] ?? "text-gray-700"}`}>
+            {result.overall_grade}
+          </span>
+          <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${VERDICT_STYLE[result.signal_verdict] ?? ""}`}>
+            {VERDICT_LABEL[result.signal_verdict] ?? result.signal_verdict}
+          </span>
+        </div>
+      </div>
+
+      {/* Pre-check table */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Pre-Check Verification</p>
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
+          {(["q1", "q2", "q3", "q4"] as const).map((q, i) => {
+            const labels = ["Price run >30/50%", "Valuation stretched", "Bull assumptions req.", "Margin of safety"];
+            const item = result.pre_check[q];
+            return (
+              <div key={q} className="flex items-start gap-3 px-3 py-2">
+                <span className="text-xs text-gray-400 font-mono w-4 flex-shrink-0 mt-0.5">Q{i + 1}</span>
+                <span className="text-xs text-gray-500 w-32 flex-shrink-0">{labels[i]}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${ANSWER_STYLE[item.answer] ?? ""}`}>
+                  {item.answer}
+                </span>
+                <span className="text-xs text-gray-500 leading-snug">{item.evidence}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-1.5 px-1 space-y-0.5">
+          <p className="text-xs text-gray-500"><span className="font-medium">Rule:</span> {result.pre_check.profile_rule}</p>
+          <p className="text-xs text-gray-500"><span className="font-medium">Allowed signals:</span> {result.pre_check.signal_allowed}</p>
+          {result.pre_check.violation && (
+            <p className="text-xs text-red-600 font-medium">⚠ Violation: {result.pre_check.violation}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Issues */}
+      {result.issues.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+            Issues ({result.issues.length})
+          </p>
+          <div className="space-y-1.5">
+            {[...criticalIssues, ...majorIssues, ...minorIssues].map((issue, idx) => (
+              <div key={idx} className={`flex items-start gap-2 px-3 py-2 rounded-lg border text-xs ${SEVERITY_STYLE[issue.severity] ?? ""}`}>
+                <span className="font-bold flex-shrink-0 w-3">{SEVERITY_ICON[issue.severity]}</span>
+                <span className="font-semibold flex-shrink-0 w-12 capitalize">{issue.severity}</span>
+                <span className="text-gray-500 flex-shrink-0 w-20 truncate">{issue.section}</span>
+                <span className="leading-snug">{issue.description}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Section scores */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Section Scores</p>
+        <div className="flex flex-wrap gap-2">
+          {sectionEntries.map(([section, grade]) => (
+            <div key={section} className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs ${GRADE_BG[grade] ?? "bg-gray-50 border-gray-200 text-gray-700"}`}>
+              <span className="font-bold">{grade}</span>
+              <span className="capitalize">{section.replace(/_/g, " ")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bear case */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Bear Case</p>
+        <div className="flex items-start gap-2">
+          <span className={`px-1.5 py-0.5 text-xs font-bold rounded border ${GRADE_BG[result.bear_case_grade] ?? ""}`}>
+            {result.bear_case_grade}
+          </span>
+          <p className="text-xs text-gray-600 leading-snug">{result.bear_case_feedback}</p>
+        </div>
+      </div>
+
+      {/* Improvements */}
+      {result.improvements.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Suggested Improvements</p>
+          <ul className="space-y-1">
+            {result.improvements.map((imp, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-gray-600">
+                <span className="text-blue-400 flex-shrink-0 mt-0.5">›</span>
+                {imp}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Strengths (collapsed) */}
+      {result.strengths.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowStrengths(!showStrengths)}
+            className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors"
+          >
+            {showStrengths ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {showStrengths ? "Hide" : "Show"} strengths ({result.strengths.length})
+          </button>
+          {showStrengths && (
+            <ul className="mt-1.5 space-y-1">
+              {result.strengths.map((s, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-emerald-700">
+                  <span className="flex-shrink-0 mt-0.5">✓</span>
+                  {s}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Summary */}
+      <p className="text-xs text-gray-500 leading-relaxed border-t border-gray-200 pt-3">{result.summary}</p>
+    </div>
+  );
 }
 
 function HoldCheckHistory({
@@ -359,6 +582,11 @@ export default function Home() {
   const [holdError, setHoldError] = useState<string | null>(null);
   const [holdSources, setHoldSources] = useState<string[]>([]);
 
+  // Eval state
+  const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
+  const [evalLoading, setEvalLoading] = useState(false);
+  const [evalError, setEvalError] = useState<string | null>(null);
+
   // Progress bars
   const [researchProgress, setResearchProgress] = useState(0);
   const [holdProgress, setHoldProgress] = useState(0);
@@ -515,6 +743,8 @@ export default function Home() {
     setHoldError(null);
     setHoldSources([]);
     holdSourcesRef.current = [];
+    setEvalResult(null);
+    setEvalError(null);
     setHoldStatusMsg("Starting analysis...");
     setHoldProgress(5);
 
@@ -598,6 +828,38 @@ export default function Home() {
       if (msg) setHoldError(msg);
     } finally {
       setHoldLoading(false);
+    }
+  };
+
+  const runEval = async () => {
+    if (!holdResult) return;
+    setEvalLoading(true);
+    setEvalError(null);
+    setEvalResult(null);
+    const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    try {
+      const res = await fetch(`${base}/holdcheck/eval`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticker: holdResult.ticker,
+          hold_check_output: holdResult.content,
+          risk: userContext.risk,
+          horizon: userContext.horizon,
+          goal: userContext.goal,
+          purchase_price: holdResult.purchase_price,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail ?? "Evaluation failed. Please try again.");
+      }
+      const data: EvalResult = await res.json();
+      setEvalResult(data);
+    } catch (e: unknown) {
+      setEvalError(e instanceof Error ? e.message : "Evaluation failed. Please try again.");
+    } finally {
+      setEvalLoading(false);
     }
   };
 
@@ -921,10 +1183,16 @@ export default function Home() {
                 <div className="prose prose-gray max-w-none prose-headings:font-semibold prose-h2:text-lg prose-h2:text-gray-800 prose-h3:text-base prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{holdResult.content}</ReactMarkdown>
                 </div>
-                <div className="mt-5 pt-4 border-t border-gray-100">
+                <div className="mt-5 pt-4 border-t border-gray-100 space-y-3">
+                  <EvalPanel
+                    result={evalResult}
+                    loading={evalLoading}
+                    error={evalError}
+                    onEvaluate={runEval}
+                  />
                   <button
                     onClick={() => { setMode("research"); runResearch(holdResult.ticker); }}
-                    className="text-sm text-blue-600 font-medium hover:underline"
+                    className="text-sm text-blue-600 font-medium hover:underline block"
                   >
                     Run full research report for {holdResult.ticker} →
                   </button>
