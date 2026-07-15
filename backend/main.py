@@ -17,7 +17,7 @@ from agents.news_agent import run_news_agent
 from agents.synthesis_agent import run_synthesis_agent
 from agents.comparison_agent import run_comparison_agent, format_comparison_table
 from agents.discovery_agent import run_discovery_agent
-from agents.hold_check_agent import run_hold_check_agent
+from agents.hold_check_agent import run_hold_check_agent, build_raw_metrics_block
 from agents.eval_agent import run_eval_agent
 from tools.market_tools import get_all_stock_data
 from tools.edgar_tools import get_recent_8k_text, get_recent_10q_mda, get_earnings_transcript
@@ -227,6 +227,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         await asyncio.sleep(0)
 
         current_price = chart_data[-1]["price"] if chart_data else (raw_chart[-1]["price"] if raw_chart else 0.0)
+        raw_metrics = build_raw_metrics_block(raw_data)
 
         analysis = await run_hold_check_agent(
             ticker, purchase_price, quant_analysis, news_analysis, client,
@@ -238,6 +239,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             mda_text=mda_text or "",
             treasury_yield=treasury_yield,
             transcript=transcript_text or "",
+            raw_metrics=raw_metrics,
         )
 
         yield event("hold_result", {

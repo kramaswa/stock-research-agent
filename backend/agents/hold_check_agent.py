@@ -1,8 +1,44 @@
 import re
 import asyncio
 import hashlib
+from typing import Any
 import anthropic
 from cachetools import TTLCache
+
+
+def build_raw_metrics_block(raw: dict[str, Any]) -> str:
+    """Build a concise ground-truth block from raw Finnhub data to anchor the hold check."""
+    def fx(v, suffix="x") -> str:
+        return f"{v:.1f}{suffix}" if v is not None else "N/A"
+
+    eps_g = raw.get("eps_growth_ttm_yoy")
+    peg_note = (
+        f"  ← EPS declining {eps_g:.1f}% YoY — PEG is INVALID as a cheapness signal"
+        if eps_g is not None and eps_g < 0 else ""
+    )
+    fcf_ps = raw.get("fcf_per_share_ttm")
+    fcf_line = f"${fcf_ps:.2f}" if fcf_ps is not None else "N/A (null — FCF may be consumed by capex or unavailable)"
+
+    return (
+        "## Ground Truth Valuation Metrics\n"
+        "These figures come directly from the data provider (Finnhub). "
+        "Cite them verbatim in your Valuation section. "
+        "Do not substitute a narrower range or a different estimate. "
+        "If a metric looks surprising, engage with it directly — do not omit it.\n\n"
+        f"- EV/FCF TTM:            {fx(raw.get('ev_to_fcf_ttm'))}\n"
+        f"- EV/EBITDA TTM:         {fx(raw.get('ev_ebitda_ttm'))}\n"
+        f"- Forward P/E:           {fx(raw.get('forward_pe'))}\n"
+        f"- P/E TTM:               {fx(raw.get('pe_ttm'))}\n"
+        f"- PEG TTM:               {fx(raw.get('peg_ttm'))}{peg_note}\n"
+        f"- Price/Book:            {fx(raw.get('price_to_book'))}\n"
+        f"- FCF per share TTM:     {fcf_line}\n"
+        f"- 26-week price return:  {fx(raw.get('return_26w_pct'), '%')}\n"
+        f"- 52-week price return:  {fx(raw.get('return_52w_pct'), '%')}\n"
+        f"- EPS growth TTM YoY:    {fx(raw.get('eps_growth_ttm_yoy'), '%')}\n"
+        f"- Revenue growth TTM YoY:{fx(raw.get('revenue_growth_ttm_yoy'), '%')}\n"
+        f"- Gross margin TTM:      {fx(raw.get('gross_margin_ttm'), '%')}\n"
+        f"- Operating margin TTM:  {fx(raw.get('operating_margin_ttm'), '%')}\n"
+    )
 
 _hold_cache: TTLCache = TTLCache(maxsize=100, ttl=3600)
 
@@ -108,7 +144,9 @@ This section is mandatory. A high-quality business with low-quality accounting i
 ## Valuation
 Do not rely on P/E alone. Assess on multiple frameworks and give an explicit fair value read. Where a current risk-free rate is provided, frame all multiples in that context — higher rates compress what the market should pay for future earnings, and a multiple that was reasonable at 2% may be expensive at 5%.
 
-- **EV/FCF and EV/EBITDA**: Quote actual numbers. How do they compare to the stock's own history and sector peers (use comparison data if available)?
+**MANDATORY — read this before writing the Valuation section**: The 'Ground Truth Valuation Metrics' block in the user message contains the definitive figures from the data provider. You must quote EV/FCF, EV/EBITDA, forward P/E, and price return figures from that block exactly. If the quant analysis below contains different figures, use the ground truth values and note the discrepancy. If a metric is high or stretched, confront it directly — do not omit it, substitute a lower estimate, or quietly replace it with a range that appears more favorable. An analyst who ignores EV/FCF of 57x because it is ugly is worse than useless.
+
+- **EV/FCF and EV/EBITDA**: Quote the exact figures from the Ground Truth block. How do they compare to the stock's own history and sector peers (use comparison data if available)? If FCF per share is null or near zero, explicitly state this and explain what it implies — heavy capex, negative FCF, or data unavailability are all materially different situations.
 - **PEG**: Is the growth rate justifying the earnings multiple? **Critical: PEG is only a valid cheapness signal when EPS growth is positive. If `eps_growth_ttm_yoy` is negative (EPS declining YoY), PEG is mathematically undefined — a PEG computed on revenue growth when EPS is contracting is a misleading anchor and must not be cited as evidence the stock is cheap. In that case, omit PEG entirely and rely on EV/FCF and EV/EBITDA as the primary valuation anchors.**
 - **Forward multiple compression (required for long-horizon investors)**: For investors with a 3+ year horizon, today's TTM multiple is not the relevant price paid — the relevant price is what the multiple compresses to as earnings grow. Using consensus EBITDA and EPS growth estimates, project the forward EV/EBITDA and P/E at 2 and 3 years out (e.g., "At consensus 25% EBITDA growth, today's EV implies 32x 2027 EV/EBITDA and 21x 2028 EV/EBITDA"). Explicitly state: does the compressed multiple at year 2–3 represent fair value, cheap, or still expensive for the business quality? This analysis is the primary valuation lens for aggressive long-horizon investors — a stock that looks expensive on TTM multiples but compresses to an attractive multiple at consensus growth within the investor's horizon is a materially different risk/reward than a stock that remains expensive even on forward estimates. Flag high estimate uncertainty (4-year EBITDA projections have wide bands) but do not dismiss the framework.
 - **Analyst consensus price target**: What upside or downside is implied vs. current price? How many analysts cover this?
@@ -212,6 +250,7 @@ async def run_hold_check_agent(
     mda_text: str = "",
     treasury_yield: float | None = None,
     transcript: str = "",
+    raw_metrics: str = "",
 ) -> str:
     ctx = user_context or {}
     ck = _cache_key(
@@ -285,6 +324,8 @@ async def run_hold_check_agent(
         else ""
     )
 
+    raw_metrics_section = f"\n{raw_metrics}\n" if raw_metrics else ""
+
     user_message = (
         f"Analyze the hold thesis for {ticker.upper()}.\n\n"
         f"## Entry Context\n"
@@ -292,6 +333,7 @@ async def run_hold_check_agent(
         f"{thesis_text}\n"
         f"{profile_text}"
         f"{macro_section}"
+        f"{raw_metrics_section}"
         f"\n## Current Quantitative Data\n"
         f"{quant_analysis}\n"
         f"\n## Recent News & Sentiment\n"
