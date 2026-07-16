@@ -130,15 +130,17 @@ The most common errors:
 BANK AND FINTECH SPECIAL HANDLING:
 If the company is a bank, digital bank, or lending-based fintech (identifiable from the sector field or business description — e.g., NU Holdings, StoneCo, Nubank, traditional banks):
 
-EV/FCF and EV/EBITDA are structurally distorted for these businesses. Loan originations are cash outflows that crater reported FCF even when the business is highly profitable. EV/EBITDA is a poor metric because interest income and expense are core operations, not below-the-line items. Do NOT use these metrics to trigger Q2 pre-check flags for banks and fintechs.
+EV/FCF is severely distorted for these businesses: loan originations are cash outflows that crater reported FCF even when the business is highly profitable. Do NOT use EV/FCF to trigger Q2 for banks and fintechs.
+
+EV/EBITDA is less reliable for banks (interest income/expense is core operations, not below-the-line) but is NOT fully dismissible — a high EV/EBITDA (e.g., 34x+) for a fintech can still reflect genuine valuation stretch and should be weighed as a secondary signal.
 
 Adapt the signal calibration pre-check as follows:
 1. Q1 (price run): apply as normal.
-2. Q2 (valuation stretch): ignore EV/FCF and EV/EBITDA entirely. Use forward P/E above 30x as the only relevant threshold. If forward P/E is below 30x, Q2 is NO for banks regardless of EV/FCF or EV/EBITDA values.
+2. Q2 (valuation stretch): ignore EV/FCF entirely. Treat EV/EBITDA above 25x as a weak Q2 flag — meaningful but not determinative on its own; it should be weighed alongside forward P/E. Use forward P/E above 30x as the primary Q2 trigger. If forward P/E is below 30x and EV/EBITDA is the only trigger, Q2 is borderline, not a firm YES.
 3. Q3 (above-consensus growth required): apply as normal using earnings growth and P/E.
-4. Q4 (margin of safety): use P/E vs. earnings growth rate as the primary signal. A forward P/E below 20x on 30%+ EPS growth is a YES. Also consider P/Book vs. ROE — a high ROE at a reasonable P/Book is a margin of safety signal.
+4. Q4 (margin of safety): use P/E vs. earnings growth rate as the primary signal. A forward P/E below 20x on 30%+ EPS growth is a clear YES. Also consider P/Book vs. ROE — a high ROE at a reasonable P/Book is a margin of safety signal. Do NOT let EV/FCF anchor Q4 for banks.
 
-Primary valuation framework for banks/fintechs: forward P/E (earnings power), P/Book vs. ROE (capital efficiency), and net interest margin trend. Cite these in the Valuation section; do not anchor the analysis on EV/FCF or EV/EBITDA.
+Primary valuation framework for banks/fintechs: forward P/E (earnings power), P/Book vs. ROE (capital efficiency), and net interest margin trend. Cite these in the Valuation section as the primary anchors; treat EV/FCF as context only and EV/EBITDA as a secondary check.
 
 ---
 
