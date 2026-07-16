@@ -19,6 +19,19 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
     fcf_ps = raw.get("fcf_per_share_ttm")
     fcf_line = f"${fcf_ps:.2f}" if fcf_ps is not None else "N/A (null — FCF may be consumed by capex or unavailable)"
 
+    # Detect financial sector companies where EV/FCF and EV/EBITDA are structurally distorted
+    sector_lower = (raw.get("sector") or "").lower()
+    _fin_keywords = ("bank", "financ", "insur", "credit", "lending", "brokerage", "capital market")
+    is_financial = any(kw in sector_lower for kw in _fin_keywords)
+    fin_warning = (
+        "  ← DISTORTED FOR BANK/FINTECH: loan originations inflate cash outflows making this metric misleading; DO NOT use as a valuation signal"
+        if is_financial else ""
+    )
+    ebitda_warning = (
+        "  ← LESS MEANINGFUL FOR BANK/FINTECH: interest income/expense is core operations, not below the line; prefer P/E + P/Book + ROE"
+        if is_financial else ""
+    )
+
     # Format insider transactions directly so the hold check agent sees raw data
     # regardless of what the quant agent narrative says
     insider_txns = raw.get("insider_transactions") or []
@@ -50,8 +63,8 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         "Cite them verbatim in your Valuation section. "
         "Do not substitute a narrower range or a different estimate. "
         "If a metric looks surprising, engage with it directly — do not omit it.\n\n"
-        f"- EV/FCF TTM:            {fx(raw.get('ev_to_fcf_ttm'))}\n"
-        f"- EV/EBITDA TTM:         {fx(raw.get('ev_ebitda_ttm'))}\n"
+        f"- EV/FCF TTM:            {fx(raw.get('ev_to_fcf_ttm'))}{fin_warning}\n"
+        f"- EV/EBITDA TTM:         {fx(raw.get('ev_ebitda_ttm'))}{ebitda_warning}\n"
         f"- Forward P/E:           {fx(raw.get('forward_pe'))}\n"
         f"- P/E TTM:               {fx(raw.get('pe_ttm'))}\n"
         f"- PEG TTM:               {fx(raw.get('peg_ttm'))}{peg_note}\n"
@@ -111,6 +124,21 @@ RULES based on investor risk profile AND time horizon:
 The most common errors:
 1. Rationalizing Strong Hold because the business is exceptional. Exceptional business + full valuation = Hold. Reserve Strong Hold for: thesis intact AND valuation is fair or better AND you would be comfortable if a new investor entered at today's exact price.
 2. Treating all investor profiles identically. The signal that correctly describes risk/reward for a conservative investor may be Consider Trimming; for an aggressive investor at the same price, Hold is often the right answer — same business, same valuation, different tolerance for sitting through drawdowns.
+
+---
+
+BANK AND FINTECH SPECIAL HANDLING:
+If the company is a bank, digital bank, or lending-based fintech (identifiable from the sector field or business description — e.g., NU Holdings, StoneCo, Nubank, traditional banks):
+
+EV/FCF and EV/EBITDA are structurally distorted for these businesses. Loan originations are cash outflows that crater reported FCF even when the business is highly profitable. EV/EBITDA is a poor metric because interest income and expense are core operations, not below-the-line items. Do NOT use these metrics to trigger Q2 pre-check flags for banks and fintechs.
+
+Adapt the signal calibration pre-check as follows:
+1. Q1 (price run): apply as normal.
+2. Q2 (valuation stretch): ignore EV/FCF and EV/EBITDA entirely. Use forward P/E above 30x as the only relevant threshold. If forward P/E is below 30x, Q2 is NO for banks regardless of EV/FCF or EV/EBITDA values.
+3. Q3 (above-consensus growth required): apply as normal using earnings growth and P/E.
+4. Q4 (margin of safety): use P/E vs. earnings growth rate as the primary signal. A forward P/E below 20x on 30%+ EPS growth is a YES. Also consider P/Book vs. ROE — a high ROE at a reasonable P/Book is a margin of safety signal.
+
+Primary valuation framework for banks/fintechs: forward P/E (earnings power), P/Book vs. ROE (capital efficiency), and net interest margin trend. Cite these in the Valuation section; do not anchor the analysis on EV/FCF or EV/EBITDA.
 
 ---
 
