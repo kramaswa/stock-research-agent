@@ -68,6 +68,11 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         "BLOCK — not the value from the quant narrative. Example: if the quant analysis says EV/EBITDA "
         "is 43.3x but this block shows 44.66x, your Valuation section must state 44.66x. Same for price "
         "returns — use the 26-week and 52-week returns from this block, not the quant analysis.\n\n"
+        "⚠ NULL RULE: If any metric in this block shows 'N/A', do NOT substitute a figure from your "
+        "training knowledge. This applies especially to price history — if 26-week or 52-week returns "
+        "are N/A, you MUST NOT cite specific peak prices, 52-week lows, or percentage drawdowns from "
+        "memory. State that price return data is unavailable from the provider. Presenting training-"
+        "knowledge price figures as factual anchors without sourcing is an error.\n\n"
         f"- EV/FCF TTM:            {fx(raw.get('ev_to_fcf_ttm'))}{fin_warning}\n"
         f"- EV/EBITDA TTM:         {fx(raw.get('ev_ebitda_ttm'))}{ebitda_warning}\n"
         f"- Forward P/E:           {fx(raw.get('forward_pe'))}\n"
@@ -245,6 +250,8 @@ For each of the 3 arguments:
 2. Describe the exact chain of causation: how does that factor flow through revenue → margins → EPS → multiple compression?
 3. Quantify the impact where possible: "If [X happens], EPS falls from $Y to $Z; at the lower justified multiple of N×, the stock is worth $W — a decline of X%."
 
+**Multiple consistency rule**: When constructing a bear-case price target, BOTH the earnings estimate AND the valuation multiple must reflect bear-case assumptions. Applying a bear-case earnings figure (e.g., $2B net income) to a bull-case multiple (e.g., 100x P/E) does not produce a conservative floor — it understates the downside and gives the bear argument a misleadingly optimistic anchor. A genuine bear case applies a compressed multiple (typically the lower end of the stock's historical range, or 40–60% of the current trading multiple) to the depressed earnings estimate.
+
 This section should genuinely pressure-test the bull thesis. If you cannot write a genuinely adversarial bear case, say so explicitly — a weak bear case is itself useful information for the investor.
 
 ## Earnings Call Analysis
@@ -300,7 +307,7 @@ Format: "Upgrade to [signal] if [specific condition]" or "Downgrade to [signal] 
 Only use signal names from: Add to Position, Strong Hold, Hold, Consider Trimming, Consider Exiting, Exit Signal.
 Be specific — name actual metrics, price levels, or events.
 
-**Single-trigger rule**: Each condition must identify ONE dominant factor — not a conjunction of multiple simultaneous requirements joined with AND. "Downgrade if X AND Y AND Z all occur" is not a usable trigger; it is practically impossible to fire and gives no actionable guidance. Use a single most important trigger per condition. If multiple paths exist, use OR logic: "Downgrade if X occurs OR if Y occurs."
+**Single-trigger rule**: Each condition must identify ONE dominant factor. AND logic across multiple simultaneous requirements ("Downgrade if X AND Y AND Z") is practically impossible to fire — prohibited. OR logic is permitted only when the two triggers are variations of the same underlying mechanism (e.g., "revenue misses in Q3 OR Q4"). Do NOT join triggers with OR if they have fundamentally different probability profiles or mechanisms (e.g., "pricing cut OR management change" — these are unrelated scenarios that deserve separate evaluation). In that case, pick the single most important trigger and drop the weaker one.
 
 ---
 *AI-generated analysis for informational purposes only. Not financial advice.*"""
