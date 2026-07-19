@@ -37,6 +37,7 @@ interface HoldHistoryEntry {
   timestamp: string;
   content: string;
   sources: string[];
+  evalResult?: EvalResult | null;
 }
 
 interface PreCheckAnswer { answer: "YES" | "NO" | "BORDERLINE"; evidence: string; }
@@ -603,6 +604,7 @@ export default function Home() {
   const abortRef = useRef<(() => void) | null>(null);
   const discoveryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdSourcesRef = useRef<string[]>([]);
+  const currentEntryIdRef = useRef<string | null>(null);
 
   const runResearch = async (tickerArg?: string) => {
     const t = (tickerArg ?? ticker).trim().toUpperCase();
@@ -811,6 +813,7 @@ export default function Home() {
                 content: data.content,
                 sources: holdSourcesRef.current,
               };
+              currentEntryIdRef.current = entry.id;
               setHoldHistory((prev) => {
                 const updated = [entry, ...prev.filter((h) => h.id !== entry.id)].slice(0, 20);
                 try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
@@ -856,6 +859,15 @@ export default function Home() {
       }
       const data: EvalResult = await res.json();
       setEvalResult(data);
+      if (currentEntryIdRef.current) {
+        setHoldHistory((prev) => {
+          const updated = prev.map((h) =>
+            h.id === currentEntryIdRef.current ? { ...h, evalResult: data } : h
+          );
+          try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
+          return updated;
+        });
+      }
     } catch (e: unknown) {
       setEvalError(e instanceof Error ? e.message : "Evaluation failed. Please try again.");
     } finally {
@@ -874,7 +886,8 @@ export default function Home() {
       current_price: entry.currentPrice,
       purchase_price: entry.purchasePrice,
     });
-    setEvalResult(null);
+    currentEntryIdRef.current = entry.id;
+    setEvalResult(entry.evalResult ?? null);
     setEvalError(null);
     setEvalLoading(false);
   };
