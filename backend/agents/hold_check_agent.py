@@ -32,6 +32,31 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         if is_financial else ""
     )
 
+    # Detect data-sparse situations (recent IPO, thin coverage, private company just gone public)
+    _key_metrics = [
+        raw.get("ev_to_fcf_ttm"), raw.get("ev_ebitda_ttm"), raw.get("forward_pe"),
+        raw.get("pe_ttm"), raw.get("return_26w_pct"), raw.get("return_52w_pct"),
+        raw.get("revenue_growth_ttm_yoy"), raw.get("eps_growth_ttm_yoy"), raw.get("fcf_per_share_ttm"),
+    ]
+    null_count = sum(1 for v in _key_metrics if v is None)
+    returns_null = raw.get("return_26w_pct") is None and raw.get("return_52w_pct") is None
+    if null_count >= 5 or returns_null:
+        data_caveat = (
+            "⚠ LIMITED DATA WARNING: Most quantitative metrics for this stock are unavailable from "
+            "the data provider. This is typical for recently IPO'd companies or stocks without "
+            "sufficient trading history. You MUST:\n"
+            "1. State data limitations explicitly in each section rather than filling gaps with estimates\n"
+            "2. NOT cite pre-IPO private valuations, pre-IPO ARR figures, or pre-IPO financial data "
+            "as if they were current public data — pre-IPO figures reflect a different capital "
+            "structure and are not comparable to the post-IPO public market cap\n"
+            "3. NOT cite specific peak prices, 52-week lows, or percentage drawdowns if price return "
+            "data is null — you cannot verify these from the provided data\n"
+            "4. Lower your confidence level throughout — use language like 'limited data available' "
+            "and 'cannot verify from provided data' rather than presenting estimates as facts\n\n"
+        )
+    else:
+        data_caveat = ""
+
     # Format insider transactions directly so the hold check agent sees raw data
     # regardless of what the quant agent narrative says
     insider_txns = raw.get("insider_transactions") or []
@@ -58,6 +83,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         insider_section = "\n## Ground Truth Insider Transactions\nNo transactions in the past 90 days.\n"
 
     return (
+        data_caveat +
         "## Ground Truth Valuation Metrics\n"
         "These figures come directly from the data provider (Finnhub). "
         "Cite them verbatim in your Valuation section. "
