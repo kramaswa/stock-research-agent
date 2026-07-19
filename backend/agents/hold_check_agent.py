@@ -95,10 +95,16 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         "is 43.3x but this block shows 44.66x, your Valuation section must state 44.66x. Same for price "
         "returns — use the 26-week and 52-week returns from this block, not the quant analysis.\n\n"
         "⚠ NULL RULE: If any metric in this block shows 'N/A', do NOT substitute a figure from your "
-        "training knowledge. This applies especially to price history — if 26-week or 52-week returns "
-        "are N/A, you MUST NOT cite specific peak prices, 52-week lows, or percentage drawdowns from "
-        "memory. State that price return data is unavailable from the provider. Presenting training-"
-        "knowledge price figures as factual anchors without sourcing is an error.\n\n"
+        "training knowledge. This applies especially to:\n"
+        "- Price history: if 26-week or 52-week returns are N/A, you MUST NOT cite specific peak "
+        "prices, 52-week lows, or percentage drawdowns from memory.\n"
+        "- Growth metrics: if revenue_growth_ttm_yoy is N/A, you MUST NOT use a 3-year or 5-year "
+        "CAGR as a proxy for current momentum without explicitly flagging that TTM growth is "
+        "unavailable. A multi-year CAGR from a small or startup base is NOT interchangeable with "
+        "current TTM growth — these measure fundamentally different things. State: 'TTM revenue "
+        "growth is unavailable from the data provider; the 3-year CAGR of X% reflects historical "
+        "growth from a small base and may not represent the current trajectory.'\n"
+        "Presenting training-knowledge figures as factual anchors without sourcing is an error.\n\n"
         f"- EV/FCF TTM:            {fx(raw.get('ev_to_fcf_ttm'))}{fin_warning}\n"
         f"- EV/EBITDA TTM:         {fx(raw.get('ev_ebitda_ttm'))}{ebitda_warning}\n"
         f"- Forward P/E:           {fx(raw.get('forward_pe'))}\n"
@@ -251,7 +257,8 @@ Do not rely on P/E alone. Assess on multiple frameworks and give an explicit fai
 - **Margin of safety**: Explicitly state whether the current price offers a discount to fair value (buy zone), is at fair value (hold zone), or prices in optimistic assumptions (trim zone). If a risk-free rate is provided, note how the rate environment affects what multiple is justified.
 
 ## Growth & Earnings Quality
-- Is revenue growth accelerating or decelerating? Compare the 1Y, 3Y, and 5Y growth rates if available.
+- Is revenue growth accelerating or decelerating? Compare the 1Y, 3Y, and 5Y growth rates if available. If TTM revenue growth is null, explicitly state this and do not substitute a multi-year CAGR as a proxy for current momentum without flagging the distinction.
+- **Sequential EPS interpretation for early-stage or high-capex companies**: If EPS is deeply negative and worsens quarter-over-quarter (e.g., -$0.56 → -$1.12), do NOT label this as confirmed execution deterioration without first explicitly considering and ruling out: (1) seasonality, (2) one-time charges or write-downs, (3) deliberate capex or investment acceleration that management has guided toward. If you cannot distinguish the cause from available data, state explicitly: "The sequential loss deepening could reflect [specific alternatives]; insufficient data to confirm whether this is structural deterioration vs. timing or investment-driven."
 - **Earnings beat/miss track record**: Review the earnings surprise history. Does management consistently beat estimates (credibility signal) or miss (execution risk)? Quote the average surprise %.
 - **Estimate revision momentum**: Quote the net analyst rating-change balance in the past 90 days (upgrades minus downgrades from rating_changes_90d). Net positive revision activity — where more analysts are upgrading than downgrading — is a leading indicator of EPS estimate increases ahead and improves the reliability of forward consensus numbers. Net negative revisions flag deteriorating fundamental expectations. Also note near-term quarterly EPS estimate trajectory (eps_estimates_quarterly): are estimates for the next 2–3 quarters stepping up sequentially, flat, or declining? Declining quarterly estimates while annual consensus holds flat is a red flag — it means the market is back-half loading the year.
 
@@ -269,7 +276,9 @@ Do not rely on P/E alone. Assess on multiple frameworks and give an explicit fai
 ## Bear Case
 Write this as an institutional short seller's research note — not a balanced list of generic risks. The standard: articulate the specific mechanism by which this stock declines 40–50% from today's price. "Macro headwinds" and "competition could intensify" do not meet this standard.
 
-**Sourcing rule**: Every specific quantitative claim in the bear case — revenue segment sizes, geographic concentration percentages, customer names and their share of revenue, market share figures, competitor pricing data — must come from the provided data: raw JSON, earnings release, 10-Q/20-F MD&A, or earnings transcript. If you cite a figure that is NOT in the provided data (e.g., "China revenue is approximately $5B"), you MUST label it explicitly as "[analyst estimate, unverified]". You MUST NOT use an unverified estimate as the primary input in a quantified price target — an unsourced revenue figure driving a specific dollar price target misleads the reader about what is modeled vs. assumed.
+**Sourcing rule**: Every specific quantitative claim in the bear case — revenue segment sizes, geographic concentration percentages, customer names and their share of revenue, market share figures, covenant thresholds, competitor pricing data — must come from the provided data: raw JSON, earnings release, 10-Q/20-F MD&A, or earnings transcript. If you cite a figure that is NOT in the provided data, you MUST label it explicitly as "[analyst estimate, unverified]". You MUST NOT use an unverified estimate as the primary input in a quantified price target.
+
+**False precision rule**: Presenting an unsourced estimate with a specific number (e.g., "10-15% customer concentration triggers covenant breach", "top 3 customers = 50%+ of revenue") is worse than omitting it — specific thresholds imply you have a verified source when you do not. If you lack the data, use directional language: "customer concentration appears material based on available disclosures" — not a precise threshold you cannot verify. Reserve specific numbers for figures you can source.
 
 For each of the 3 arguments:
 1. Name the specific competitor, product, regulatory body, customer, or structural factor
