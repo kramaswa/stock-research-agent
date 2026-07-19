@@ -874,6 +874,9 @@ export default function Home() {
       current_price: entry.currentPrice,
       purchase_price: entry.purchasePrice,
     });
+    setEvalResult(null);
+    setEvalError(null);
+    setEvalLoading(false);
   };
 
   const handleHistoryRemove = (id: string) => {
