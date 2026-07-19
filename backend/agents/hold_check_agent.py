@@ -9,7 +9,7 @@ from cachetools import TTLCache
 def build_raw_metrics_block(raw: dict[str, Any]) -> str:
     """Build a concise ground-truth block from raw Finnhub data to anchor the hold check."""
     def fx(v, suffix="x") -> str:
-        return f"{v:.1f}{suffix}" if v is not None else "N/A"
+        return f"{v:.2f}{suffix}" if v is not None else "N/A"
 
     eps_g = raw.get("eps_growth_ttm_yoy")
     peg_note = (
@@ -17,7 +17,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         if eps_g is not None and eps_g < 0 else ""
     )
     fcf_ps = raw.get("fcf_per_share_ttm")
-    fcf_line = f"${fcf_ps:.2f}" if fcf_ps is not None else "N/A (null — FCF may be consumed by capex or unavailable)"
+    fcf_line = f"${fcf_ps:.2f}" if fcf_ps is not None else "N/A (null — data unavailable from provider; do not speculate on the cause)"
 
     # Detect financial sector companies where EV/FCF and EV/EBITDA are structurally distorted
     sector_lower = (raw.get("sector") or "").lower()
@@ -63,6 +63,11 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         "Cite them verbatim in your Valuation section. "
         "Do not substitute a narrower range or a different estimate. "
         "If a metric looks surprising, engage with it directly — do not omit it.\n\n"
+        "⚠ CONFLICT RULE: The quant analysis below may cite slightly different values due to rounding "
+        "or computational differences. When citing any metric in your analysis, USE THE VALUE FROM THIS "
+        "BLOCK — not the value from the quant narrative. Example: if the quant analysis says EV/EBITDA "
+        "is 43.3x but this block shows 44.66x, your Valuation section must state 44.66x. Same for price "
+        "returns — use the 26-week and 52-week returns from this block, not the quant analysis.\n\n"
         f"- EV/FCF TTM:            {fx(raw.get('ev_to_fcf_ttm'))}{fin_warning}\n"
         f"- EV/EBITDA TTM:         {fx(raw.get('ev_ebitda_ttm'))}{ebitda_warning}\n"
         f"- Forward P/E:           {fx(raw.get('forward_pe'))}\n"
@@ -172,6 +177,10 @@ Use this exact structure:
 
 This section surfaces what the signal would be for an investor who genuinely and rigorously disagrees with the dominant assumption. It is not a backdoor to rationalize a better signal — it is transparency about what is load-bearing the verdict.
 
+**MANDATORY CONSTRAINT**: The conditional signal must still comply with the profile rules from the pre-check. If your pre-check concludes Q4 is clearly NO (stock is materially above fair value, no margin of safety), you CANNOT offer a conditional upgrade to Strong Hold — because no single external assumption changes the profile rules. A conditional upgrade to Strong Hold is only valid if the stated assumption, if true, would move Q4 from NO to at minimum BORDERLINE. If Q4 is clearly NO and all multiples are stretched, the correct response is to skip this section or offer a conditional at the same signal level (e.g., "conditions that would sustain Hold vs. triggering Consider Trimming"). Do not offer a conditional upgrade that contradicts your own valuation conclusion.
+
+**SELF-CHECK (required before writing this section)**: Explicitly ask yourself: "If this assumption were true, would Q4 change from NO to at least BORDERLINE?" For example — if confirming strong private revenue data still leaves the current market cap pricing in optimistic assumptions at stretched multiples, Q4 remains NO regardless of the confirmed data. In that case, OMIT this section entirely. Only include this section if you can honestly answer YES to the self-check.
+
 Structure it as follows:
 1. **The dominant assumption**: "The [signal] is primarily driven by [specific risk or assumption], which is suppressing what would otherwise be a [stronger signal]."
 2. **The conditional signal**: "If you assign a materially lower probability to [that specific risk] — or believe [that assumption] does not apply to your holding horizon — the signal would likely be [EXACTLY ONE STEP UP on the six-signal ladder] for [specific investor profile]. The six signals in order are: Exit Signal → Consider Exiting → Consider Trimming → Hold → Strong Hold → Add to Position. One step up from Hold is always Strong Hold — never Add to Position. One step up from Strong Hold is always Add to Position. Do not skip steps. Be precise about which profiles the upgrade applies to and which it does not: for example, removing a geopolitical discount might unlock Strong Hold for an aggressive long-term investor (whose relaxed thresholds and long horizon absorb the remaining valuation stretch), but leave a moderate investor at Hold anyway because 2+ pre-check valuation flags (price run + EV/EBITDA) remain regardless. Name the profile explicitly."
@@ -205,8 +214,9 @@ Do not rely on P/E alone. Assess on multiple frameworks and give an explicit fai
 - **EV/FCF and EV/EBITDA**: Quote the exact figures from the Ground Truth block. How do they compare to the stock's own history and sector peers (use comparison data if available)? If FCF per share is null or near zero, explicitly state this and explain what it implies — heavy capex, negative FCF, or data unavailability are all materially different situations.
 - **PEG**: Is the growth rate justifying the earnings multiple? **Critical: PEG is only a valid cheapness signal when EPS growth is positive. If `eps_growth_ttm_yoy` is negative (EPS declining YoY), PEG is mathematically undefined — a PEG computed on revenue growth when EPS is contracting is a misleading anchor and must not be cited as evidence the stock is cheap. In that case, omit PEG entirely and rely on EV/FCF and EV/EBITDA as the primary valuation anchors.**
 - **Forward multiple compression (required for long-horizon investors)**: For investors with a 3+ year horizon, today's TTM multiple is not the relevant price paid — the relevant price is what the multiple compresses to as earnings grow. Using consensus EBITDA and EPS growth estimates, project the forward EV/EBITDA and P/E at 2 and 3 years out (e.g., "At consensus 25% EBITDA growth, today's EV implies 32x 2027 EV/EBITDA and 21x 2028 EV/EBITDA"). Explicitly state: does the compressed multiple at year 2–3 represent fair value, cheap, or still expensive for the business quality? This analysis is the primary valuation lens for aggressive long-horizon investors — a stock that looks expensive on TTM multiples but compresses to an attractive multiple at consensus growth within the investor's horizon is a materially different risk/reward than a stock that remains expensive even on forward estimates. Flag high estimate uncertainty (4-year EBITDA projections have wide bands) but do not dismiss the framework.
+- **Capital structure reconciliation**: If you reference multiple historical valuation figures for the same company (pre-IPO round valuations, tender offer prices, IPO price, secondary sales, current market cap), you MUST explicitly reconcile them: state the approximate share count and explain how the figures bridge to the current market cap. Two contradictory figures left unreferenced (e.g., "$175B pre-IPO valuation" and "$75B+ IPO" both cited without explaining how either maps to a $1.6T current market cap) is a factual error. If you cannot reconcile them with available data, acknowledge the inconsistency explicitly rather than citing both figures as if they are consistent.
 - **Analyst consensus price target**: What upside or downside is implied vs. current price? How many analysts cover this?
-- **Implied fair value range**: Based on available multiples, give an explicit range representing fair value (e.g., "$X–$Y based on X× forward EV/EBITDA at current growth"). Commit to numbers.
+- **Implied fair value range**: Based on available multiples, give an explicit range representing fair value (e.g., "$X–$Y based on X× forward EV/EBITDA at current growth"). Commit to numbers. **DCF rule**: If you present a DCF valuation, you MUST disclose the key inputs in the text: discount rate, terminal growth rate, the base cash flow or earnings figure used, and approximate share count. A DCF range without disclosed inputs ($90–$380 with no model shown) is not analysis — it is assertion. If `fcf_per_share_ttm` is null, you cannot anchor a DCF on FCF — say this explicitly and use multiple-based valuation (EV/EBITDA, forward P/E) as the primary framework. Do not silently substitute EPS proxies for FCF in a "DCF" without disclosing the substitution.
 - **Margin of safety**: Explicitly state whether the current price offers a discount to fair value (buy zone), is at fair value (hold zone), or prices in optimistic assumptions (trim zone). If a risk-free rate is provided, note how the rate environment affects what multiple is justified.
 
 ## Growth & Earnings Quality
@@ -227,6 +237,8 @@ Do not rely on P/E alone. Assess on multiple frameworks and give an explicit fai
 
 ## Bear Case
 Write this as an institutional short seller's research note — not a balanced list of generic risks. The standard: articulate the specific mechanism by which this stock declines 40–50% from today's price. "Macro headwinds" and "competition could intensify" do not meet this standard.
+
+**Sourcing rule**: Every specific quantitative claim in the bear case — revenue segment sizes, geographic concentration percentages, customer names and their share of revenue, market share figures, competitor pricing data — must come from the provided data: raw JSON, earnings release, 10-Q/20-F MD&A, or earnings transcript. If you cite a figure that is NOT in the provided data (e.g., "China revenue is approximately $5B"), you MUST label it explicitly as "[analyst estimate, unverified]". You MUST NOT use an unverified estimate as the primary input in a quantified price target — an unsourced revenue figure driving a specific dollar price target misleads the reader about what is modeled vs. assumed.
 
 For each of the 3 arguments:
 1. Name the specific competitor, product, regulatory body, customer, or structural factor
@@ -287,6 +299,8 @@ Provide exactly 3 conditions. You MUST include the immediately adjacent signals 
 Format: "Upgrade to [signal] if [specific condition]" or "Downgrade to [signal] if [specific condition]."
 Only use signal names from: Add to Position, Strong Hold, Hold, Consider Trimming, Consider Exiting, Exit Signal.
 Be specific — name actual metrics, price levels, or events.
+
+**Single-trigger rule**: Each condition must identify ONE dominant factor — not a conjunction of multiple simultaneous requirements joined with AND. "Downgrade if X AND Y AND Z all occur" is not a usable trigger; it is practically impossible to fire and gives no actionable guidance. Use a single most important trigger per condition. If multiple paths exist, use OR logic: "Downgrade if X occurs OR if Y occurs."
 
 ---
 *AI-generated analysis for informational purposes only. Not financial advice.*"""
