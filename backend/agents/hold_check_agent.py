@@ -6,6 +6,28 @@ import anthropic
 from cachetools import TTLCache
 
 
+def _format_eps_estimates(raw: dict[str, Any]) -> str:
+    estimates = raw.get("eps_estimates") or []
+    if not estimates:
+        return "\n## Ground Truth Consensus EPS Estimates\nNot available from provider — do not cite consensus forward EPS figures; use 'market-implied forward EPS' derived from forward P/E if needed.\n"
+    lines = []
+    for e in estimates[:3]:
+        period = e.get("period", "?")
+        mean = e.get("epsAvg") or e.get("mean")
+        high = e.get("epsHigh") or e.get("high")
+        low = e.get("epsLow") or e.get("low")
+        n = e.get("numberAnalysts") or e.get("n_analysts")
+        mean_str = f"${mean:.2f}" if mean is not None else "N/A"
+        range_str = f"(range ${low:.2f}–${high:.2f})" if low is not None and high is not None else ""
+        n_str = f", {int(n)} analysts" if n is not None else ""
+        lines.append(f"  {period}: consensus {mean_str} {range_str}{n_str}")
+    return (
+        "\n## Ground Truth Consensus EPS Estimates\n"
+        "Cite these as the consensus forward EPS — do not back-calculate or label as 'market-implied' when this data is present.\n"
+        + "\n".join(lines) + "\n"
+    )
+
+
 def build_raw_metrics_block(raw: dict[str, Any]) -> str:
     """Build a concise ground-truth block from raw Finnhub data to anchor the hold check."""
     def fx(v, suffix="x") -> str:
@@ -118,6 +140,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         f"- Revenue growth TTM YoY:{fx(raw.get('revenue_growth_ttm_yoy'), '%')}\n"
         f"- Gross margin TTM:      {fx(raw.get('gross_margin_ttm'), '%')}\n"
         f"- Operating margin TTM:  {fx(raw.get('operating_margin_ttm'), '%')}\n"
+        + _format_eps_estimates(raw)
         + insider_section
     )
 
@@ -206,7 +229,16 @@ For ETFs, skip or adapt sections that require company-specific data (SBC, M&A tr
 
 Use this exact structure:
 
-## Signal: [exact signal from the list above]
+## Pre-Check
+Answer each question explicitly before choosing the signal. This section is required and must appear verbatim with your answers filled in.
+- Q1 (Price run >30%/50%): [YES/NO] — [one line: cite return_26w_pct and return_52w_pct from ground truth block]
+- Q2 (Valuation stretched): [YES/NO] — [one line: cite EV/FCF, EV/EBITDA, and fwd P/E from ground truth block]
+- Q3 (Bull assumptions required): [YES/NO] — [one line: explain whether current valuation requires above-consensus growth to justify]
+- Q4 (Margin of safety): [YES/NO/BORDERLINE] — [one line: state whether a new buyer at today's price has margin of safety]
+- Profile rule: [state which rule applies to the investor's profile and what signals are permitted]
+- Signal ceiling: [state the maximum permitted signal given the above answers]
+
+## Signal: [exact signal from the list above — must not exceed the ceiling stated in Pre-Check]
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
@@ -256,7 +288,7 @@ Do not rely on P/E alone. Assess on multiple frameworks and give an explicit fai
   - **TTM EPS inflated by non-operating items** (investment gains, asset sales, insurance recoveries, one-time tax benefits): The TTM PEG will appear misleadingly low because the denominator is inflated by gains that don't recur. A caveat does not fix the anchor effect — citing "PEG of 1.57x but note the EPS is distorted" still anchors the reader to a misleadingly cheap number. In this case, omit TTM PEG entirely and replace it with a forward PEG anchored on normalized operating EPS growth (e.g., "On normalized 20-25% operating EPS growth, the forward PEG is approximately 1.0-1.2x on 24x forward P/E").**
 - **Forward multiple compression (required for long-horizon investors)**: For investors with a 3+ year horizon, today's TTM multiple is not the relevant price paid — the relevant price is what the multiple compresses to as earnings grow. Using consensus EBITDA and EPS growth estimates, project the forward EV/EBITDA and P/E at 2 and 3 years out (e.g., "At consensus 25% EBITDA growth, today's EV implies 32x 2027 EV/EBITDA and 21x 2028 EV/EBITDA"). Explicitly state: does the compressed multiple at year 2–3 represent fair value, cheap, or still expensive for the business quality? This analysis is the primary valuation lens for aggressive long-horizon investors — a stock that looks expensive on TTM multiples but compresses to an attractive multiple at consensus growth within the investor's horizon is a materially different risk/reward than a stock that remains expensive even on forward estimates. Flag high estimate uncertainty (4-year EBITDA projections have wide bands) but do not dismiss the framework.
 - **Capital structure reconciliation**: If you reference multiple historical valuation figures for the same company (pre-IPO round valuations, tender offer prices, IPO price, secondary sales, current market cap), you MUST explicitly reconcile them: state the approximate share count and explain how the figures bridge to the current market cap. Two contradictory figures left unreferenced (e.g., "$175B pre-IPO valuation" and "$75B+ IPO" both cited without explaining how either maps to a $1.6T current market cap) is a factual error. If you cannot reconcile them with available data, acknowledge the inconsistency explicitly rather than citing both figures as if they are consistent.
-- **Analyst consensus price target**: What upside or downside is implied vs. current price? How many analysts cover this?
+- **Analyst consensus price target**: What upside or downside is implied vs. current price? How many analysts cover this? **Null rule: if `analyst_target_mean` is null in the raw data, you MUST NOT cite any analyst count, price target, or rating distribution (e.g. "29 buy / 13 hold / 2 sell") — state that analyst coverage data is unavailable from the provider. Do not substitute figures from training knowledge.**
 - **Implied fair value range**: Based on available multiples, give an explicit range representing fair value (e.g., "$X–$Y based on X× forward EV/EBITDA at current growth"). Commit to numbers. **DCF rule**: If you present a DCF valuation, you MUST disclose the key inputs in the text: discount rate, terminal growth rate, the base cash flow or earnings figure used, and approximate share count. A DCF range without disclosed inputs ($90–$380 with no model shown) is not analysis — it is assertion. If `fcf_per_share_ttm` is null, you cannot anchor a DCF on FCF — say this explicitly and use multiple-based valuation (EV/EBITDA, forward P/E) as the primary framework. Do not silently substitute EPS proxies for FCF in a "DCF" without disclosing the substitution.
 - **Margin of safety**: Explicitly state whether the current price offers a discount to fair value (buy zone), is at fair value (hold zone), or prices in optimistic assumptions (trim zone). If a risk-free rate is provided, note how the rate environment affects what multiple is justified.
 
