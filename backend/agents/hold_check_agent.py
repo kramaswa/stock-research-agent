@@ -218,6 +218,12 @@ The standard stock-level valuation multiples (EV/FCF, EV/EBITDA, company P/E) do
 3. Above-consensus growth required: for income ETFs, ask whether dividend growth + yield meaningfully exceeds the risk-free rate. If yes, this question is NO.
 4. Margin of safety: for income-focused ETFs, total expected return = current yield + expected dividend growth + modest capital appreciation. If this clearly exceeds the 10Y Treasury yield over the investor's horizon, the answer is YES.
 
+**ETF pre-check labeling rules** (apply to all Q1–Q4 answers):
+- If all provider valuation metrics are null (ev_to_fcf_ttm, ev_ebitda_ttm, forward_pe all N/A), your Q2 and Q4 answers depend entirely on estimated underlying portfolio multiples that cannot be verified from the provided data. In this case: (a) Q4 CANNOT be labeled YES — at best BORDERLINE, because the margin of safety rests on unverified estimates, not provider-confirmed data; (b) any underlying portfolio P/E, earnings yield, or forward multiple you cite must be labeled explicitly as "[analyst estimate, not from provider data]" every time it appears in Q2, Q3, or Q4.
+- The distinction matters: Q4=YES implies confirmed margin of safety; Q4=BORDERLINE implies plausible but unconfirmed. When your evidence is entirely estimated, BORDERLINE is the honest answer.
+
+**ETF bear case arithmetic rule**: If you calculate a portfolio-level impact (e.g., "20% EPS miss at compressed multiples implies 30–40% fund decline"), you MUST show the arithmetic: state the approximate index weights of the named holdings, the basis for the EPS impact figure, and how multiple compression at the holding level translates to the fund-level decline. Asserting a portfolio percentage decline without showing the calculation is false precision — either demonstrate the math or drop the specific percentage.
+
 Signal guidance for ETFs by profile:
 - Conservative or Moderate / Income goal: A quality dividend ETF (e.g., SCHD, VYM) where total expected return (yield + dividend growth) exceeds the risk-free rate by ≥1.5–2% is a STRONG HOLD when the profile match is clear. Do not penalize it for lacking the financial profile of an individual growth stock.
 - Aggressive / Growth goal: A dividend ETF is a profile mismatch — Hold is appropriate because the vehicle doesn't serve the stated goal, even if the ETF itself is high-quality.
