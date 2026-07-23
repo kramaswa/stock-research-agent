@@ -120,6 +120,12 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         "training knowledge. This applies especially to:\n"
         "- Price history: if 26-week or 52-week returns are N/A, you MUST NOT cite specific peak "
         "prices, 52-week lows, or percentage drawdowns from memory.\n"
+        "- Price levels (52-week high/low dollar prices): the dataset contains return PERCENTAGES, "
+        "NOT absolute price levels. There is no '52-week high price' or '52-week low price' field "
+        "in the provider data. NEVER cite a specific dollar amount as 'from quant data' or 'from "
+        "provider data' for a price level — that field does not exist and any such figure is "
+        "fabricated. If you need to reference a price level, state 'approximately $X (derived from "
+        "current price and return percentage, not directly from provider)' and show the derivation.\n"
         "- Growth metrics: if revenue_growth_ttm_yoy is N/A, you MUST NOT use a 3-year or 5-year "
         "CAGR as a proxy for current momentum without explicitly flagging that TTM growth is "
         "unavailable. A multi-year CAGR from a small or startup base is NOT interchangeable with "
@@ -223,6 +229,10 @@ The standard stock-level valuation multiples (EV/FCF, EV/EBITDA, company P/E) do
 - The distinction matters: Q4=YES implies confirmed margin of safety; Q4=BORDERLINE implies plausible but unconfirmed. When your evidence is entirely estimated, BORDERLINE is the honest answer.
 
 **ETF bear case arithmetic rule**: If you calculate a portfolio-level impact (e.g., "20% EPS miss at compressed multiples implies 30–40% fund decline"), you MUST show the arithmetic: state the approximate index weights of the named holdings, the basis for the EPS impact figure, and how multiple compression at the holding level translates to the fund-level decline. Asserting a portfolio percentage decline without showing the calculation is false precision — either demonstrate the math or drop the specific percentage.
+
+**ETF valuation framework caveat**: When the entire valuation argument rests on unverified portfolio multiples (because provider metrics are null), you MUST include an explicit statement in the Valuation section: "Because no provider-confirmed portfolio multiples are available, the following valuation framework is illustrative only — the forward P/E compression argument and margin-of-safety conclusion are directional, not precise, and cannot support a strong conviction signal on their own." Do not bury this caveat in a parenthetical and then proceed to build a full multi-step argument as if the estimates were confirmed data.
+
+**ETF holdings disclosure rule**: Major ETF fund families (Schwab, Vanguard, iShares, State Street, Invesco) publicly disclose their top holdings and weights on their fund pages, updated daily or weekly. If you know the top holdings and approximate weights from your training data (e.g., NVIDIA at ~6% of SCHG, top 5 holdings at ~35-40%), cite these as "from fund sponsor holdings disclosure (Schwab.com / fund fact sheet, approximate as of last available data)" — NOT as "analyst estimate." These are verifiable public facts, not opinions. Labeling publicly disclosed fund holdings as "analyst estimates" undermines the analysis by treating known data as speculation.
 
 Signal guidance for ETFs by profile:
 - Conservative or Moderate / Income goal: A quality dividend ETF (e.g., SCHD, VYM) where total expected return (yield + dividend growth) exceeds the risk-free rate by ≥1.5–2% is a STRONG HOLD when the profile match is clear. Do not penalize it for lacking the financial profile of an individual growth stock.
