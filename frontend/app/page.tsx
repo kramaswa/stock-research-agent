@@ -215,7 +215,7 @@ function EvalPanel({
               <div key={idx} className={`flex items-start gap-2 px-3 py-2 rounded-lg border text-xs ${SEVERITY_STYLE[issue.severity] ?? ""}`}>
                 <span className="font-bold flex-shrink-0 w-3">{SEVERITY_ICON[issue.severity]}</span>
                 <span className="font-semibold flex-shrink-0 w-12 capitalize">{issue.severity}</span>
-                <span className="text-gray-500 flex-shrink-0 w-20 truncate">{issue.section}</span>
+                <span className="text-gray-500 flex-shrink-0 w-36">{issue.section}</span>
                 <span className="leading-snug">{issue.description}</span>
               </div>
             ))}
