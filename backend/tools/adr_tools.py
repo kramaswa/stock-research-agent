@@ -7,6 +7,13 @@ from cachetools import TTLCache
 _adr_info_cache: TTLCache = TTLCache(maxsize=100, ttl=86400)   # 24h — home ticker/ratio rarely changes
 _adr_price_cache: TTLCache = TTLCache(maxsize=100, ttl=900)    # 15min — live prices
 
+# Hardcoded fallbacks for well-known ADRs with confirmed ratios
+# adr_ratio = home exchange shares per 1 US ADR/share
+_KNOWN_ADR_INFO: dict[str, dict] = {
+    "TSM":  {"home_ticker": "2330.TW",  "adr_ratio": 5.0, "home_exchange": "TWSE"},
+    "ASML": {"home_ticker": "ASML.AS",  "adr_ratio": 1.0, "home_exchange": "Euronext Amsterdam"},
+}
+
 
 def get_adr_home_info(us_ticker: str, company_name: str, client: anthropic.Anthropic) -> dict | None:
     """
@@ -16,6 +23,12 @@ def get_adr_home_info(us_ticker: str, company_name: str, client: anthropic.Anthr
     key = us_ticker.upper()
     if key in _adr_info_cache:
         return _adr_info_cache[key]
+
+    # Check hardcoded fallbacks first (covers new listings Haiku may not know)
+    if key in _KNOWN_ADR_INFO:
+        result = _KNOWN_ADR_INFO[key]
+        _adr_info_cache[key] = result
+        return result
 
     try:
         response = client.messages.create(
@@ -28,11 +41,13 @@ def get_adr_home_info(us_ticker: str, company_name: str, client: anthropic.Anthr
                     f"Provide:\n"
                     f"1. home_ticker: primary home exchange ticker in yfinance format "
                     f"(e.g. '000660.KS' for SK Hynix on KRX, '2330.TW' for TSMC on TWSE, 'ASML.AS' for ASML on Euronext)\n"
-                    f"2. adr_ratio: how many home exchange shares does 1 US ADR represent? "
-                    f"(e.g. 1 TSM ADR = 5 shares of 2330.TW → adr_ratio=5; 1 NVO ADR = 1 NVO.CO share → adr_ratio=1)\n"
+                    f"2. adr_ratio: how many home exchange shares does 1 US ADR/depositary receipt represent? "
+                    f"(e.g. 1 TSM ADR = 5 shares of 2330.TW → adr_ratio=5; 1 ASML US share = 1 ASML.AS share → adr_ratio=1; "
+                    f"1 SKHY US share = X shares of 000660.KS on KRX — use the official DR prospectus ratio)\n"
                     f"3. home_exchange: short exchange name (e.g. 'KRX', 'TWSE', 'Euronext Amsterdam', 'TSX')\n"
                     f"Reply ONLY in JSON: {{\"home_ticker\": \"...\", \"adr_ratio\": 1.0, \"home_exchange\": \"...\"}}\n"
-                    f"If you are not confident, reply: {{\"unknown\": true}}"
+                    f"IMPORTANT: Only reply if you are confident in the adr_ratio from the official DR prospectus or exchange filings. "
+                    f"If you are uncertain about the ratio, reply: {{\"unknown\": true}}"
                 ),
             }],
         )

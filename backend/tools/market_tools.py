@@ -171,6 +171,7 @@ def get_all_stock_data(ticker: str) -> dict:
         "company_name": profile.get("name", ticker),
         "sector": profile.get("finnhubIndustry"),
         "exchange": profile.get("exchange"),
+        "country": profile.get("country"),
         "market_cap_millions": profile.get("marketCapitalization"),
         "ipo_date": profile.get("ipo"),
         # Price

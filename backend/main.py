@@ -208,8 +208,12 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         if peer_data:
             comparison_md = format_comparison_table(raw_data, peer_data)
 
-        # Compute live ADR premium when a 6-K filing is detected (foreign private issuer)
-        if edgar_text and edgar_text.strip().startswith("[6-K"):
+        # Compute live ADR premium for foreign issuers: 6-K filing OR non-US Finnhub country
+        # edgar_text label format is "[SEC 6-K filed DATE]"
+        _is_foreign = (edgar_text and "6-K" in edgar_text[:25]) or (
+            raw_data.get("country") and raw_data["country"].upper() not in ("US", "USA", "UNITED STATES")
+        )
+        if _is_foreign:
             raw_data = dict(raw_data)  # shallow copy — don't mutate the TTLCache entry
             try:
                 _t, _c, _cl = ticker, company_name, client
