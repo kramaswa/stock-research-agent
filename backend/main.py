@@ -22,6 +22,7 @@ from agents.eval_agent import run_eval_agent
 from tools.market_tools import get_all_stock_data
 from tools.edgar_tools import get_recent_8k_text, get_recent_10q_mda, get_earnings_transcript
 from tools.macro_tools import get_treasury_yield_10y
+from tools.adr_tools import get_adr_home_info, calculate_adr_premium
 
 load_dotenv()
 
@@ -207,6 +208,24 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         if peer_data:
             comparison_md = format_comparison_table(raw_data, peer_data)
 
+        # Compute live ADR premium when a 6-K filing is detected (foreign private issuer)
+        if edgar_text and edgar_text.strip().startswith("[6-K"):
+            raw_data = dict(raw_data)  # shallow copy — don't mutate the TTLCache entry
+            try:
+                _t, _c, _cl = ticker, company_name, client
+                adr_home = await loop.run_in_executor(
+                    None, lambda: get_adr_home_info(_t, _c, _cl)
+                )
+                if adr_home:
+                    _h = adr_home
+                    adr_prem = await loop.run_in_executor(
+                        None, lambda: calculate_adr_premium(_t, _h)
+                    )
+                    if adr_prem:
+                        raw_data["adr_premium"] = adr_prem
+            except Exception:
+                pass  # ADR data is best-effort; hold check continues without it
+
         # Emit data sources so the UI can show what context was fed to Opus
         sources = ["Finnhub"]
         insider_count = len(raw_data.get("insider_transactions") or [])
@@ -221,6 +240,10 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
                     label = sec_text[1:bracket_end]
                     parts = label.split(" filed ")
                     sources.append(f"{parts[0]} ({parts[1]})" if len(parts) == 2 else label)
+        if raw_data.get("adr_premium"):
+            p = raw_data["adr_premium"]
+            sign = "+" if p["premium_pct"] >= 0 else ""
+            sources.append(f"ADR vs {p['home_ticker']} ({sign}{p['premium_pct']:.1f}% live)")
         yield event("data_sources", {"sources": sources})
 
         yield event("status", {"message": "Analyzing your thesis...", "step": "analyze"})

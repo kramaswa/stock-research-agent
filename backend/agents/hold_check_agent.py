@@ -28,6 +28,50 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
     )
 
 
+def _format_adr_premium(raw: dict[str, Any]) -> str:
+    """Build the ADR premium/discount section when live data is available."""
+    adr = raw.get("adr_premium")
+    if not adr:
+        return ""
+    p = adr["premium_pct"]
+    direction = "premium" if p >= 0 else "discount"
+    sign = "+" if p >= 0 else ""
+    ratio = adr["adr_ratio"]
+    section = (
+        f"\n## Ground Truth ADR Premium / Discount (live data — computed at request time)\n"
+        f"This stock is a US-listed ADR of a foreign company. Live pricing vs. home exchange:\n"
+        f"- US ADR ({adr['us_ticker']}): ${adr['us_price']:.2f}\n"
+        f"- Home exchange ({adr['home_ticker']} on {adr['home_exchange']}): "
+        f"{adr['home_currency']} {adr['home_price']:.2f} "
+        f"(≈${adr['home_price_usd']:.4f} USD per share)\n"
+        f"- ADR ratio: 1 US share = {ratio:g} home share{'s' if ratio != 1 else ''}"
+        f" → home equivalent per US share: ${adr['home_per_adr_usd']:.2f}\n"
+        f"- ADR {direction}: {sign}{p:.1f}%\n"
+    )
+    if abs(p) > 3:
+        if p > 0:
+            section += (
+                f"\n⚠ VERIFIED LIVE ADR PREMIUM: {sign}{p:.1f}% — use this exact figure, not any other estimate.\n"
+                f"A US investor buying {adr['us_ticker']} today pays {abs(p):.1f}% more than a home-exchange "
+                f"investor buying identical underlying shares.\n"
+                f"Premium compression to parity = ≈{abs(p):.1f}% additional downside from ${adr['us_price']:.2f} "
+                f"→ ~${adr['home_per_adr_usd']:.2f} with NO change in business fundamentals.\n"
+                f"YOU MUST:\n"
+                f"(a) Cite '{sign}{p:.1f}% ADR premium (verified live data)' in Key Risks — not a range, not 'may trade at a premium'.\n"
+                f"(b) Include a standalone Bear Case: 'Premium compression to parity: ≈{abs(p):.1f}% additional downside "
+                f"→ ~${adr['home_per_adr_usd']:.2f} from today's ${adr['us_price']:.2f} US price.'\n"
+                f"(c) In Q4 margin of safety: the verified {abs(p):.1f}% premium is structural overpayment vs. home-exchange "
+                f"investors — factor it in as a hard headwind to margin of safety.\n"
+            )
+        else:
+            section += (
+                f"\n⚠ VERIFIED LIVE ADR DISCOUNT: {sign}{p:.1f}% — use this exact figure.\n"
+                f"A US investor buying {adr['us_ticker']} today pays {abs(p):.1f}% LESS than a home-exchange investor.\n"
+                f"Note this structural advantage in the valuation section.\n"
+            )
+    return section
+
+
 def build_raw_metrics_block(raw: dict[str, Any]) -> str:
     """Build a concise ground-truth block from raw Finnhub data to anchor the hold check."""
     def fx(v, suffix="x") -> str:
@@ -118,7 +162,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         "returns — use the 26-week and 52-week returns from this block, not the quant analysis.\n\n"
         "⚠ ADR / FOREIGN ISSUER DETECTION AND RULES: If the SEC Earnings Release section in the analysis context is labeled '6-K' (rather than '8-K'), the company is a foreign private issuer reporting to the SEC — this is a definitive signal that the US-listed ticker is a foreign company's ADR or US-listed depositary shares (e.g., SK Hynix filing 6-K means SKHY is a US ADR of a Korean company). Apply ALL of the following rules when a 6-K is present:\n\n"
         "1. RETURN DATA CAVEAT: Finnhub's price return data for the US ticker reflects the underlying home-exchange price history, not the US ADR's actual trading history. In the Pre-Check, note: 'Return figures reflect [company]'s performance on its home exchange ([exchange]), not the US ADR holder's experience since US listing. A US investor who bought the ADR at its US launch date has seen a different, typically shorter return profile.' The Q1 flag is still directionally meaningful (the underlying business has appreciated), but do not imply a US ADR investor is sitting on returns they could not have captured.\n\n"
-        "2. ADR PREMIUM RISK (mandatory — applies regardless of whether news mentions it): Newly listed US ADRs routinely trade at a premium of 10–50%+ to their underlying home-exchange shares during early trading. This premium can compress to zero at any time regardless of underlying business performance, representing pure structural downside entirely separate from the business thesis. You MUST: (a) Flag ADR premium compression explicitly in Key Risks: 'As a foreign company's US ADR, [ticker] may trade at a premium to its underlying [home exchange] shares. Premium compression represents downside independent of business performance — verify the current ADR premium/discount before sizing a position.' (b) If the news analysis or any context mentions a specific premium percentage, include it as a standalone Bear Case scenario with explicit math: 'If the ADR premium of ~X% compresses toward parity, this represents an additional ~X% downside from today's US price with no change in underlying fundamentals.' (c) Factor premium risk into Q4: an ADR that may trade at a meaningful premium to its home-exchange equivalent cannot claim full margin of safety — Q4 should reflect this structural uncertainty.\n\n"
+        "2. ADR PREMIUM RISK (mandatory — applies regardless of whether news mentions it): Newly listed US ADRs routinely trade at a premium of 10–50%+ to their underlying home-exchange shares during early trading. This premium can compress to zero at any time regardless of underlying business performance, representing pure structural downside entirely separate from the business thesis. You MUST: (a) If a 'Ground Truth ADR Premium / Discount' section appears in this block, use the EXACT verified percentage from that section in Key Risks — not a range, not 'may trade at a premium.' If no live section is present, flag that premium compression risk exists and quantification requires live home-exchange price data. (b) If a Ground Truth ADR Premium / Discount section is present, include a standalone Bear Case using those verified figures. If no live section is present but news mentions a specific premium, include it labeled [unverified from news] — never use a training-knowledge estimate as if it were current data. (c) Factor premium risk into Q4: a verified ADR premium means the US investor is paying more than a home-exchange investor for identical earnings — this is a hard structural headwind to margin of safety, not a footnote.\n\n"
         "3. VALUATION CAVEAT: For foreign issuers, the forward P/E and other multiples from Finnhub are calculated using the US ADR price (which includes any premium). If the ADR trades at a premium to the home exchange, the effective multiple a US investor pays is higher than what a home-exchange investor pays for the same earnings. Note this when discussing valuation relative to home-exchange peers.\n\n"
         "⚠ NULL RULE: If any metric in this block shows 'N/A', do NOT substitute a figure from your "
         "training knowledge. This applies especially to:\n"
@@ -152,6 +196,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         f"- Operating margin TTM:  {fx(raw.get('operating_margin_ttm'), '%')}\n"
         + _format_eps_estimates(raw)
         + insider_section
+        + _format_adr_premium(raw)
     )
 
 _hold_cache: TTLCache = TTLCache(maxsize=100, ttl=3600)
