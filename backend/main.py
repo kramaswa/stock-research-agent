@@ -222,8 +222,9 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
                 )
                 if adr_home:
                     _h = adr_home
+                    _hint = raw_data.get("current_price")
                     adr_prem = await loop.run_in_executor(
-                        None, lambda: calculate_adr_premium(_t, _h)
+                        None, lambda: calculate_adr_premium(_t, _h, us_price_hint=_hint)
                     )
                     if adr_prem:
                         raw_data["adr_premium"] = adr_prem

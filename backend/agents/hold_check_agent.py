@@ -33,42 +33,65 @@ def _format_adr_premium(raw: dict[str, Any]) -> str:
     adr = raw.get("adr_premium")
     if not adr:
         return ""
-    p = adr["premium_pct"]
-    direction = "premium" if p >= 0 else "discount"
-    sign = "+" if p >= 0 else ""
-    ratio = adr["adr_ratio"]
+
+    p = adr.get("premium_pct")          # None when ADR ratio is unconfirmed
+    ratio = adr.get("adr_ratio")
+    home_per_adr = adr.get("home_per_adr_usd")
+
     section = (
-        f"\n## Ground Truth ADR Premium / Discount (live data — computed at request time)\n"
-        f"This stock is a US-listed ADR of a foreign company. Live pricing vs. home exchange:\n"
+        f"\n## Ground Truth ADR Home Exchange Pricing (live data — computed at request time)\n"
+        f"This stock is a US-listed ADR of a foreign company. Live pricing:\n"
         f"- US ADR ({adr['us_ticker']}): ${adr['us_price']:.2f}\n"
         f"- Home exchange ({adr['home_ticker']} on {adr['home_exchange']}): "
         f"{adr['home_currency']} {adr['home_price']:.2f} "
         f"(≈${adr['home_price_usd']:.4f} USD per share)\n"
-        f"- ADR ratio: 1 US share = {ratio:g} home share{'s' if ratio != 1 else ''}"
-        f" → home equivalent per US share: ${adr['home_per_adr_usd']:.2f}\n"
-        f"- ADR {direction}: {sign}{p:.1f}%\n"
     )
-    if abs(p) > 3:
-        if p > 0:
-            section += (
-                f"\n⚠ VERIFIED LIVE ADR PREMIUM: {sign}{p:.1f}% — use this exact figure, not any other estimate.\n"
-                f"A US investor buying {adr['us_ticker']} today pays {abs(p):.1f}% more than a home-exchange "
-                f"investor buying identical underlying shares.\n"
-                f"Premium compression to parity = ≈{abs(p):.1f}% additional downside from ${adr['us_price']:.2f} "
-                f"→ ~${adr['home_per_adr_usd']:.2f} with NO change in business fundamentals.\n"
-                f"YOU MUST:\n"
-                f"(a) Cite '{sign}{p:.1f}% ADR premium (verified live data)' in Key Risks — not a range, not 'may trade at a premium'.\n"
-                f"(b) Include a standalone Bear Case: 'Premium compression to parity: ≈{abs(p):.1f}% additional downside "
-                f"→ ~${adr['home_per_adr_usd']:.2f} from today's ${adr['us_price']:.2f} US price.'\n"
-                f"(c) In Q4 margin of safety: the verified {abs(p):.1f}% premium is structural overpayment vs. home-exchange "
-                f"investors — factor it in as a hard headwind to margin of safety.\n"
-            )
-        else:
-            section += (
-                f"\n⚠ VERIFIED LIVE ADR DISCOUNT: {sign}{p:.1f}% — use this exact figure.\n"
-                f"A US investor buying {adr['us_ticker']} today pays {abs(p):.1f}% LESS than a home-exchange investor.\n"
-                f"Note this structural advantage in the valuation section.\n"
-            )
+
+    if ratio is not None and home_per_adr is not None and p is not None:
+        direction = "premium" if p >= 0 else "discount"
+        sign = "+" if p >= 0 else ""
+        section += (
+            f"- ADR ratio: 1 US share = {ratio:g} home share{'s' if ratio != 1 else ''}"
+            f" → home equivalent per US share: ${home_per_adr:.2f}\n"
+            f"- ADR {direction}: {sign}{p:.1f}%\n"
+        )
+        if abs(p) > 3:
+            if p > 0:
+                section += (
+                    f"\n⚠ VERIFIED LIVE ADR PREMIUM: {sign}{p:.1f}% — use this exact figure, not any other estimate.\n"
+                    f"A US investor buying {adr['us_ticker']} today pays {abs(p):.1f}% more than a home-exchange "
+                    f"investor buying identical underlying shares.\n"
+                    f"Premium compression to parity = ≈{abs(p):.1f}% additional downside from ${adr['us_price']:.2f} "
+                    f"→ ~${home_per_adr:.2f} with NO change in business fundamentals.\n"
+                    f"YOU MUST:\n"
+                    f"(a) Cite '{sign}{p:.1f}% ADR premium (verified live data)' in Key Risks — not a range.\n"
+                    f"(b) Include a standalone Bear Case: 'Premium compression to parity: ≈{abs(p):.1f}% additional "
+                    f"downside → ~${home_per_adr:.2f} from today's ${adr['us_price']:.2f} US price.'\n"
+                    f"(c) In Q4: the verified {abs(p):.1f}% premium is structural overpayment vs. home-exchange "
+                    f"investors — factor it in as a hard headwind to margin of safety.\n"
+                )
+            else:
+                section += (
+                    f"\n⚠ VERIFIED LIVE ADR DISCOUNT: {sign}{p:.1f}% — use this exact figure.\n"
+                    f"A US investor buying {adr['us_ticker']} today pays {abs(p):.1f}% LESS than a home-exchange investor.\n"
+                    f"Note this structural advantage in the valuation section.\n"
+                )
+    else:
+        # Ratio unconfirmed — show price data so model can reason about it
+        section += (
+            f"- ADR ratio: unconfirmed (DR prospectus not in available data)\n"
+            f"- Exact ADR premium/discount CANNOT be computed without the confirmed ratio.\n"
+            f"\n⚠ PARTIAL LIVE DATA — HOME EXCHANGE PRICE IS VERIFIED, RATIO IS NOT:\n"
+            f"The home exchange price above is live market data. "
+            f"To compute the ADR premium/discount, divide by the ADR ratio (home shares per 1 US share), "
+            f"which is set in the DR prospectus at listing and does not change.\n"
+            f"YOU MUST still:\n"
+            f"(a) Cite the live home exchange price in Key Risks: "
+            f"'{adr[\"home_ticker\"]} trades at {adr[\"home_currency\"]} {adr[\"home_price\"]:.0f} "
+            f"(≈${adr[\"home_price_usd\"]:.2f} USD/share) — ADR ratio unconfirmed, exact premium unknown.'\n"
+            f"(b) Note in Q4 that the exact premium/discount is unquantified due to unconfirmed DR ratio, "
+            f"but the structural risk of premium compression exists regardless.\n"
+        )
     return section
 
 
