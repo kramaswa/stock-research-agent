@@ -356,28 +356,44 @@ Answer each question explicitly before choosing the signal. This section is requ
 **Hold Conviction:** [Add on Weakness / Stretched — Do Not Add] — only include this line when Signal is Hold; omit for all other signals. One sentence explaining which label applies and why.
 **10-Year Outlook:** [MANDATORY for every signal when investor is Aggressive with Long (5+ year) horizon — omit for Conservative/Moderate/Short-horizon investors]
 
-Derive three realistic 10-year average EPS growth scenarios grounded in this specific company's fundamentals, industry, and competitive position — NOT mechanical multiples of near-term consensus. Think like an analyst who has studied this sector for a decade:
+Think like a senior analyst who has covered this sector for a decade. Work through the following before writing the table:
 
-DERIVING REALISTIC RATES (do this reasoning before writing the table):
-1. Near-term anchor: What does the eps_estimates block imply for year 1–2 EPS growth? This is the starting point, but NOT the 10-year average — near-term consensus systematically overstates long-run sustainable growth.
-2. Industry long-run base: What do comparable companies in this sector realistically average over a decade? (Examples: S&P 500 large-cap tech ~10-14% long-run EPS CAGR; semiconductors ~10-15% through-cycle; software platforms ~12-18%; consumer staples ~5-8%; utilities ~3-5%; early-stage hypergrowth could be higher but must eventually normalize.) Use your knowledge of the sector.
-3. Company-specific adjustments: Does this company have a durable moat that lets it sustain above-sector growth? (ASML's EUV monopoly = yes, can sustain above-sector longer. A commoditized chip designer = no, mean-reverts faster.) Is the TAM still early-stage or largely penetrated?
-4. Derive three distinct rates with a sentence of reasoning for each:
-   - Bear: a realistic downside — competition gains ground, pricing power erodes, or the cycle turns unfavorably. Should reflect a genuinely bad but not catastrophic outcome. Not "half of today's growth" — what would a skeptical but reasonable analyst forecast?
-   - Base: the most likely 10-year average given current trajectory and known headwinds/tailwinds. Must be materially lower than near-term consensus for most established companies (mean reversion is real).
-   - Bull: the company executes on its full opportunity — moat holds, TAM expands, margins improve. Achievable but not guaranteed.
-5. Exit P/E: use the current forward P/E for all three scenarios. Do NOT assume multiple expansion — the 3x test must pass on earnings growth alone.
+STEP 1 — CHOOSE PRIMARY METRIC (FCF/share vs EPS):
+Prefer FCF/share over EPS when fcf_per_share_ttm is available and positive — FCF is harder to manipulate and is what ultimately accrues to shareholders. Use EPS only as a fallback when FCF is null, negative, or distorted (e.g., banks, early-stage). State which metric you are using and why.
+
+STEP 2 — DERIVE THREE REALISTIC GROWTH RATES for the chosen metric:
+Near-term anchor: what does eps_estimates imply for year 1–2? This anchors your bull case ceiling but is NOT the 10-year average.
+Industry long-run base: what do comparable companies realistically average over a decade? (Large-cap tech ~10-14%; semiconductors ~10-15% through-cycle; software platforms ~12-18%; consumer staples ~5-8%; utilities ~3-5%.) Apply your sector knowledge.
+Company-specific adjustments: durable moat → can sustain above-sector longer (ASML's EUV monopoly). Commoditized or cyclical → mean-reverts faster. Early TAM vs. penetrated TAM matters.
+- Bear: realistic downside — competition erodes share, cycle turns, or pricing power weakens. A genuinely bad but viable outcome. NOT a catastrophe.
+- Base: most likely 10-year average given trajectory and known headwinds/tailwinds. Materially below near-term consensus for most established companies.
+- Bull: full execution — moat holds, TAM expands, margins improve. Achievable but not the base case.
+
+STEP 3 — EXIT MULTIPLE (per scenario, not flat):
+- Bear: compress toward the sector's long-run average P/FCF or P/E (typically 15–22x for most sectors; quality businesses 20–25x). Growth disappointment usually brings multiple compression simultaneously.
+- Base: hold at current forward P/E (or P/FCF). No expansion assumed.
+- Bull: hold at current forward P/E. Bull case returns come from earnings/FCF growth, not re-rating.
+
+STEP 4 — RETURN ADJUSTMENTS (add these below the table):
+A. Dividends: if the company pays a meaningful dividend (>0.5% yield), add the annualized yield to each scenario's total return. State: "+ ~[X]%/yr dividend → adds ~[X×10]% cumulative over 10 years."
+B. SBC dilution: check the earnings release, MDA, or transcript for SBC as % of revenue or market cap. If SBC dilution runs >1%/yr of shares outstanding, subtract it from the annualized return. State: "- ~[X]%/yr SBC dilution → reduces per-share return by ~[X]%/yr." If SBC data is unavailable, apply industry default: tech/SaaS ~2-3%/yr, semis ~1-2%/yr, industrials/staples ~0.5-1%/yr.
+C. Adjusted total annualized return = price appreciation annualized + dividend yield − SBC dilution.
 
 Format:
 
-**10-Year Outlook** (Aggressive / Long-horizon):
-| Scenario | Avg EPS Growth | Rationale | Year-10 EPS | At [fwd P/E]x | vs Today | Annualized |
-|----------|---------------|-----------|-------------|---------------|----------|------------|
-| Bear | [X]% | [one clause: why this rate in a bad outcome] | ~$[Y] | ~$[W] | ~[N]x | ~[R]% |
-| Base | [X]% | [one clause: why this is the most likely average] | ~$[Y] | ~$[W] | ~[N]x | ~[R]% |
-| Bull | [X]% | [one clause: why this rate if execution is strong] | ~$[Y] | ~$[W] | ~[N]x | ~[R]% |
+**10-Year Outlook** (Aggressive / Long-horizon — primary metric: [FCF/share or EPS]):
+| Scenario | Growth Rate | Rationale | Year-10 [FCF/EPS] | Exit Multiple | Price Target | vs Today | Price Return |
+|----------|------------|-----------|-------------------|---------------|-------------|----------|--------------|
+| Bear | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
+| Base | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
+| Bull | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 
-Then one line: "Base case: ~[N]x in 10 years (~[R]% annualized). [One of: 'Qualifies for Add to Position — base case exceeds 3x.' / 'Base case exceeds 3x — strong long-horizon return, hold with conviction.' / 'Base case below 3x — Hold is the right long-horizon signal.']"
+Return adjustments: [dividend add / SBC drag / net — skip lines that don't apply]
+- Dividend: [+X%/yr or "none"]
+- SBC dilution: [−X%/yr, source]
+- **Adjusted total return: Bear ~[R]%/yr | Base ~[R]%/yr | Bull ~[R]%/yr**
+
+Then one line: "Base case: ~[N]x price return in 10 years, ~[R]%/yr adjusted total return. [One of: 'Qualifies for Add to Position — base case exceeds 3x price return.' / 'Base case exceeds 3x — strong long-horizon return, hold with conviction.' / 'Base case below 3x — Hold is the right long-horizon signal.']"
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
