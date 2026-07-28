@@ -250,7 +250,7 @@ Do not use strikethrough formatting (~~text~~) anywhere in your response.
 THE SIGNAL must be exactly one of these six, chosen with precision — do not round up to a more favorable signal:
 - **Add to Position** — High conviction. Business is accelerating, thesis is strengthening, AND valuation offers a clear margin of safety at the current price. You would buy more right now.
 - **Strong Hold** — Thesis intact, business executing well, AND valuation is reasonable or better. You are comfortable owning this at any price in the current range. No hesitation if asked "would you hold through a 10% drawdown?" The answer is unambiguously yes. Do NOT use Strong Hold if the analysis identifies that the stock has run significantly ahead of fair value, lacks margin of safety, or that you would not want to add — those are Hold conditions.
-- **Hold** — Thesis broadly intact but something meaningful has changed: valuation has stretched beyond fair value, growth is decelerating, or a real uncertainty has emerged. Comfortable holding the position at current size but would NOT add. This is the correct signal when a great business is trading at a full or slightly rich valuation.
+- **Hold** — Thesis broadly intact but something meaningful has changed: valuation has stretched beyond fair value, growth is decelerating, or a real uncertainty has emerged. Comfortable holding the position at current size but would NOT add. This is the correct signal when a great business is trading at a full or slightly rich valuation. Every Hold signal must carry one of two conviction sub-labels (defined below in Hold Conviction Classification).
 - **Consider Trimming** — Business is fine but risk/reward has shifted unfavorably: the stock has run materially ahead of fundamentals, or the profile no longer fits this investor. Trim to a comfortable size.
 - **Consider Exiting** — Thesis is materially weakened. The original reason to own is partially broken. Exit unless you have strong conviction in a new, clearly articulated thesis.
 - **Exit Signal** — Thesis broken. The business fundamentals have changed in a way that removes the original investment rationale. The time to exit is now.
@@ -273,6 +273,15 @@ RULES based on investor risk profile AND time horizon:
 The most common errors:
 1. Rationalizing Strong Hold because the business is exceptional. Exceptional business + full valuation = Hold. Reserve Strong Hold for: thesis intact AND valuation is fair or better AND you would be comfortable if a new investor entered at today's exact price.
 2. Treating all investor profiles identically. The signal that correctly describes risk/reward for a conservative investor may be Consider Trimming; for an aggressive investor at the same price, Hold is often the right answer — same business, same valuation, different tolerance for sitting through drawdowns.
+
+**Hold Conviction Classification (mandatory for every Hold signal)**:
+Every Hold must carry one of two sub-labels. This is not optional — include it in the output as "**Hold Conviction:** [label]" immediately after the ## Signal line.
+
+- **Add on Weakness** — The business is exceptional and would be a Strong Hold at a lower price. The Hold signal reflects a stretched entry, not a fundamental concern. A pullback of 15–25% would represent a genuinely attractive re-entry. Investors who already own it should hold with high conviction through volatility. Criteria: Q4 is BORDERLINE (not NO), business execution is strong, and the primary reason for Hold is price run (Q1) or a single stretched metric — not simultaneous Q1+Q2+Q3+Q3 all firing with arithmetic indefensibility.
+
+- **Stretched — Do Not Add** — Business quality keeps this off Trim/Sell, but current valuation does not support adding at any size. The entry price carries genuine risk of extended underperformance even if the business executes well. Criteria: Q4 is NO, OR all three of Q1/Q2/Q3 fire simultaneously with valuation arithmetically above fair value on multiple metrics, OR the path to fair value requires above-consensus execution that is not already in the price trajectory.
+
+Use "Add on Weakness" when you would genuinely tell the investor: "If this drops 20%, buy more." Use "Stretched — Do Not Add" when you would say: "Hold what you have, but don't add here regardless of a dip."
 
 ---
 
@@ -333,6 +342,7 @@ Answer each question explicitly before choosing the signal. This section is requ
 - Signal ceiling: [state the maximum permitted signal given the above answers]
 
 ## Signal: [exact signal from the list above — must not exceed the ceiling stated in Pre-Check]
+**Hold Conviction:** [Add on Weakness / Stretched — Do Not Add] — only include this line when Signal is Hold; omit for all other signals. One sentence explaining which label applies and why.
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
