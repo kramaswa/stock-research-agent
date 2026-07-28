@@ -354,7 +354,26 @@ Answer each question explicitly before choosing the signal. This section is requ
 
 ## Signal: [exact signal from the list above — must not exceed the ceiling stated in Pre-Check]
 **Hold Conviction:** [Add on Weakness / Stretched — Do Not Add] — only include this line when Signal is Hold; omit for all other signals. One sentence explaining which label applies and why.
-**10-Year Outlook:** [MANDATORY for every signal when investor is Aggressive with Long (5+ year) horizon — omit for Conservative/Moderate/Short-horizon investors] — Always include this line regardless of the signal. Show the explicit 10-year compounding math: "At [X]% annual EPS growth ([source: consensus eps_estimates / management guidance / stated assumption]), year-10 EPS reaches ~$[Y]. At [Z]x exit P/E (held at or below current forward P/E of [fwd P/E]x), the stock reaches ~$[W] — approximately [N]x today's $[current_price] ([R]% annualized)." Then state one of: (a) "This stock can potentially [N]X in 10 years at consensus growth — qualifies for Add to Position under the Long-Horizon Compounder path." [only if signal is actually Add to Position] (b) "This stock can potentially [N]X in 10 years at consensus growth — a strong long-horizon return that supports holding with conviction." [if N ≥ 3 but signal is Strong Hold or Hold] (c) "At consensus growth, the stock reaches approximately [N]x in 10 years — below the 3x threshold for long-horizon Add to Position." [if N < 3] Use current_price from the context and EPS from the eps_estimates block. If eps_estimates are unavailable, use revenue growth and margin trajectory to estimate earnings power.
+**10-Year Outlook:** [MANDATORY for every signal when investor is Aggressive with Long (5+ year) horizon — omit for Conservative/Moderate/Short-horizon investors]
+
+Show a 3-scenario table using mean-reverted growth rates derived as follows:
+- Start from the consensus near-term EPS growth rate (from eps_estimates, or the implied YoY growth from the estimates block). Call this G.
+- Bear: max(4%, G × 0.40), capped at 10%. Represents competition intensifying, market maturing, or macro headwinds — a viable but slowing business.
+- Base: G × 0.60. Reflects the well-documented tendency for above-average growth rates to moderate over a decade. This is the most likely 10-year average.
+- Bull: G × 0.85. The company largely sustains momentum due to moat, secular tailwinds, or expanding TAM.
+- Exit P/E: use the current forward P/E for all three scenarios (do NOT assume multiple expansion — returns must come from earnings growth, not re-rating).
+- If eps_estimates are unavailable, derive G from revenue growth + margin trajectory and state the assumption explicitly.
+
+Format the output as:
+
+10-Year Outlook (Aggressive / Long-horizon — consensus near-term EPS growth: G%):
+| Scenario | Avg EPS Growth | Year-10 EPS | At [fwd P/E]x P/E | vs Today ($[price]) | Annualized |
+|----------|---------------|-------------|-------------------|---------------------|------------|
+| Bear     | [G×0.4]%      | ~$[Y]       | ~$[W]             | ~[N]x               | ~[R]%      |
+| Base     | [G×0.6]%      | ~$[Y]       | ~$[W]             | ~[N]x               | ~[R]%      |
+| Bull     | [G×0.85]%     | ~$[Y]       | ~$[W]             | ~[N]x               | ~[R]%      |
+
+Then one line: "Base case: [N]x in 10 years ([R]% annualized). [One of: 'Qualifies for Add to Position — base case exceeds 3x.' / 'Base case exceeds 3x — strong long-horizon return, hold with conviction.' / 'Base case below 3x threshold — Hold is the appropriate long-horizon signal.']"
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
