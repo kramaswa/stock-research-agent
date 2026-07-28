@@ -78,6 +78,10 @@ def _format_adr_premium(raw: dict[str, Any]) -> str:
                 )
     else:
         # Ratio unconfirmed — show price data so model can reason about it
+        _ht = adr["home_ticker"]
+        _hc = adr["home_currency"]
+        _hp = adr["home_price"]
+        _hp_usd = adr["home_price_usd"]
         section += (
             f"- ADR ratio: unconfirmed (DR prospectus not in available data)\n"
             f"- Exact ADR premium/discount CANNOT be computed without the confirmed ratio.\n"
@@ -87,8 +91,8 @@ def _format_adr_premium(raw: dict[str, Any]) -> str:
             f"which is set in the DR prospectus at listing and does not change.\n"
             f"YOU MUST still:\n"
             f"(a) Cite the live home exchange price in Key Risks: "
-            f"'{adr[\"home_ticker\"]} trades at {adr[\"home_currency\"]} {adr[\"home_price\"]:.0f} "
-            f"(≈${adr[\"home_price_usd\"]:.2f} USD/share) — ADR ratio unconfirmed, exact premium unknown.'\n"
+            f"'{_ht} trades at {_hc} {_hp:.0f} "
+            f"(approx ${_hp_usd:.2f} USD/share) — ADR ratio unconfirmed, exact premium unknown.'\n"
             f"(b) Note in Q4 that the exact premium/discount is unquantified due to unconfirmed DR ratio, "
             f"but the structural risk of premium compression exists regardless.\n"
         )
