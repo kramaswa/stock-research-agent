@@ -361,6 +361,11 @@ Think like a senior analyst who has covered this sector for a decade. Work throu
 STEP 1 — CHOOSE PRIMARY METRIC (FCF/share vs EPS):
 Prefer FCF/share over EPS when fcf_per_share_ttm is available and positive — FCF is harder to manipulate and is what ultimately accrues to shareholders. Use EPS only as a fallback when FCF is null, negative, or distorted (e.g., banks, early-stage). State which metric you are using and why.
 
+**Starting base — forward vs TTM (critical for accuracy):**
+When EPS is the primary metric, use the consensus FORWARD EPS from the eps_estimates block as Year 0 of the projection — NOT TTM EPS — unless the business is at a cyclical earnings peak. The reason: exit multiples are forward P/E (priced against next year's earnings). Starting from TTM EPS with a forward P/E exit silently compresses the multiple across the projection horizon, systematically understating returns for growing companies. For example, if TTM EPS is $14.79 and forward EPS is $18.07 on a 21x forward P/E, growing from $14.79 implicitly assumes the P/E compresses from ~26x TTM to 21x — that's a drag that has nothing to do with valuation and everything to do with an inconsistent starting point.
+
+EXCEPTION — use normalized through-cycle EPS instead of forward EPS when: (a) the business is at a demonstrable cyclical earnings peak (e.g., memory semis in an HBM upcycle, commodity producers at commodity price peak, industrials at cycle top), and (b) forward EPS substantially exceeds what the business earns through a full cycle. For cyclical peak situations, anchoring to inflated forward EPS overstates the long-run base. State explicitly which approach you are using and why.
+
 STEP 2 — DERIVE THREE REALISTIC GROWTH RATES for the chosen metric:
 Near-term anchor: what does eps_estimates imply for year 1–2? This anchors your bull case ceiling but is NOT the 10-year average.
 Industry long-run base: what do comparable companies realistically average over a decade? (Large-cap tech ~10-14%; semiconductors ~10-15% through-cycle; software platforms ~12-18%; consumer staples ~5-8%; utilities ~3-5%.) Apply your sector knowledge.
