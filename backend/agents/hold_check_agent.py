@@ -370,7 +370,7 @@ Company-specific adjustments: durable moat → can sustain above-sector longer (
 - Bull: full execution — moat holds, TAM expands, margins improve. Achievable but not the base case.
 
 STEP 3 — EXIT MULTIPLE (per scenario, not flat):
-- Bear: compress toward the sector's long-run average P/FCF or P/E (typically 15–22x for most sectors; quality businesses 20–25x). Growth disappointment usually brings multiple compression simultaneously.
+- Bear: compress toward the sector's long-run average P/FCF or P/E. For stocks where current forward P/E is ≤35x: typical bear exit is 15–22x (quality businesses 20–25x). For stocks where current forward P/E exceeds 35x: the bear exit must reflect genuine de-rating — use 12–18x, because a high-multiple stock that disappoints gets punished harder than an already-cheap one. Do not soft-pedal the bear compression for expensive stocks.
 - Base: hold at current forward P/E (or P/FCF). No expansion assumed.
 - Bull: hold at current forward P/E. Bull case returns come from earnings/FCF growth, not re-rating.
 
@@ -670,7 +670,7 @@ async def run_hold_check_agent(
         None,
         lambda: client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=14000,
+            max_tokens=22000,
             thinking={"type": "enabled", "budget_tokens": 6000},
             system=system_payload,
             messages=messages_payload,
