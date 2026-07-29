@@ -369,10 +369,32 @@ Company-specific adjustments: durable moat → can sustain above-sector longer (
 - Base: most likely 10-year average given trajectory and known headwinds/tailwinds. Materially below near-term consensus for most established companies.
 - Bull: full execution — moat holds, TAM expands, margins improve. Achievable but not the base case.
 
-STEP 3 — EXIT MULTIPLE (per scenario, not flat):
-- Bear: compress toward the sector's long-run average P/FCF or P/E. For stocks where current forward P/E is ≤35x: typical bear exit is 15–22x (quality businesses 20–25x). For stocks where current forward P/E exceeds 35x: the bear exit must reflect genuine de-rating — use 12–18x, because a high-multiple stock that disappoints gets punished harder than an already-cheap one. Do not soft-pedal the bear compression for expensive stocks.
-- Base: hold at current forward P/E (or P/FCF). No expansion assumed.
-- Bull: hold at current forward P/E. Bull case returns come from earnings/FCF growth, not re-rating.
+STEP 3 — EXIT MULTIPLE (per scenario, using sector long-run medians):
+Exit multiples reflect where the market is likely to value this business over a 10-year horizon, not just where it trades today. Use the sector long-run median as the anchor — this captures mean reversion in both directions (expensive stocks compress, cheap stocks normalize).
+
+**Sector long-run median P/E (base case anchor):**
+| Sector | Median P/E |
+|--------|-----------|
+| Platform / marketplace (Uber, Airbnb, Booking, DoorDash) | ~26x |
+| SaaS / cloud software | ~30x |
+| Consumer internet / social (Meta, Alphabet) | ~24x |
+| Financial platforms / networks (Visa, Mastercard) | ~30x |
+| Semiconductor equipment (ASML, AMAT, KLAC) | ~24x |
+| Fabless semis (NVDA, AMD, Broadcom, QCOM) | ~24x |
+| Integrated device / diversified semis (Intel, TI) | ~18x |
+| Memory / commodity semis (Micron, SK Hynix) | ~16x |
+| Healthcare / pharma | ~22x |
+| Industrials / defense | ~18x |
+| Consumer staples | ~20x |
+| Consumer discretionary | ~20x |
+| Banks / fintech lending | ~14x |
+| Telecom / utilities | ~14x |
+| Energy / commodities | ~13x |
+
+Per-scenario rules:
+- **Bear**: compress to 40–60% of sector median. For stocks with current forward P/E above 35x, use the lower end (40–50% of median) — high-multiple stocks that disappoint get punished harder.
+- **Base**: use the sector long-run median P/E from the table above. This is mean reversion — expensive stocks compress toward it, cheap stocks normalize upward toward it. Do not use the current forward P/E for the base case.
+- **Bull**: use `max(current forward P/E, sector median)`. For stocks above the median, the bull case holds the current elevated multiple (no further expansion). For stocks below the median, the bull case normalizes up to the sector median — full execution earns a fair multiple.
 
 STEP 4 — RETURN ADJUSTMENTS (add these below the table):
 A. Dividends: if the company pays a meaningful dividend (>0.5% yield), add the annualized yield to each scenario's total return. State: "+ ~[X]%/yr dividend → adds ~[X×10]% cumulative over 10 years."
@@ -391,7 +413,9 @@ Before writing the table, determine the dividend yield and SBC dilution rate —
 | Base | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 | Bull | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 
-**Adj. Return column** = adjusted total return multiple for that scenario, directly comparable to the S&P 500 row's 2.85x. Compute it as: (1 + (price_return_annualized + dividend_yield − sbc_dilution_rate) / 100)^10. Example: price appreciation 12.2%/yr + dividend 1.7%/yr − SBC 0.8%/yr = 13.1%/yr → 1.131^10 = 3.41x. Do this calculation per scenario — bear, base, and bull will each have a different price appreciation rate but the same dividend yield and SBC rate. Round to two decimal places. **Price %/yr** is the price-only annualized return (no dividends, no SBC) — kept as a reference so the reader can see how much of the total return comes from price appreciation vs. dividend income.
+**Adj. Return column** = adjusted total return multiple for that scenario, directly comparable to the S&P 500 row's 2.85x. Compute it as: (1 + (price_return_annualized + dividend_yield − sbc_dilution_rate) / 100)^10. Example: price appreciation 12.2%/yr + dividend 1.7%/yr − SBC 0.8%/yr = 13.1%/yr → 1.131^10 = 3.41x. Do this calculation per scenario — bear, base, and bull will each have a different price appreciation rate but the same dividend yield and SBC rate. Round to two decimal places.
+
+**Price %/yr** is the price-only annualized return — computed as: `(Price Target / current_price)^(1/10) − 1`, where `current_price` is the actual current stock price from the Entry Context (the same value for ALL three scenarios — do not derive a different implied price per row). Verify the sign: if Price Target > current_price the result is positive; if Price Target < current_price it is negative. A calculation error here (e.g., showing −4.1%/yr when the price target is above today's price) means you used the wrong denominator — recheck using the current price from the data.
 
 Return adjustments (shown below the table for transparency):
 - Dividend: [+X%/yr or "none"] — source: [earnings release / quant data / industry default]
