@@ -384,7 +384,7 @@ Format:
 **10-Year Outlook** (Aggressive / Long-horizon — primary metric: [FCF/share or EPS]):
 | Scenario | Growth Rate | Rationale | Year-10 [FCF/EPS] | Exit Multiple | Price Target | vs Today | Price Return |
 |----------|------------|-----------|-------------------|---------------|-------------|----------|--------------|
-| 📈 S&P 500 baseline | ~10%/yr | Historical index average — the hurdle this stock must beat | — | — | — | ~2.6x | ~10%/yr |
+| 📈 S&P 500 baseline | ~11%/yr | Long-run total return avg (price + dividends); recent decade ~13%/yr (~3.4x) | — | — | — | ~2.85x | ~11%/yr |
 | Bear | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 | Base | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 | Bull | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
@@ -394,7 +394,7 @@ Return adjustments: [dividend add / SBC drag / net — skip lines that don't app
 - SBC dilution: [−X%/yr, source]
 - **Adjusted total return: Bear ~[R]%/yr | Base ~[R]%/yr | Bull ~[R]%/yr**
 
-Then one line: "Base case: ~[N]x in 10 years vs S&P 500 baseline of ~2.6x (~[R]%/yr adjusted). [One of: 'Beats the index and exceeds 3x — qualifies for Add to Position.' / 'Beats the index and exceeds 3x — strong long-horizon return, hold with conviction.' / 'Beats the index but below 3x — Strong Hold territory.' / 'Roughly matches the index — Hold; consider whether concentration risk is worth it vs. an index fund.' / 'Below index baseline — Hold only on business quality grounds; index fund likely outperforms.']"
+Then one line: "Base case: ~[N]x in 10 years vs S&P 500 baseline of ~2.85x (~11%/yr long-run total return avg; recent decade was ~3.4x at ~13%/yr). [One of: 'Beats the index and exceeds 3x — qualifies for Add to Position.' / 'Beats the index and exceeds 3x — strong long-horizon return, hold with conviction.' / 'Beats the index but below 3x — Strong Hold territory.' / 'Roughly matches the index — Hold; consider whether concentration risk is worth it vs. an index fund.' / 'Below index baseline — Hold only on business quality grounds; index fund likely outperforms.']"
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
