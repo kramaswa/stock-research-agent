@@ -666,16 +666,18 @@ async def run_hold_check_agent(
     system_payload = [{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}]
     messages_payload = [{"role": "user", "content": user_message}]
     loop = asyncio.get_event_loop()
-    response = await loop.run_in_executor(
-        None,
-        lambda: client.messages.create(
+
+    def _stream_to_message():
+        with client.messages.stream(
             model="claude-sonnet-4-6",
             max_tokens=22000,
             thinking={"type": "enabled", "budget_tokens": 6000},
             system=system_payload,
             messages=messages_payload,
-        ),
-    )
+        ) as stream:
+            return stream.get_final_message()
+
+    response = await loop.run_in_executor(None, _stream_to_message)
 
     for block in response.content:
         if block.type == "text":
