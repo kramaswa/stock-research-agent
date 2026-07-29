@@ -369,6 +369,8 @@ Company-specific adjustments: durable moat → can sustain above-sector longer (
 - Base: most likely 10-year average given trajectory and known headwinds/tailwinds. Materially below near-term consensus for most established companies.
 - Bull: full execution — moat holds, TAM expands, margins improve. Achievable but not the base case.
 
+**CRITICAL — growth rates and exit multiples are independent variables. Do NOT lower the base growth rate simply because the exit multiple is compressing toward the sector median. The exit multiple reflects what valuation the market assigns; the growth rate reflects what the business earns. A world-class business that mean-reverts to a sector-average multiple can still grow earnings at above-sector rates. For businesses with demonstrated pricing power, near-monopoly positions, or structural AI capex tailwinds (e.g., TSMC, ASML), the base case growth rate should reflect those company-specific advantages — not be dragged down by the sector average just because the exit multiple is anchored there.**
+
 STEP 3 — EXIT MULTIPLE (per scenario, using sector long-run medians):
 Exit multiples reflect where the market is likely to value this business over a 10-year horizon, not just where it trades today. Use the sector long-run median as the anchor — this captures mean reversion in both directions (expensive stocks compress, cheap stocks normalize).
 
