@@ -381,20 +381,24 @@ C. Adjusted total annualized return = price appreciation annualized + dividend y
 
 Format:
 
+Before writing the table, determine the dividend yield and SBC dilution rate — you will need them to fill in the Adj. Return column for each row.
+
 **10-Year Outlook** (Aggressive / Long-horizon — primary metric: [FCF/share or EPS]):
-| Scenario | Growth Rate | Rationale | Year-10 [FCF/EPS] | Exit Multiple | Price Target | vs Today | Price Return |
-|----------|------------|-----------|-------------------|---------------|-------------|----------|--------------|
+| Scenario | Growth Rate | Rationale | Year-10 [FCF/EPS] | Exit Multiple | Price Target | Adj. Return | Price %/yr |
+|----------|------------|-----------|-------------------|---------------|-------------|-------------|------------|
 | 📈 S&P 500 baseline | ~11%/yr | Long-run total return avg (price + dividends); recent decade ~13%/yr (~3.4x) | — | — | — | ~2.85x | ~11%/yr |
 | Bear | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 | Base | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 | Bull | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 
-Return adjustments: [dividend add / SBC drag / net — skip lines that don't apply]
-- Dividend: [+X%/yr or "none"]
-- SBC dilution: [−X%/yr, source]
-- **Adjusted total return: Bear ~[R]%/yr | Base ~[R]%/yr | Bull ~[R]%/yr**
+**Adj. Return column** = adjusted total return multiple for that scenario, directly comparable to the S&P 500 row's 2.85x. Compute it as: (1 + (price_return_annualized + dividend_yield − sbc_dilution_rate) / 100)^10. Example: price appreciation 12.2%/yr + dividend 1.7%/yr − SBC 0.8%/yr = 13.1%/yr → 1.131^10 = 3.41x. Do this calculation per scenario — bear, base, and bull will each have a different price appreciation rate but the same dividend yield and SBC rate. Round to two decimal places. **Price %/yr** is the price-only annualized return (no dividends, no SBC) — kept as a reference so the reader can see how much of the total return comes from price appreciation vs. dividend income.
 
-Then one line using the ADJUSTED total return (not price-only): take the base-case annualized adjusted total return from the return adjustments line above, compound it for 10 years (e.g., 1.13^10 = 3.4x), and use THAT as [N]x. Do not use the raw price-return multiple from the table — dividends are real return and must be included in the comparison. Format: "Adjusted total return: ~[N]x in 10 years (price + dividends − SBC) vs S&P 500 baseline of ~2.85x (~11%/yr long-run total return avg; recent decade was ~3.4x at ~13%/yr). [One of: 'Beats the index and exceeds 3x — qualifies for Add to Position.' / 'Beats the index and exceeds 3x — strong long-horizon return, hold with conviction.' / 'Beats the index but below 3x — Strong Hold territory.' / 'Roughly matches the index — Hold; consider whether concentration risk is worth it vs. an index fund.' / 'Below index baseline — Hold only on business quality grounds; index fund likely outperforms.']"
+Return adjustments (shown below the table for transparency):
+- Dividend: [+X%/yr or "none"] — source: [earnings release / quant data / industry default]
+- SBC dilution: [−X%/yr] — source: [earnings release / industry default: tech/SaaS ~2-3%/yr, semis ~1-2%/yr, industrials ~0.5-1%/yr]
+- These adjustments are already embedded in the Adj. Return column above.
+
+Then one line: "Base case Adj. Return: ~[N]x in 10 years vs S&P 500 baseline of ~2.85x (~11%/yr long-run total return avg; recent decade was ~3.4x at ~13%/yr). [One of: 'Beats the index and exceeds 3x — qualifies for Add to Position.' / 'Beats the index and exceeds 3x — strong long-horizon return, hold with conviction.' / 'Beats the index but below 3x — Strong Hold territory.' / 'Roughly matches the index — Hold; consider whether concentration risk is worth it vs. an index fund.' / 'Below index baseline — Hold only on business quality grounds; index fund likely outperforms.']"
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
