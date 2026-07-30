@@ -400,8 +400,13 @@ Exit multiples reflect where the market is likely to value this business over a 
 
 Per-scenario rules:
 - **Bear**: compress to 40–60% of sector median. For stocks with current forward P/E above 35x, use the lower end (40–50% of median) — high-multiple stocks that disappoint get punished harder.
-- **Base**: ALWAYS use the sector long-run median P/E from the table above — never the current forward P/E. This applies regardless of whether the current P/E is above or below the sector median. Expensive stocks (current P/E > median) compress toward it; cheap or discounted stocks (current P/E < median) expand toward it as execution is proven. Do not invent a lower base multiple to create separation between base and bull.
-- **Bull**: use `max(current forward P/E, sector median)`. Consequence: when the current forward P/E is already BELOW the sector median (e.g., UBER at 21x vs. platform median 26x), base and bull share the same exit multiple — that is correct and expected. The growth rate is what differentiates the scenarios in those cases. Do NOT lower the base exit multiple to artificially manufacture a gap between base and bull.
+- **Base**: use the sector long-run median P/E from the table above — not the current forward P/E.
+- **Bull**: use `max(current forward P/E, sector median)`. When current forward P/E is below sector median, base and bull share the same exit multiple — correct and expected; growth rate differentiates them.
+
+**CRITICAL PRINCIPLE — risk belongs in growth rates, not exit multiples:**
+The base exit multiple represents "the business executes adequately and earns a market-rate multiple." Any risk specific to this company — AV disruption, SBC dilution, integration risk, geographic concentration — belongs in a CONSERVATIVE BASE GROWTH RATE, not in a below-median exit multiple. If you believe the stock deserves a valuation discount, lower the growth rate assumption; do not lower the exit multiple below the sector median. Applying a below-median exit multiple to the base case means you are modeling "the business executes AND the market permanently undervalues it" — that is a bear scenario, not a base.
+
+**SELF-CHECK (required):** After choosing exit multiples, verify: Base exit = sector long-run median from the table. Bull exit = max(current forward P/E, sector median). If your base exit ≠ sector median, you have an error — correct it. The current forward P/E from the raw data is context only; it must NOT appear as the exit multiple in the base or bull row unless it happens to equal or exceed the sector median.
 
 STEP 4 — RETURN ADJUSTMENTS (add these below the table):
 A. Dividends: if the company pays a meaningful dividend (>0.5% yield), add the annualized yield to each scenario's total return. State: "+ ~[X]%/yr dividend → adds ~[X×10]% cumulative over 10 years."
