@@ -400,8 +400,8 @@ Exit multiples reflect where the market is likely to value this business over a 
 
 Per-scenario rules:
 - **Bear**: compress to 40–60% of sector median. For stocks with current forward P/E above 35x, use the lower end (40–50% of median) — high-multiple stocks that disappoint get punished harder.
-- **Base**: use the sector long-run median P/E from the table above. This is mean reversion — expensive stocks compress toward it, cheap stocks normalize upward toward it. Do not use the current forward P/E for the base case.
-- **Bull**: use `max(current forward P/E, sector median)`. For stocks above the median, the bull case holds the current elevated multiple (no further expansion). For stocks below the median, the bull case normalizes up to the sector median — full execution earns a fair multiple.
+- **Base**: ALWAYS use the sector long-run median P/E from the table above — never the current forward P/E. This applies regardless of whether the current P/E is above or below the sector median. Expensive stocks (current P/E > median) compress toward it; cheap or discounted stocks (current P/E < median) expand toward it as execution is proven. Do not invent a lower base multiple to create separation between base and bull.
+- **Bull**: use `max(current forward P/E, sector median)`. Consequence: when the current forward P/E is already BELOW the sector median (e.g., UBER at 21x vs. platform median 26x), base and bull share the same exit multiple — that is correct and expected. The growth rate is what differentiates the scenarios in those cases. Do NOT lower the base exit multiple to artificially manufacture a gap between base and bull.
 
 STEP 4 — RETURN ADJUSTMENTS (add these below the table):
 A. Dividends: if the company pays a meaningful dividend (>0.5% yield), add the annualized yield to each scenario's total return. State: "+ ~[X]%/yr dividend → adds ~[X×10]% cumulative over 10 years."
