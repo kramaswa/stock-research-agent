@@ -358,6 +358,23 @@ Answer each question explicitly before choosing the signal. This section is requ
 
 Think like a senior analyst who has covered this sector for a decade. Work through the following before writing the table:
 
+**ETF/FUND DETECTION (check this first before any other step):**
+If the ticker is an ETF, index fund, or closed-end fund — indicated by: no eps_ttm, no forward_pe, no earnings_history in the data, AND/OR the company name contains "ETF", "Fund", "Trust", "Index", "Portfolio", or similar — use the ETF Total Return Framework below instead of the stock EPS/exit multiple framework.
+
+**ETF Total Return Framework:**
+ETFs compound via NAV appreciation + distributions, not EPS × exit multiple. Apply this framework:
+
+1. **Primary metric**: projected total NAV return (price appreciation + dividend/distribution yield). No EPS, no exit multiple, no Year-10 EPS column (show "—").
+2. **Three scenarios**: bear/base/bull total return rates based on the ETF's strategy:
+   - For broad market/factor ETFs: anchor to long-run market return (~10-11%/yr) ± factor premium
+   - For income/covered-call ETFs (JEPI, QYLD): anchor to historical distribution yield + expected NAV appreciation (typically well below market total return)
+   - For sector/thematic ETFs: anchor to sector growth expectations
+3. **Price Target**: current_price × (1 + price_appreciation_only)^10, where price_appreciation = total_return − distribution_yield
+4. **Adj. Return**: (1 + (total_return − expense_ratio) / 100)^10. The ONLY drag for ETFs is the expense ratio — do NOT apply SBC dilution (ETFs do not issue stock-based compensation). Estimate expense ratio from the ETF name/type if not in data: index ETFs ~0.03-0.05%, factor/smart-beta ETFs ~0.15-0.35%, active ETFs ~0.25-0.75%, income/covered-call ETFs ~0.35-0.65%.
+5. **Price %/yr**: (Price Target / current_price)^(1/10) − 1. Use the SAME current_price for all three scenarios.
+6. **No exit multiple column**: show "—" for Exit Multiple in all rows.
+7. **S&P 500 baseline row**: keep as-is (~2.85x, ~11%/yr) for comparison.
+
 STEP 1 — CHOOSE PRIMARY METRIC (FCF/share vs EPS):
 Prefer FCF/share over EPS when fcf_per_share_ttm is available and positive — FCF is harder to manipulate and is what ultimately accrues to shareholders. Use EPS only as a fallback when FCF is null, negative, or distorted (e.g., banks, early-stage). State which metric you are using and why.
 
