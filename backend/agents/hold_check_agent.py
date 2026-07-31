@@ -436,7 +436,9 @@ Return adjustments (shown below the table for transparency):
 - SBC dilution: [−X%/yr] — source: [earnings release / industry default: tech/SaaS ~2-3%/yr, semis ~1-2%/yr, industrials ~0.5-1%/yr]
 - These adjustments are already embedded in the Adj. Return column above.
 
-Then one line: "Base case Adj. Return: ~[N]x in 10 years vs S&P 500 baseline of ~2.85x (~11%/yr long-run total return avg; recent decade was ~3.4x at ~13%/yr). [One of: 'Beats the index and exceeds 3x — qualifies for Add to Position.' / 'Beats the index and exceeds 3x — strong long-horizon return, hold with conviction.' / 'Beats the index but below 3x — Strong Hold territory.' / 'Roughly matches the index — Hold; consider whether concentration risk is worth it vs. an index fund.' / 'Below index baseline — Hold only on business quality grounds; index fund likely outperforms.']"
+Then one line: "Base case Adj. Return: ~[N]x in 10 years vs S&P 500 baseline of ~2.85x (~11%/yr long-run total return avg; recent decade was ~3.4x at ~13%/yr). [One of: 'Beats the index and exceeds 3x — qualifies for Add to Position.' / 'Beats the index but below 3x — Strong Hold territory.' / 'Roughly matches the index — Hold; consider whether concentration risk is worth it vs. an index fund.' / 'Below index baseline — Hold only on business quality grounds; index fund likely outperforms.']"
+
+IMPORTANT: The "Beats the index and exceeds 3x — strong long-horizon return, hold with conviction" option has been removed. A base case adj return above 3x that beats the index IS the definition of a good price at today's entry — you cannot simultaneously say the 10-year return is compelling and that today's price is not good. If the base case exceeds 3x and the investor is Aggressive / Long-horizon, use "qualifies for Add to Position" — the compelling return projection already reflects today's price as the starting point.
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
