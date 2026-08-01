@@ -354,7 +354,7 @@ Answer each question explicitly before choosing the signal. This section is requ
 
 ## Signal: [exact signal from the list above — must not exceed the ceiling stated in Pre-Check]
 **Hold Conviction:** [Add on Weakness / Stretched — Do Not Add] — only include this line when Signal is Hold; omit for all other signals. One sentence explaining which label applies and why.
-**10-Year Outlook:** [MANDATORY for every signal when investor is Aggressive with Long (5+ year) horizon — omit for Conservative/Moderate/Short-horizon investors]
+**10-Year Outlook:** [MANDATORY for every signal when investor is Aggressive or Moderate with Long (5+ year) horizon — omit for Conservative investors and all Short/Medium-horizon investors]
 
 Think like a senior analyst who has covered this sector for a decade. Work through the following before writing the table:
 
@@ -436,7 +436,7 @@ Format:
 
 Before writing the table, determine the dividend yield and SBC dilution rate — you will need them to fill in the Adj. Return column for each row.
 
-**10-Year Outlook** (Aggressive / Long-horizon — primary metric: [FCF/share or EPS]):
+**10-Year Outlook** (Aggressive or Moderate / Long-horizon — primary metric: [FCF/share or EPS]):
 | Scenario | Growth Rate | Rationale | Year-10 [FCF/EPS] | Exit Multiple | Price Target | Adj. Return | Price %/yr |
 |----------|------------|-----------|-------------------|---------------|-------------|-------------|------------|
 | 📈 S&P 500 baseline | ~11%/yr | Long-run total return avg (price + dividends); recent decade ~13%/yr (~3.4x) | — | — | — | ~2.85x | ~11%/yr |
@@ -455,7 +455,7 @@ Return adjustments (shown below the table for transparency):
 
 Then one line: "Base case Adj. Return: ~[N]x in 10 years vs S&P 500 baseline of ~2.85x (~11%/yr long-run total return avg; recent decade was ~3.4x at ~13%/yr). [One of: 'Beats the index and exceeds 3x — qualifies for Add to Position.' / 'Beats the index but below 3x — Strong Hold territory.' / 'Roughly matches the index — Hold; consider whether concentration risk is worth it vs. an index fund.' / 'Below index baseline — Hold only on business quality grounds; index fund likely outperforms.']"
 
-IMPORTANT: The "Beats the index and exceeds 3x — strong long-horizon return, hold with conviction" option has been removed. A base case adj return above 3x that beats the index IS the definition of a good price at today's entry — you cannot simultaneously say the 10-year return is compelling and that today's price is not good. If the base case exceeds 3x and the investor is Aggressive / Long-horizon, use "qualifies for Add to Position" — the compelling return projection already reflects today's price as the starting point.
+IMPORTANT: A base case adj return above 3x that beats the index IS the definition of a good price at today's entry. If the base case exceeds 3x and the investor is Aggressive / Long-horizon, use "qualifies for Add to Position." For Moderate / Long-horizon investors, a base case exceeding 3x supports Strong Hold at minimum — the signal ceiling for moderate investors is Strong Hold unless the valuation offers an unusually clear margin of safety.
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
