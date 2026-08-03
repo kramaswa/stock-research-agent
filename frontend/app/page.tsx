@@ -306,7 +306,8 @@ function HoldCheckHistory({
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Hold Checks</p>
         <button onClick={onClear} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Clear all</button>
       </div>
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-50">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="overflow-y-auto max-h-80 divide-y divide-gray-50">
         {history.map((entry) => {
           const sig = SIGNALS.find((s) => s.key === entry.signalKey);
           return (
@@ -332,6 +333,7 @@ function HoldCheckHistory({
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
@@ -815,7 +817,7 @@ export default function Home() {
               };
               currentEntryIdRef.current = entry.id;
               setHoldHistory((prev) => {
-                const updated = [entry, ...prev.filter((h) => h.id !== entry.id)].slice(0, 20);
+                const updated = [entry, ...prev.filter((h) => h.id !== entry.id)].slice(0, 40);
                 try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
                 return updated;
               });
