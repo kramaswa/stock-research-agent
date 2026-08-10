@@ -407,7 +407,8 @@ Exit multiples reflect where the market is likely to value this business over a 
 | Fabless semis (NVDA, AMD, Broadcom, QCOM) | ~24x |
 | Integrated device / diversified semis (Intel, TI) | ~18x |
 | Memory / commodity semis (Micron, SK Hynix) | ~16x |
-| Healthcare / pharma | ~22x |
+| Medical devices / healthcare platforms (ISRG, IDXX, STE) | ~26x |
+| Healthcare / pharma / biotech | ~22x |
 | Industrials / defense | ~18x |
 | Consumer staples | ~20x |
 | Consumer discretionary | ~20x |
