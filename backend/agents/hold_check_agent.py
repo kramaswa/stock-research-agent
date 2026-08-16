@@ -498,6 +498,8 @@ Before writing the table, determine the dividend yield and SBC dilution rate —
 | Bull | [X]% | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
 | **Expected** | **100%** | — | Probability-weighted avg | — | — | — | **~[N]x** | — |
 
+**CONSISTENCY RULE (mandatory):** The Expected row's Adj. Return must equal the arithmetic in the probability-weighted summary below. Compute the weighted average ONCE — (P_bear × bear_adj) + (P_base × base_adj) + (P_bull × bull_adj) — and use that single number in BOTH the table and the summary. Do not round differently between the two. If they differ, you have an error — correct the table to match the arithmetic.
+
 **Adj. Return column** = adjusted total return multiple for that scenario, directly comparable to the S&P 500 row's 2.85x. Compute it as: (1 + (price_return_annualized + dividend_yield − sbc_dilution_rate) / 100)^10. Example: price appreciation 12.2%/yr + dividend 1.7%/yr − SBC 0.8%/yr = 13.1%/yr → 1.131^10 = 3.41x. Do this calculation per scenario — bear, base, and bull will each have a different price appreciation rate but the same dividend yield and SBC rate. Round to two decimal places.
 
 **Price %/yr** is the price-only annualized return — computed as: `(Price Target / current_price)^(1/10) − 1`, where `current_price` is the actual current stock price from the Entry Context (the same value for ALL three scenarios — do not derive a different implied price per row). Verify the sign: if Price Target > current_price the result is positive; if Price Target < current_price it is negative. A calculation error here (e.g., showing −4.1%/yr when the price target is above today's price) means you used the wrong denominator — recheck using the current price from the data.
