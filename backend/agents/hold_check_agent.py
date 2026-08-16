@@ -389,33 +389,40 @@ ETFs compound via NAV appreciation + distributions, not EPS × exit multiple. Ap
 STEP 1 — CHOOSE PRIMARY METRIC (FCF/share vs EPS):
 Prefer FCF/share over EPS when fcf_per_share_ttm is available and positive — FCF is harder to manipulate and is what ultimately accrues to shareholders. Use EPS only as a fallback when FCF is null, negative, or distorted (e.g., banks, early-stage). State which metric you are using and why.
 
-**Starting base — forward vs TTM (critical for accuracy):**
-When EPS is the primary metric, use the consensus FORWARD EPS from the eps_estimates block as Year 0 of the projection — NOT TTM EPS — unless the business is at a cyclical earnings peak. The reason: exit multiples are forward P/E (priced against next year's earnings). Starting from TTM EPS with a forward P/E exit silently compresses the multiple across the projection horizon, systematically understating returns for growing companies. For example, if TTM EPS is $14.79 and forward EPS is $18.07 on a 21x forward P/E, growing from $14.79 implicitly assumes the P/E compresses from ~26x TTM to 21x — that's a drag that has nothing to do with valuation and everything to do with an inconsistent starting point.
+**GAAP-only rule (mandatory, no exceptions):** When using EPS, always use GAAP EPS — never operating EPS, adjusted EPS, non-GAAP EPS, or any other variant. The exit multiples in this framework (sector median P/E values) are GAAP-based forward P/E ratios. Mixing non-GAAP EPS with a GAAP P/E exit multiple systematically misstates returns and produces inconsistent results across runs. If you write "Op. EPS", "Adj. EPS", or any non-GAAP label in the Year-10 column header or calculations, that is a critical error — redo using GAAP EPS.
 
-EXCEPTION — use normalized through-cycle EPS instead of forward EPS when: (a) the business is at a demonstrable cyclical earnings peak (e.g., memory semis in an HBM upcycle, commodity producers at commodity price peak, industrials at cycle top), and (b) forward EPS substantially exceeds what the business earns through a full cycle. For cyclical peak situations, anchoring to inflated forward EPS overstates the long-run base. State explicitly which approach you are using and why.
+**Starting base — cite the exact Finnhub field (critical for consistency):**
+State which field you are using and its exact value from the Ground Truth block:
+- **First choice**: eps_estimates block → use the first period's eps_avg as Year 0 forward EPS. Cite it as: "Forward EPS: $[X] (Finnhub consensus, [period])."
+- **Fallback if eps_estimates unavailable**: use the pre-computed market-implied EPS from the Ground Truth block (current_price ÷ forward_pe, pre-calculated for you). Cite it as: "Forward EPS: $[X] (market-implied: $[price] ÷ [fwd_pe]x)."
+- **Never**: do not use TTM EPS as Year 0 unless the business is at a cyclical earnings peak AND forward EPS substantially exceeds through-cycle EPS. Never derive EPS by assuming the sector median P/E — always use the actual forward_pe from Finnhub data.
+
+The reason forward EPS matters: exit multiples are forward P/E ratios. Starting from TTM EPS silently compresses the multiple across the horizon, systematically understating returns. For example, TTM EPS $14.79 with forward EPS $18.07 on a 21x forward P/E — starting from TTM implicitly assumes the P/E compresses from ~26x to 21x, a drag unrelated to valuation.
+
+EXCEPTION — use normalized through-cycle EPS when: (a) the business is at a demonstrable cyclical earnings peak (memory semis in HBM upcycle, commodity producers at peak, industrials at cycle top) AND (b) forward EPS substantially exceeds through-cycle EPS. State this explicitly.
 
 STEP 2 — DERIVE THREE REALISTIC GROWTH RATES for the chosen metric:
 
-**A. Near-term consensus anchor (mandatory first step):**
-Before estimating any growth rates, read the eps_estimates and revenue_estimates blocks and compute the implied 1–2 year consensus growth rate:
-- If eps_estimates has two periods: implied near-term EPS growth = (Y2_eps / Y1_eps) − 1. State this explicitly: "Consensus implies ~X% EPS growth Y1→Y2."
-- This near-term rate is your reality anchor. The bull case 10-year CAGR must not materially exceed it — analysts modeling next year are not systematically pessimistic, and year 1-2 is typically the highest-visibility, highest-growth window. If your bull case 10-year CAGR would exceed the consensus near-term rate, you need a compelling reason (TAM still early, major product cycle pending).
-- If eps_estimates is unavailable, use revenue_estimates the same way and note that EPS growth may exceed revenue growth via margin expansion.
+**A. Near-term consensus anchor (mandatory first step — cite exact Finnhub values):**
+Before estimating any growth rates, read the Ground Truth block and state these exact values:
+- "eps_growth_5y (Finnhub): [X]%" — this is your historical CAGR anchor. Do NOT estimate historical growth from training knowledge; use this field.
+- "eps_growth_3y (Finnhub): [Y]%" — cross-check; if 3Y >> 5Y the company is accelerating; if 3Y << 5Y it is decelerating.
+- If eps_estimates has two periods: compute (Y2_eps_avg / Y1_eps_avg) − 1 and state: "Consensus near-term EPS growth: ~Z% (Y1→Y2)." The bull case 10-year CAGR must not materially exceed this near-term consensus rate without explicit justification (e.g., TAM still early, major product cycle pending).
+- If eps_estimates unavailable, use revenue_estimates implied growth as a proxy.
 
-**B. Revenue-scale discounting (mandatory for market_cap > $100B or revenue > $50B):**
-The law of large numbers applies — sustaining high growth rates becomes harder as the revenue base compounds. Apply the following discount to the historical EPS CAGR when setting the BASE case, and cap the bull case accordingly:
+**B. Revenue-scale discounting — single fixed midpoints (mandatory for revenue > $10B):**
+The law of large numbers applies — large revenue bases cannot sustain historical growth rates. Use the EXACT discount below (not a range) based on current revenue from revenue_estimates or market_cap_millions:
 
-| Current revenue scale | Discount to historical CAGR for base | Bull case ceiling |
-|---|---|---|
-| < $10B (small/mid-cap) | 0–2pp — historical CAGR is a reasonable base anchor | Historical CAGR + 2–4pp |
-| $10B–$50B | 2–4pp discount | Historical CAGR + 1–2pp |
-| $50B–$150B | 4–6pp discount | Historical CAGR − 1pp |
-| $150B–$400B | 6–9pp discount; base ceiling ~14% | Historical CAGR − 2pp; bull ceiling ~18–20% |
-| $400B+ | 8–12pp discount; base ceiling ~10–12% | Historical CAGR − 4pp; bull ceiling ~16% |
+| Current revenue scale | Fixed discount to eps_growth_5y | Base case | Bull ceiling |
+|---|---|---|---|
+| < $10B | −1pp | eps_growth_5y − 1pp | eps_growth_5y + 3pp |
+| $10B–$50B | −3pp | eps_growth_5y − 3pp | eps_growth_5y + 1pp |
+| $50B–$150B | −5pp; cap base at 18% | eps_growth_5y − 5pp | eps_growth_5y − 1pp; cap at 22% |
+| $150B–$400B | −7pp; cap base at 14% | eps_growth_5y − 7pp | eps_growth_5y − 3pp; cap at 18% |
+| $400B+ | −10pp; cap base at 11% | eps_growth_5y − 10pp | eps_growth_5y − 5pp; cap at 15% |
 
-Apply the discount that corresponds to current revenue_estimates or market_cap_millions from the raw data. State explicitly: "Revenue ~$[X]B → applying [Y]pp large-base discount to historical [Z]% CAGR → base case [W]%."
-
-Example: Alphabet at ~$350B revenue, historical EPS CAGR ~20% → 7pp discount → base 13%, bull ceiling ~18%.
+State the calculation explicitly: "eps_growth_5y [Z]% − [discount]pp large-base discount = base case [W]%. Bull ceiling: [B]%."
+Example: Alphabet — eps_growth_5y 20%, revenue ~$350B ($150–400B tier) → 20% − 7pp = **13% base**, bull ceiling = 20% − 3pp = **17%**.
 
 **C. Set three scenarios using anchors A and B:**
 Industry long-run base: what do comparable companies realistically average over a decade? (Large-cap tech ~10-14%; semiconductors ~10-15% through-cycle; software platforms ~12-18%; consumer staples ~5-8%; utilities ~3-5%.)
