@@ -9,7 +9,17 @@ from cachetools import TTLCache
 def _format_eps_estimates(raw: dict[str, Any]) -> str:
     estimates = raw.get("eps_estimates") or []
     if not estimates:
-        return "\n## Ground Truth Consensus EPS Estimates\nNot available from provider — do not cite consensus forward EPS figures; use 'market-implied forward EPS' derived from forward P/E if needed.\n"
+        fwd_pe = raw.get("forward_pe")
+        price = raw.get("current_price")
+        if fwd_pe and price and fwd_pe > 0:
+            implied_eps = round(price / fwd_pe, 2)
+            return (
+                f"\n## Ground Truth Consensus EPS Estimates\n"
+                f"Not available from provider. Market-implied forward EPS: "
+                f"${price:.2f} (current price) ÷ {fwd_pe:.2f}x (Finnhub forward P/E) = ${implied_eps:.2f}/share. "
+                f"Use ${implied_eps:.2f} as Year 0 EPS — label it '(market-implied)' in your analysis.\n"
+            )
+        return "\n## Ground Truth Consensus EPS Estimates\nNot available from provider — forward P/E also unavailable; do not cite a specific forward EPS figure.\n"
     lines = []
     for e in estimates[:3]:
         period = e.get("period", "?")
@@ -278,6 +288,7 @@ For an aggressive investor with a 5+ year horizon, "Add to Position" is availabl
 If all 4 conditions are met → signal is **Add to Position**. You MUST include a "**10-Year Compounder Math:**" line immediately after the ## Signal line (format shown in the output template below) stating the stock can potentially 3X+ in 10 years at consensus growth.
 If condition 1 fails (Q4 = firm NO) → ceiling remains Hold regardless of moat quality. **EXCEPTION for Aggressive/Long-horizon investors**: If the 10-year table base case Adj. Return reaches ≥ 3x using a base exit multiple at or below the sector long-run median, this constitutes a BORDERLINE Q4 for Aggressive/Long investors — the pre-check Q4=NO based on stretched near-term multiples does NOT block Add to Position. The reason: the 10-year base case already embeds conservative multiple compression from today's stretched valuation to the sector median over 10 years, which IS the long-horizon margin of safety analysis. A stock compressing from 100x to 30x while delivering 3x+ adj. return is not the same risk as a stock staying at 100x. The pre-check Q4 flag was designed for near-term investors — for a 10-year horizon investor, the 10-year table supersedes it.
 If condition 3 fails (math shows less than 3x at consensus) → ceiling is Strong Hold (if Q4 is BORDERLINE) or Hold.
+If condition 4 fails (3x+ return is primarily multiple-expansion-driven, not earnings compounding) but conditions 1–3 all pass: ceiling is **Strong Hold** for Aggressive/Long investors. The 3x+ math is real but conviction is lower because the return depends on multiple re-rating rather than earnings compounding. Mark this case with "**10-Year Compounder Math (recovery-dependent):**" instead of the standard label. Do NOT apply the crisis discount check separately — condition 4 already captures the same multiple-expansion uncertainty. Applying both condition 4 failure AND the crisis discount to the same stock double-counts the same risk.
 
 **New US ADR listing cap**: If the SEC Earnings Release is a 6-K filing (foreign private issuer) AND the 52-week price return exceeds 150% (from the Ground Truth block), the signal is capped at **Hold**, regardless of investor profile. A 52-week return above 150% for a foreign issuer is a strong indicator that the US-listed ticker is a recently created ADR — the return measures from the IPO/listing price rather than a true 52-week baseline, meaning US investors cannot have captured those returns. The combination of new-ADR status and a re-rated home-exchange stock means: (a) the underlying has already surged, (b) the ADR may carry a premium to home-exchange shares that can compress at any time, and (c) there is no genuine margin of safety for a new US entrant. This cap does NOT apply to established ADRs where the 52-week return is within normal bounds (e.g., TSM, ASML, SHOP) — those follow standard pre-check rules. Do not rationalize past this cap by citing the investor's aggressive profile or long horizon.
 
@@ -393,6 +404,23 @@ Company-specific adjustments: durable moat → can sustain above-sector longer (
 
 **CRITICAL — growth rates and exit multiples are independent variables. Do NOT lower the base growth rate simply because the exit multiple is compressing toward the sector median. The exit multiple reflects what valuation the market assigns; the growth rate reflects what the business earns. A world-class business that mean-reverts to a sector-average multiple can still grow earnings at above-sector rates. For businesses with demonstrated pricing power, near-monopoly positions, or structural AI capex tailwinds (e.g., TSMC, ASML), the base case growth rate should reflect those company-specific advantages — not be dragged down by the sector average just because the exit multiple is anchored there.**
 
+STEP 2b — ASSIGN SCENARIO PROBABILITIES:
+After setting growth rates, assign a probability to each scenario. Probabilities must sum to 100%. Anchor to business quality and competitive position:
+
+| Business type | Bear | Base | Bull |
+|---|---|---|---|
+| Near-monopoly / durable moat (GOOG Search, Visa, MSFT, AAPL) | 5–15% | 50–65% | 25–35% |
+| Strong market leader, moderate competition (MELI, VEEV, MA) | 15–25% | 50–60% | 20–30% |
+| Competitive market or confirmed structural headwinds (TTD, MU, STX) | 25–35% | 45–55% | 15–25% |
+| Hypergrowth / unproven at scale (PLTR, early-stage) | 30–40% | 40–50% | 15–25% |
+
+Rules:
+- Bear ≥ 5% always — no business has zero downside risk
+- Bull ≥ 10% always — otherwise it is not a legitimate scenario
+- Justify each probability in one clause. Do not assert numbers without reasoning.
+- Compute: **Expected adj. return** = (P_bear × bear_adj) + (P_base × base_adj) + (P_bull × bull_adj)
+- Show probabilities in the Probability column of the table and in the Expected row at the bottom.
+
 STEP 3 — EXIT MULTIPLE (per scenario, using sector long-run medians):
 Exit multiples reflect where the market is likely to value this business over a 10-year horizon, not just where it trades today. Use the sector long-run median as the anchor — this captures mean reversion in both directions (expensive stocks compress, cheap stocks normalize).
 
@@ -434,6 +462,22 @@ The base exit multiple represents "the business executes adequately and earns a 
 2. Apply a 20% haircut to the forward EPS (to account for potentially stale consensus estimates following a recent material adverse event) and state what the base case return would be under that haircut.
 3. The signal must reflect the uncertainty: a base case return that is primarily multiple-expansion-driven does NOT carry the same conviction as one driven by earnings compounding. Treat it as one signal step weaker than the raw math suggests unless you can confirm the earnings base is reliable post-event.
 
+   **Signal ladder — "one step weaker" means exactly one position down this list:**
+   Add to Position → **Strong Hold** (NOT Hold — Strong Hold is the intermediate step)
+   Strong Hold → Hold
+   Hold → Consider Trimming
+
+   **MANDATORY EXCEPTION — no double-counting when condition 4 already failed:**
+   If the Long-Horizon Compounder path's condition 4 already failed for this stock (multiple expansion is the primary driver, so the ceiling was set to Strong Hold instead of Add to Position per the condition 4 rule), then the crisis discount's one step of weakening has ALREADY been applied — it is what moved the signal from Add to Position down to Strong Hold. You MUST NOT apply another step-down to Hold. This would count the same risk (multiple-expansion dependency) twice.
+
+   Concrete example: TTD at 9x fwd P/E, sector median 26x, base adj. return 4.04x for Aggressive/Long investor.
+   - Condition 4 fails (66% of return from 9x→26x re-rating) → ceiling is Strong Hold (not Add to Position)
+   - Crisis discount also triggers (9x < 50% of 26x) → but condition 4 already captured this risk
+   - CORRECT final signal: **Strong Hold**
+   - WRONG final signal: Hold (this would double-count the same multiple-expansion risk)
+
+   **The final signal for a stock where BOTH condition 4 fails AND the crisis discount triggers is: Strong Hold for Aggressive/Long investors. Write "## Signal: Strong Hold" — not "## Signal: Hold".**
+
 STEP 4 — RETURN ADJUSTMENTS (add these below the table):
 A. Dividends: if the company pays a meaningful dividend (>0.5% yield), add the annualized yield to each scenario's total return. State: "+ ~[X]%/yr dividend → adds ~[X×10]% cumulative over 10 years."
 B. SBC dilution: use NET dilution = gross SBC issuance % − buyback retirement %. For companies running active buyback programs that exceed SBC (share count declining year-over-year), net dilution may be near 0% or negative — do not apply a gross SBC drag in those cases. Example: Visa and Mastercard retire 3-4%/yr of shares via buybacks vs. ~0.5-1% gross SBC → net dilution ≈ 0% or slightly negative. Apply the NET figure, not gross. If buyback data is unavailable, apply industry default gross SBC: tech/SaaS ~2-3%/yr, semis ~1-2%/yr, industrials/staples ~0.5-1%/yr. State: "- ~[X]%/yr SBC dilution (net of buybacks) → reduces per-share return by ~[X]%/yr."
@@ -446,12 +490,13 @@ Format:
 Before writing the table, determine the dividend yield and SBC dilution rate — you will need them to fill in the Adj. Return column for each row.
 
 **10-Year Outlook** (Aggressive or Moderate / Long-horizon — primary metric: [FCF/share or EPS]):
-| Scenario | Growth Rate | Rationale | Year-10 [FCF/EPS] | Exit Multiple | Price Target | Adj. Return | Price %/yr |
-|----------|------------|-----------|-------------------|---------------|-------------|-------------|------------|
-| 📈 S&P 500 baseline | ~11%/yr | Long-run total return avg (price + dividends); recent decade ~13%/yr (~3.4x) | — | — | — | ~2.85x | ~11%/yr |
-| Bear | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
-| Base | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
-| Bull | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
+| Scenario | Probability | Growth Rate | Rationale | Year-10 [FCF/EPS] | Exit Multiple | Price Target | Adj. Return | Price %/yr |
+|----------|------------|------------|-----------|-------------------|---------------|-------------|-------------|------------|
+| 📈 S&P 500 baseline | — | ~11%/yr | Long-run total return avg (price + dividends); recent decade ~13%/yr (~3.4x) | — | — | — | ~2.85x | ~11%/yr |
+| Bear | [X]% | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
+| Base | [X]% | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
+| Bull | [X]% | [X]% | [one clause] | ~$[Y] | [Z]x | ~$[W] | ~[N]x | ~[R]%/yr |
+| **Expected** | **100%** | — | Probability-weighted avg | — | — | — | **~[N]x** | — |
 
 **Adj. Return column** = adjusted total return multiple for that scenario, directly comparable to the S&P 500 row's 2.85x. Compute it as: (1 + (price_return_annualized + dividend_yield − sbc_dilution_rate) / 100)^10. Example: price appreciation 12.2%/yr + dividend 1.7%/yr − SBC 0.8%/yr = 13.1%/yr → 1.131^10 = 3.41x. Do this calculation per scenario — bear, base, and bull will each have a different price appreciation rate but the same dividend yield and SBC rate. Round to two decimal places.
 
@@ -462,9 +507,16 @@ Return adjustments (shown below the table for transparency):
 - SBC dilution: [−X%/yr] — source: [earnings release / industry default: tech/SaaS ~2-3%/yr, semis ~1-2%/yr, industrials ~0.5-1%/yr]
 - These adjustments are already embedded in the Adj. Return column above.
 
-Then one line: "Base case Adj. Return: ~[N]x in 10 years vs S&P 500 baseline of ~2.85x (~11%/yr long-run total return avg; recent decade was ~3.4x at ~13%/yr). [One of: 'Beats the index and exceeds 3x — qualifies for Add to Position.' / 'Beats the index but below 3x — Strong Hold territory.' / 'Roughly matches the index — Hold; consider whether concentration risk is worth it vs. an index fund.' / 'Below index baseline — Hold only on business quality grounds; index fund likely outperforms.']"
+**Probability-weighted summary (required — show this immediately after return adjustments):**
+- Expected adj. return: ~[N]x ([P_bear]% × [bear_adj]x + [P_base]% × [base_adj]x + [P_bull]% × [bull_adj]x = [N]x)
+- Probability of beating S&P 500 (adj. return > 2.85x): ~[X]% — sum the probabilities of all scenarios whose adj. return exceeds 2.85x
+- Probability of capital preservation (adj. return > 1.0x): ~[X]% — sum the probabilities of all scenarios whose adj. return exceeds 1.0x
+
+Then one paragraph: State both the base case adj. return AND the probability-weighted expected return, and what they imply together. Example: "Base case: ~2.51x — slightly below the S&P 500 baseline of ~2.85x. Probability-weighted expected return: ~2.77x — closer to the index but still below it, driven by a 30% bull case probability at 3.65x. Only 30% of probability-weighted scenarios beat the S&P; 90% preserve capital (return > 1x). [One of: 'Qualifies for Add to Position — base and expected both clear 3x.' / 'Strong Hold territory — expected return beats the index even if base falls short.' / 'Hold — neither base nor expected return meaningfully beats the index.' / 'Hold on business quality grounds — base and expected both trail the index; index fund likely outperforms on raw math.']"
 
 SIGNAL OVERRIDE — THIS OVERRIDES THE PRE-CHECK SIGNAL: If the base case Adj. Return exceeds 3x for an Aggressive/Long-horizon investor, the final ## Signal must be "Add to Position" — even if the pre-check Q4 was NO on near-term metrics. The 10-year base case using sector-median exit multiples has already embedded conservative multiple compression; that IS the long-horizon margin of safety. Do not let a near-term Q4=NO block Add to Position when the 10-year math clears 3x. The bear case being severe does NOT lower the signal — it informs position sizing, not the signal itself. For Moderate/Long-horizon investors, a base case exceeding 3x supports Strong Hold at minimum — the signal ceiling for moderate investors is Strong Hold.
+
+Additionally: if the base case falls short of 3x but the probability-weighted expected return exceeds 3x (because a high-probability bull case pushes the weighted average above the threshold), this also qualifies as Add to Position for Aggressive/Long investors — note it explicitly as "probability-weighted expected return clears 3x." Conversely, if the base case clears 3x but the probability-weighted expected return does not (because the bear case is severe and high-probability), the signal should reflect this lower conviction — note it as "base case clears 3x but expected return below 3x — position sizing should be moderate."
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
 ## Conditional Signal
