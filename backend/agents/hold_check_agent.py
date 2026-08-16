@@ -395,14 +395,41 @@ When EPS is the primary metric, use the consensus FORWARD EPS from the eps_estim
 EXCEPTION — use normalized through-cycle EPS instead of forward EPS when: (a) the business is at a demonstrable cyclical earnings peak (e.g., memory semis in an HBM upcycle, commodity producers at commodity price peak, industrials at cycle top), and (b) forward EPS substantially exceeds what the business earns through a full cycle. For cyclical peak situations, anchoring to inflated forward EPS overstates the long-run base. State explicitly which approach you are using and why.
 
 STEP 2 — DERIVE THREE REALISTIC GROWTH RATES for the chosen metric:
-Near-term anchor: what does eps_estimates imply for year 1–2? This anchors your bull case ceiling but is NOT the 10-year average.
-Industry long-run base: what do comparable companies realistically average over a decade? (Large-cap tech ~10-14%; semiconductors ~10-15% through-cycle; software platforms ~12-18%; consumer staples ~5-8%; utilities ~3-5%.) Apply your sector knowledge.
-Company-specific adjustments: durable moat → can sustain above-sector longer (ASML's EUV monopoly). Commoditized or cyclical → mean-reverts faster. Early TAM vs. penetrated TAM matters.
-- Bear: realistic downside — competition erodes share, cycle turns, or pricing power weakens. A genuinely bad but viable outcome. NOT a catastrophe. Speculative, unproven risks (stablecoins disrupting payments, AV disrupting rideshare, etc.) belong here — not in the base.
-- Base: anchor to the company's verified 5-year historical EPS CAGR as the starting point, then adjust downward ONLY for structural headwinds that are already occurring (confirmed market share loss, proven margin compression, active regulatory enforcement). Do NOT discount from historical rates for speculative or unproven risks — those are bear case inputs. A world-class compounder (Visa, MSFT, MA) with 15-18% historical EPS CAGR should have a base case in the 12-15% range, not 8-10% — unless there is concrete evidence of structural deceleration.
-- Bull: full execution — moat holds, TAM expands, margins improve. Achievable but not the base case.
 
-**CRITICAL — growth rates and exit multiples are independent variables. Do NOT lower the base growth rate simply because the exit multiple is compressing toward the sector median. The exit multiple reflects what valuation the market assigns; the growth rate reflects what the business earns. A world-class business that mean-reverts to a sector-average multiple can still grow earnings at above-sector rates. For businesses with demonstrated pricing power, near-monopoly positions, or structural AI capex tailwinds (e.g., TSMC, ASML), the base case growth rate should reflect those company-specific advantages — not be dragged down by the sector average just because the exit multiple is anchored there.**
+**A. Near-term consensus anchor (mandatory first step):**
+Before estimating any growth rates, read the eps_estimates and revenue_estimates blocks and compute the implied 1–2 year consensus growth rate:
+- If eps_estimates has two periods: implied near-term EPS growth = (Y2_eps / Y1_eps) − 1. State this explicitly: "Consensus implies ~X% EPS growth Y1→Y2."
+- This near-term rate is your reality anchor. The bull case 10-year CAGR must not materially exceed it — analysts modeling next year are not systematically pessimistic, and year 1-2 is typically the highest-visibility, highest-growth window. If your bull case 10-year CAGR would exceed the consensus near-term rate, you need a compelling reason (TAM still early, major product cycle pending).
+- If eps_estimates is unavailable, use revenue_estimates the same way and note that EPS growth may exceed revenue growth via margin expansion.
+
+**B. Revenue-scale discounting (mandatory for market_cap > $100B or revenue > $50B):**
+The law of large numbers applies — sustaining high growth rates becomes harder as the revenue base compounds. Apply the following discount to the historical EPS CAGR when setting the BASE case, and cap the bull case accordingly:
+
+| Current revenue scale | Discount to historical CAGR for base | Bull case ceiling |
+|---|---|---|
+| < $10B (small/mid-cap) | 0–2pp — historical CAGR is a reasonable base anchor | Historical CAGR + 2–4pp |
+| $10B–$50B | 2–4pp discount | Historical CAGR + 1–2pp |
+| $50B–$150B | 4–6pp discount | Historical CAGR − 1pp |
+| $150B–$400B | 6–9pp discount; base ceiling ~14% | Historical CAGR − 2pp; bull ceiling ~18–20% |
+| $400B+ | 8–12pp discount; base ceiling ~10–12% | Historical CAGR − 4pp; bull ceiling ~16% |
+
+Apply the discount that corresponds to current revenue_estimates or market_cap_millions from the raw data. State explicitly: "Revenue ~$[X]B → applying [Y]pp large-base discount to historical [Z]% CAGR → base case [W]%."
+
+Example: Alphabet at ~$350B revenue, historical EPS CAGR ~20% → 7pp discount → base 13%, bull ceiling ~18%.
+
+**C. Set three scenarios using anchors A and B:**
+Industry long-run base: what do comparable companies realistically average over a decade? (Large-cap tech ~10-14%; semiconductors ~10-15% through-cycle; software platforms ~12-18%; consumer staples ~5-8%; utilities ~3-5%.)
+Company-specific adjustments: durable moat → can sustain above-sector longer. Commoditized or cyclical → mean-reverts faster.
+- Bear: realistic downside — competition erodes share, cycle turns, or pricing power weakens. A genuinely bad but viable outcome. NOT a catastrophe. Speculative, unproven risks belong here — not in the base.
+- Base: start from historical EPS CAGR, apply the large-base discount from table B, cross-check against near-term consensus anchor A. Adjust downward further only for structural headwinds already occurring (confirmed market share loss, proven margin compression, active regulatory enforcement). Do NOT discount for speculative risks.
+- Bull: full execution at or near the bull ceiling from table B. Must not materially exceed the near-term consensus growth rate without explicit justification.
+
+**D. Year 10 revenue sanity check (required):**
+After setting growth rates, compute the implied Year 10 revenue and state it:
+"At [X]% base EPS growth, Year 10 implied revenue ≈ $[Y]T/B (current $[Z]B × ~[multiplier]x)."
+Then assess: is this plausible given the addressable market? A company projecting revenue that would represent an implausibly large share of a finite TAM (e.g., $3T revenue in a $4T TAM with existing competitors) needs a lower growth rate. Flag any case where Year 10 revenue exceeds 30% of the current total TAM estimate.
+
+**CRITICAL — growth rates and exit multiples are independent variables. Do NOT lower the base growth rate simply because the exit multiple is compressing toward the sector median. The exit multiple reflects what valuation the market assigns; the growth rate reflects what the business earns. A world-class business that mean-reverts to a sector-average multiple can still grow earnings at above-sector rates.**
 
 STEP 2b — ASSIGN SCENARIO PROBABILITIES:
 After setting growth rates, assign a probability to each scenario. Probabilities must sum to 100%. Anchor to business quality and competitive position:
