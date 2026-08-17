@@ -227,6 +227,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         f"- FCF per share TTM:     {fcf_line}\n"
         f"- 26-week price return:  {fx(raw.get('return_26w_pct'), '%')}\n"
         f"- 52-week price return:  {fx(raw.get('return_52w_pct'), '%')}\n"
+        f"- EPS TTM (GAAP):        {'$'+f\"{raw.get('eps_ttm'):.2f}\" if raw.get('eps_ttm') is not None else 'N/A'}\n"
         f"- EPS growth TTM YoY:    {fx(raw.get('eps_growth_ttm_yoy'), '%')}\n"
         f"- Revenue growth TTM YoY:{fx(raw.get('revenue_growth_ttm_yoy'), '%')}\n"
         f"- Gross margin TTM:      {fx(raw.get('gross_margin_ttm'), '%')}\n"
@@ -402,6 +403,8 @@ State which field you are using and its exact value from the Ground Truth block:
 - **Never**: do not use TTM EPS as Year 0 unless the business is at a cyclical earnings peak AND forward EPS substantially exceeds through-cycle EPS. Never derive EPS by assuming the sector median P/E — always use the actual forward_pe from Finnhub data.
 
 The reason forward EPS matters: exit multiples are forward P/E ratios. Starting from TTM EPS silently compresses the multiple across the horizon, systematically understating returns. For example, TTM EPS $14.79 with forward EPS $18.07 on a 21x forward P/E — starting from TTM implicitly assumes the P/E compresses from ~26x to 21x, a drag unrelated to valuation.
+
+**GAAP vs non-GAAP disclosure (mandatory):** Finnhub consensus estimates (eps_estimates) are typically non-GAAP/adjusted EPS, which is what Wall Street models to. The Ground Truth block now includes "EPS TTM (GAAP)" for cross-reference. If the consensus eps_avg materially exceeds EPS TTM (GAAP) — e.g., by more than 20% — the difference is almost certainly stock-based compensation and amortization add-backs. This is acceptable: exit P/E multiples in the market are also applied to non-GAAP EPS, so the model remains internally consistent. However, you MUST disclose the basis in one sentence: "Using non-GAAP consensus forward EPS of $[X]; GAAP TTM EPS is $[Y] for reference — the gap reflects SBC and amortization add-backs standard in analyst models." If the two figures are close (within 15%), no disclosure is needed.
 
 EXCEPTION — use normalized through-cycle EPS when: (a) the business is at a demonstrable cyclical earnings peak (memory semis in HBM upcycle, commodity producers at peak, industrials at cycle top) AND (b) forward EPS substantially exceeds through-cycle EPS. State this explicitly.
 
