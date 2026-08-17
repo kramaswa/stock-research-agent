@@ -863,7 +863,7 @@ async def run_hold_check_agent(
         with client.messages.stream(
             model="claude-sonnet-4-6",
             max_tokens=28000,
-            thinking={"type": "enabled", "budget_tokens": 3000},
+            thinking={"type": "enabled", "budget_tokens": 6000},
             system=system_payload,
             messages=messages_payload,
         ) as stream:
