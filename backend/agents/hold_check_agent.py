@@ -453,9 +453,12 @@ After setting growth rates, assign a probability to each scenario. Probabilities
 | Competitive market or confirmed structural headwinds (TTD, MU, STX) | 30% | 50% | 20% |
 | Hypergrowth / unproven at scale (PLTR, early-stage) | 35% | 45% | 20% |
 
+**Competitive reclassification (apply BEFORE Step 2):** Scan the news analysis for active competition. If a well-funded competitor has confirmed regulatory approval and is actively commercializing in the same core product/procedure categories, treat the company one tier lower than its structural classification (e.g., a near-monopoly becomes "Strong market leader, moderate competition"). This is mandatory — do not let strong historical financials offset a confirmed, funded competitive threat that is already in the market.
+
 **Step 2 — Adjust using Ground Truth signals** (each signal that applies shifts bear probability by the stated amount; base absorbs the difference):
 
 *Signals that INCREASE bear probability (business deteriorating):*
+- News analysis confirms a direct competitor is in late-stage regulatory review (PDUFA/CE mark within 18 months) in the same core categories → **+5pp bear**
 - eps_growth_ttm_yoy is more than 5pp below eps_growth_5y → **+4pp bear** (growth decelerating structurally)
 - gross_margin_ttm is declining vs prior year → **+3pp bear** (pricing power eroding)
 - roic_ttm is more than 3pp below roic_5y_avg → **+3pp bear** (moat weakening)
