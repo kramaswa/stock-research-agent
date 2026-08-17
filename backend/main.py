@@ -257,18 +257,36 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
         current_price = chart_data[-1]["price"] if chart_data else (raw_chart[-1]["price"] if raw_chart else 0.0)
         raw_metrics = build_raw_metrics_block(raw_data)
 
-        analysis = await run_hold_check_agent(
-            ticker, purchase_price, quant_analysis, news_analysis, client,
-            user_thesis=thesis,
-            current_price=current_price,
-            user_context=user_context,
-            comparison_table=comparison_md,
-            earnings_release=edgar_text or "",
-            mda_text=mda_text or "",
-            treasury_yield=treasury_yield,
-            transcript=transcript_text or "",
-            raw_metrics=raw_metrics,
-        )
+        # Stream hold check chunks to the frontend as they're generated
+        chunk_queue: asyncio.Queue = asyncio.Queue()
+
+        async def _run_hold() -> str:
+            try:
+                return await run_hold_check_agent(
+                    ticker, purchase_price, quant_analysis, news_analysis, client,
+                    user_thesis=thesis,
+                    current_price=current_price,
+                    user_context=user_context,
+                    comparison_table=comparison_md,
+                    earnings_release=edgar_text or "",
+                    mda_text=mda_text or "",
+                    treasury_yield=treasury_yield,
+                    transcript=transcript_text or "",
+                    raw_metrics=raw_metrics,
+                    chunk_queue=chunk_queue,
+                )
+            finally:
+                await chunk_queue.put(None)  # sentinel: always signal completion
+
+        hold_task = asyncio.create_task(_run_hold())
+
+        while True:
+            chunk = await chunk_queue.get()
+            if chunk is None:
+                break
+            yield event("hold_chunk", {"text": chunk})
+
+        analysis = await hold_task
 
         yield event("hold_result", {
             "content": analysis,

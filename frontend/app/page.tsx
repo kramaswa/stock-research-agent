@@ -582,6 +582,7 @@ export default function Home() {
   const [holdResult, setHoldResult] = useState<HoldResult | null>(null);
   const [holdLoading, setHoldLoading] = useState(false);
   const [holdStatusMsg, setHoldStatusMsg] = useState("");
+  const [holdStreamContent, setHoldStreamContent] = useState("");
   const [holdError, setHoldError] = useState<string | null>(null);
   const [holdSources, setHoldSources] = useState<string[]>([]);
 
@@ -744,6 +745,7 @@ export default function Home() {
 
     setHoldLoading(true);
     setHoldResult(null);
+    setHoldStreamContent("");
     setHoldError(null);
     setHoldSources([]);
     holdSourcesRef.current = [];
@@ -795,7 +797,12 @@ export default function Home() {
               setHoldSources(srcs);
               holdSourcesRef.current = srcs;
             }
+            else if (data.type === "hold_chunk") {
+              setHoldStreamContent((prev) => prev + data.text);
+              setHoldProgress((p) => Math.min(p + 0.3, 95));
+            }
             else if (data.type === "hold_result") {
+              setHoldStreamContent("");
               setHoldResult(data);
               setHoldProgress(100);
               completed = true;
@@ -1165,6 +1172,18 @@ export default function Home() {
                 <button onClick={runHoldCheck} className="text-red-600 font-semibold underline whitespace-nowrap flex-shrink-0 hover:text-red-700">Try again</button>
               </div>
             )}
+            {holdLoading && holdStreamContent && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500 flex-shrink-0" />
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Analyzing {holdTicker.toUpperCase()} — streaming live</p>
+                </div>
+                <div className="prose prose-sm prose-gray max-w-none prose-headings:font-semibold prose-h2:text-base prose-h2:text-gray-800 prose-h3:text-sm prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{holdStreamContent}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+
             {holdResult && (
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-5">

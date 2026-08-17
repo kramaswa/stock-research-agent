@@ -760,6 +760,7 @@ async def run_hold_check_agent(
     treasury_yield: float | None = None,
     transcript: str = "",
     raw_metrics: str = "",
+    chunk_queue: asyncio.Queue | None = None,
 ) -> str:
     ctx = user_context or {}
     ck = _cache_key(
@@ -857,25 +858,26 @@ async def run_hold_check_agent(
     messages_payload = [{"role": "user", "content": user_message}]
     loop = asyncio.get_event_loop()
 
-    def _stream_to_message():
+    def _stream_to_text() -> str:
+        parts: list[str] = []
         with client.messages.stream(
             model="claude-sonnet-4-6",
             max_tokens=28000,
-            thinking={"type": "enabled", "budget_tokens": 6000},
+            thinking={"type": "enabled", "budget_tokens": 3000},
             system=system_payload,
             messages=messages_payload,
         ) as stream:
-            return stream.get_final_message()
+            for text in stream.text_stream:
+                parts.append(text)
+                if chunk_queue is not None:
+                    loop.call_soon_threadsafe(chunk_queue.put_nowait, text)
+        return "".join(parts)
 
-    response = await loop.run_in_executor(None, _stream_to_message)
+    full_text = await loop.run_in_executor(None, _stream_to_text)
+    if not full_text:
+        return "Hold check unavailable."
 
-    for block in response.content:
-        if block.type == "text":
-            result = re.sub(r'~~([\s\S]+?)~~', r'\1', block.text)
-            # Only cache complete results — truncated outputs from token-limit hits
-            # must not be served to future requests
-            if len(result) > 1500 and "signal:" in result.lower():
-                _hold_cache[ck] = result
-            return result
-
-    return "Hold check unavailable."
+    result = re.sub(r'~~([\s\S]+?)~~', r'\1', full_text)
+    if len(result) > 1500 and "signal:" in result.lower():
+        _hold_cache[ck] = result
+    return result
