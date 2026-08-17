@@ -369,6 +369,10 @@ Answer each question explicitly before choosing the signal. This section is requ
 
 Think like a senior analyst who has covered this sector for a decade. Work through the following before writing the table:
 
+**⚠ OUTPUT LENGTH RULE (mandatory for all steps below):** Each step must produce at most 2–3 lines in your response. Do ALL arithmetic inside your thinking block — output only the final result per step. Verbose multi-paragraph working in the text output wastes tokens needed by Business Quality, Valuation, and other sections, and will cause the analysis to be truncated before completion.
+
+**⚠ SELF-CHECK — STRIKETHROUGH RULE (mandatory before each line):** You are PROHIBITED from writing corrections inline using strikethrough (~~old text~~). If you compute something wrong, delete it in your thinking and write only the correct version. Before outputting any section, mentally scan it: if you would write ~~anything~~, stop — write only the final concluded value instead. A response containing ~~any strikethrough text~~ is a failed response regardless of content quality.
+
 **ETF/FUND DETECTION (check this first before any other step):**
 If the ticker is an ETF, index fund, or closed-end fund — indicated by: no eps_ttm, no forward_pe, no earnings_history in the data, AND/OR the company name contains "ETF", "Fund", "Trust", "Index", "Portfolio", or similar — use the ETF Total Return Framework below instead of the stock EPS/exit multiple framework.
 
@@ -856,7 +860,7 @@ async def run_hold_check_agent(
     def _stream_to_message():
         with client.messages.stream(
             model="claude-sonnet-4-6",
-            max_tokens=22000,
+            max_tokens=28000,
             thinking={"type": "enabled", "budget_tokens": 6000},
             system=system_payload,
             messages=messages_payload,
@@ -867,7 +871,7 @@ async def run_hold_check_agent(
 
     for block in response.content:
         if block.type == "text":
-            result = re.sub(r"~~(.+?)~~", r"\1", block.text, flags=re.DOTALL)
+            result = re.sub(r'~~([\s\S]+?)~~', r'\1', block.text)
             # Only cache complete results — truncated outputs from token-limit hits
             # must not be served to future requests
             if len(result) > 1500 and "signal:" in result.lower():
