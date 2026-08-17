@@ -805,6 +805,7 @@ export default function Home() {
               setHoldStreamContent("");
               setHoldResult(data);
               setHoldProgress(100);
+              setEvalLoading(true);
               completed = true;
               const { label: sigLabel, key: sigKey } = extractSignal(data.content);
               const entry: HoldHistoryEntry = {
@@ -828,6 +829,20 @@ export default function Home() {
                 try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
                 return updated;
               });
+            }
+            else if (data.type === "eval_result") {
+              const evalData = data.result as EvalResult;
+              setEvalResult(evalData);
+              setEvalLoading(false);
+              if (currentEntryIdRef.current) {
+                setHoldHistory((prev) => {
+                  const updated = prev.map((h) =>
+                    h.id === currentEntryIdRef.current ? { ...h, evalResult: evalData } : h
+                  );
+                  try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
+                  return updated;
+                });
+              }
             }
             else if (data.type === "done") { setHoldProgress(100); completed = true; }
             else if (data.type === "error") { setHoldError(data.message); streamError = true; }
