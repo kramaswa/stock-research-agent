@@ -247,7 +247,7 @@ def _cache_key(
     raw = f"{ticker.upper()}|{risk}|{horizon}|{goal}|{price_bucket}|{user_thesis[:100].strip()}"
     return hashlib.md5(raw.encode()).hexdigest()
 
-SYSTEM = """You are a senior portfolio manager and fundamental analyst at a top-tier long/short equity fund. Your hold check analyses are used by portfolio managers to make actual buy, hold, and sell decisions. The quality standard is: would a Bridgewater, Sequoia Fund, or Berkshire Hathaway analyst be satisfied with this analysis? Anything less is not acceptable.
+SYSTEM_PHASE1 = """You are a senior portfolio manager and fundamental analyst at a top-tier long/short equity fund. Your hold check analyses are used by portfolio managers to make actual buy, hold, and sell decisions. The quality standard is: would a Bridgewater, Sequoia Fund, or Berkshire Hathaway analyst be satisfied with this analysis? Anything less is not acceptable.
 
 You will receive: quantitative data (fundamentals, FCF, ROIC, analyst consensus, price targets, forward estimates, insider activity, short interest), recent news and sentiment, optional peer comparison, the investor's entry context and thesis, and optionally the most recent SEC earnings release (8-K/6-K), management discussion (10-Q/20-F MD&A), and current risk-free rate. Use all available context.
 
@@ -587,6 +587,14 @@ SIGNAL OVERRIDE — THIS OVERRIDES THE PRE-CHECK SIGNAL: If the base case Adj. R
 Additionally: if the base case falls short of 3x but the probability-weighted expected return exceeds 3x (because a high-probability bull case pushes the weighted average above the threshold), this also qualifies as Add to Position for Aggressive/Long investors — note it explicitly as "probability-weighted expected return clears 3x." Conversely, if the base case clears 3x but the probability-weighted expected return does not (because the bear case is severe and high-probability), the signal should reflect this lower conviction — note it as "base case clears 3x but expected return below 3x — position sizing should be moderate."
 2–3 sentences. Your verdict — own it. Lead with the business reality. Do not present both sides here.
 
+**STOP HERE.** Your output ends after the verdict paragraph above. Do not write ## Conditional Signal or any section that follows — those are handled by a second analysis phase."""
+
+SYSTEM_PHASE2 = """You are a senior portfolio manager and fundamental analyst at a top-tier long/short equity fund. The quality standard is Bridgewater / Sequoia / Berkshire-level rigor.
+
+You are writing the **narrative sections** of a hold check report. The first analysis phase has already produced ## Pre-Check, ## Signal, and the 10-Year Outlook — provided below in the user message as "Phase 1 Output." Your response begins at ## Conditional Signal and continues through all remaining sections. Do not re-determine or restate the signal; reference it by name when relevant and be fully consistent with the 10-year math already computed.
+
+ABSOLUTE PROHIBITION — NO EXCEPTIONS: Never use strikethrough formatting (~~like this~~) anywhere in your response. Not for corrections, not for revisions, not for anything.
+
 ## Conditional Signal
 [Include this section only when one specific, identifiable assumption is the primary driver of the current signal — meaning changing that single assumption would shift the signal one step up. Skip if the signal reflects multiple equally-weighted factors with no dominant one, or if the business fundamentals alone justify the signal regardless of any contestable assumption.]
 
@@ -854,29 +862,44 @@ async def run_hold_check_agent(
         f"{transcript_section}"
     )
 
-    system_payload = [{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}]
-    messages_payload = [{"role": "user", "content": user_message}]
     loop = asyncio.get_event_loop()
 
-    def _stream_to_text() -> str:
+    def _run_phase(system_text: str, msg: str, use_thinking: bool, max_tok: int) -> str:
         parts: list[str] = []
-        with client.messages.stream(
-            model="claude-sonnet-4-6",
-            max_tokens=28000,
-            thinking={"type": "enabled", "budget_tokens": 6000},
-            system=system_payload,
-            messages=messages_payload,
-        ) as stream:
+        kwargs: dict = {
+            "model": "claude-sonnet-4-6",
+            "max_tokens": max_tok,
+            "system": [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
+            "messages": [{"role": "user", "content": msg}],
+        }
+        if use_thinking:
+            kwargs["thinking"] = {"type": "enabled", "budget_tokens": 6000}
+        with client.messages.stream(**kwargs) as stream:
             for text in stream.text_stream:
                 parts.append(text)
                 if chunk_queue is not None:
                     loop.call_soon_threadsafe(chunk_queue.put_nowait, text)
         return "".join(parts)
 
-    full_text = await loop.run_in_executor(None, _stream_to_text)
-    if not full_text:
+    # Phase 1: Pre-Check + Signal + 10-Year Outlook (with extended thinking)
+    phase1_text = await loop.run_in_executor(
+        None, _run_phase, SYSTEM_PHASE1, user_message, True, 12000
+    )
+    if not phase1_text:
         return "Hold check unavailable."
 
+    # Phase 2: All narrative sections (no thinking — structured read-and-write)
+    phase2_user = (
+        user_message
+        + "\n\n---\n\n## Phase 1 Output — Signal and 10-Year Outlook (already completed; be consistent with this)\n\n"
+        + phase1_text
+        + "\n\n---\n\nWrite the remaining sections starting from ## Conditional Signal."
+    )
+    phase2_text = await loop.run_in_executor(
+        None, _run_phase, SYSTEM_PHASE2, phase2_user, False, 16000
+    )
+
+    full_text = phase1_text + "\n\n" + phase2_text
     result = re.sub(r'~~([\s\S]+?)~~', r'\1', full_text)
     if len(result) > 1500 and "signal:" in result.lower():
         _hold_cache[ck] = result
