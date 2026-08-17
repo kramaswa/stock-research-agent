@@ -462,6 +462,7 @@ After setting growth rates, assign a probability to each scenario. Probabilities
 
 *Signals that INCREASE bear probability (business deteriorating):*
 - News analysis confirms a direct competitor is in late-stage regulatory review (PDUFA/CE mark within 18 months) in the same core categories → **+5pp bear**
+- News analysis confirms government-mandated price controls or volume-based procurement (VBP) actively in effect in a market representing ≥10% of the company's revenue or growth runway (e.g., China VBP for medical devices, EU reference pricing caps) → **+4pp bear** (structural margin ceiling in a key growth market)
 - eps_growth_ttm_yoy is more than 5pp below eps_growth_5y → **+4pp bear** (growth decelerating structurally)
 - gross_margin_ttm is declining vs prior year → **+3pp bear** (pricing power eroding)
 - roic_ttm is more than 3pp below roic_5y_avg → **+3pp bear** (moat weakening)
