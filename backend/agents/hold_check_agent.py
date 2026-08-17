@@ -227,7 +227,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         f"- FCF per share TTM:     {fcf_line}\n"
         f"- 26-week price return:  {fx(raw.get('return_26w_pct'), '%')}\n"
         f"- 52-week price return:  {fx(raw.get('return_52w_pct'), '%')}\n"
-        f"- EPS TTM (GAAP):        {'$'+f\"{raw.get('eps_ttm'):.2f}\" if raw.get('eps_ttm') is not None else 'N/A'}\n"
+        f"- EPS TTM (GAAP):        {('$' + format(raw['eps_ttm'], '.2f')) if raw.get('eps_ttm') is not None else 'N/A'}\n"
         f"- EPS growth TTM YoY:    {fx(raw.get('eps_growth_ttm_yoy'), '%')}\n"
         f"- Revenue growth TTM YoY:{fx(raw.get('revenue_growth_ttm_yoy'), '%')}\n"
         f"- Gross margin TTM:      {fx(raw.get('gross_margin_ttm'), '%')}\n"
