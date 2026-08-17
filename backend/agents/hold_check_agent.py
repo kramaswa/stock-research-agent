@@ -506,7 +506,7 @@ Exit multiples reflect where the market is likely to value this business over a 
 | Energy / commodities | ~13x |
 
 Per-scenario rules:
-- **Bear**: compress to 40–60% of sector median. For stocks with current forward P/E above 35x, use the lower end (40–50% of median) — high-multiple stocks that disappoint get punished harder.
+- **Bear**: compress to 40–60% of sector median. For stocks with current forward P/E above 35x, use the lower end (40–50% of median) — high-multiple stocks that disappoint get punished harder. **Growth-consistent floor (mandatory):** After applying the percentage rule, check that the bear exit is not lower than what the bear case growth rate itself commands. Apply a minimum floor: 18x if bear case EPS CAGR ≥ 10%; 14x if bear case EPS CAGR 5–9%; no additional floor if bear case EPS CAGR < 5%. This prevents internally inconsistent scenarios where a company still compounding EPS at 12%/yr is assigned the same multiple as a near-zero-growth or stagnant business. Example: CRWD bear at 12% EPS CAGR → 40% × 30x = 12x, but floor is 18x, so use 18x.
 - **Base**: use the sector long-run median P/E from the table above — not the current forward P/E.
 - **Bull**: use `min(max(current forward P/E, sector median), 1.5 × sector median)`. The 1.5× cap prevents anchoring the bull exit at today's AI-hype premium — a business worth 2× its sector median today won't sustain that gap in 10 years as it matures and grows larger. Example: AMD at 51x forward P/E vs. 24x fabless semi median → bull exit = min(max(51, 24), 36) = 36x, not 51x. When current forward P/E is below sector median, base and bull share the same exit multiple — correct and expected; growth rate differentiates them.
 
