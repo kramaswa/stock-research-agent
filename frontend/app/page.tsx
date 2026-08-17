@@ -1172,15 +1172,21 @@ export default function Home() {
                 <button onClick={runHoldCheck} className="text-red-600 font-semibold underline whitespace-nowrap flex-shrink-0 hover:text-red-700">Try again</button>
               </div>
             )}
-            {holdLoading && holdStreamContent && (
+            {holdLoading && holdProgress >= 70 && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500 flex-shrink-0" />
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Analyzing {holdTicker.toUpperCase()} — streaming live</p>
                 </div>
-                <div className="prose prose-sm prose-gray max-w-none prose-headings:font-semibold prose-h2:text-base prose-h2:text-gray-800 prose-h3:text-sm prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{holdStreamContent}</ReactMarkdown>
-                </div>
+                {holdStreamContent ? (
+                  <div className="prose prose-sm prose-gray max-w-none prose-headings:font-semibold prose-h2:text-base prose-h2:text-gray-800 prose-h3:text-sm prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {holdStreamContent.replace(/~~([\s\S]*?)~~/g, (_m, inner) => inner)}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Deep analysis in progress — first output shortly...</p>
+                )}
               </div>
             )}
 
