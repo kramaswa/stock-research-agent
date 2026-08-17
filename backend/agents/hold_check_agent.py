@@ -439,21 +439,48 @@ Then assess: is this plausible given the addressable market? A company projectin
 **CRITICAL — growth rates and exit multiples are independent variables. Do NOT lower the base growth rate simply because the exit multiple is compressing toward the sector median. The exit multiple reflects what valuation the market assigns; the growth rate reflects what the business earns. A world-class business that mean-reverts to a sector-average multiple can still grow earnings at above-sector rates.**
 
 STEP 2b — ASSIGN SCENARIO PROBABILITIES:
-After setting growth rates, assign a probability to each scenario. Probabilities must sum to 100%. Anchor to business quality and competitive position:
+After setting growth rates, assign a probability to each scenario. Probabilities must sum to 100%.
 
-| Business type | Bear | Base | Bull |
+**Step 1 — Choose starting tier** based on business type:
+| Business type | Bear start | Base start | Bull start |
 |---|---|---|---|
-| Near-monopoly / durable moat (GOOG Search, Visa, MSFT, AAPL) | 5–15% | 50–65% | 25–35% |
-| Strong market leader, moderate competition (MELI, VEEV, MA) | 15–25% | 50–60% | 20–30% |
-| Competitive market or confirmed structural headwinds (TTD, MU, STX) | 25–35% | 45–55% | 15–25% |
-| Hypergrowth / unproven at scale (PLTR, early-stage) | 30–40% | 40–50% | 15–25% |
+| Near-monopoly / durable moat (GOOG Search, Visa, MSFT, AAPL) | 10% | 58% | 32% |
+| Strong market leader, moderate competition (MELI, VEEV, MA) | 20% | 55% | 25% |
+| Competitive market or confirmed structural headwinds (TTD, MU, STX) | 30% | 50% | 20% |
+| Hypergrowth / unproven at scale (PLTR, early-stage) | 35% | 45% | 20% |
+
+**Step 2 — Adjust using Ground Truth signals** (each signal that applies shifts bear probability by the stated amount; base absorbs the difference):
+
+*Signals that INCREASE bear probability (business deteriorating):*
+- eps_growth_ttm_yoy is more than 5pp below eps_growth_5y → **+4pp bear** (growth decelerating structurally)
+- gross_margin_ttm is declining vs prior year → **+3pp bear** (pricing power eroding)
+- roic_ttm is more than 3pp below roic_5y_avg → **+3pp bear** (moat weakening)
+- short_interest: short_ratio_days_to_cover > 5 → **+3pp bear** (sophisticated investors betting against)
+- rating_changes_90d: 2+ downgrades and 0 upgrades → **+3pp bear** (analysts losing confidence)
+- insider_transactions: net C-suite selling (>2 sell transactions, 0 buys) → **+2pp bear**
+- debt_to_equity > 2x combined with declining revenue growth → **+3pp bear**
+
+*Signals that DECREASE bear probability (business strengthening):*
+- eps_growth_ttm_yoy >= eps_growth_5y → **−3pp bear** (business accelerating)
+- roic_5y_avg > 20% AND roic_ttm within 2pp of roic_5y_avg → **−3pp bear** (durable moat confirmed)
+- earnings_history: 4/4 beats with avg surprise > 5% → **−2pp bear** (management credibility)
+- short_interest: short_ratio_days_to_cover < 2 → **−2pp bear** (no major institutional bear case)
+- rating_changes_90d: 2+ upgrades and 0 downgrades → **−2pp bear**
+- insider_transactions: net C-suite buying (>1 buy, 0 sells) → **−2pp bear**
+
+Cap adjustments: bear cannot go below 5% or above 45% regardless of signals. Bull cannot go below 10%.
+
+**Step 3 — State the calculation explicitly:**
+"Starting tier: [type] → bear [X]%, base [Y]%, bull [Z]%.
+Adjustments: [list each signal that applies and its pp shift].
+Final: bear [A]%, base [B]%, bull [C]% (sum = 100%)."
 
 Rules:
-- Bear ≥ 5% always — no business has zero downside risk
-- Bull ≥ 10% always — otherwise it is not a legitimate scenario
-- Justify each probability in one clause. Do not assert numbers without reasoning.
+- Probabilities must sum to 100% — verify before writing the table
+- Bear ≥ 5% always; bull ≥ 10% always
+- Only cite signals where the data is actually present in the Ground Truth block — do not assume or hallucinate field values
 - Compute: **Expected adj. return** = (P_bear × bear_adj) + (P_base × base_adj) + (P_bull × bull_adj)
-- Show probabilities in the Probability column of the table and in the Expected row at the bottom.
+- Show probabilities in the Probability column of the table and in the Expected row at the bottom
 
 STEP 3 — EXIT MULTIPLE (per scenario, using sector long-run medians):
 Exit multiples reflect where the market is likely to value this business over a 10-year horizon, not just where it trades today. Use the sector long-run median as the anchor — this captures mean reversion in both directions (expensive stocks compress, cheap stocks normalize).
