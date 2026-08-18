@@ -50,16 +50,21 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
         n_str = f", {int(n)} analysts" if n is not None else ""
         lines.append(f"  {period}: consensus {mean_str} {range_str}{n_str}")
 
-    # Warn when eps_estimates itself looks inflated vs GAAP TTM (cyclical peak distortion)
+    # Note large GAAP/non-GAAP gap — but do NOT redirect away from the consensus.
+    # A large gap is usually structural (M&A amortization, SBC) not a cyclical peak.
+    # The cyclical normalization exception is already handled in the prompt itself.
     first_mean = estimates[0].get("epsAvg") or estimates[0].get("mean")
     peak_warning = ""
     if first_mean and eps_ttm and eps_ttm > 0 and first_mean > 2.0 * eps_ttm:
         ratio = round(first_mean / eps_ttm, 1)
         peak_warning = (
-            f"\n⚠ CYCLICAL PEAK WARNING: consensus forward EPS (${first_mean:.2f}) is "
-            f"{ratio}× GAAP TTM EPS (${eps_ttm:.2f}). This company is likely at a cyclical "
-            f"earnings peak. Apply the EXCEPTION clause — use normalized through-cycle EPS "
-            f"rather than the peak consensus as Year 0.\n"
+            f"\n📊 GAAP GAP NOTE: consensus forward EPS (${first_mean:.2f}) is {ratio}× "
+            f"GAAP TTM EPS (${eps_ttm:.2f}). This gap most commonly reflects M&A amortization "
+            f"or SBC add-backs — NOT necessarily a cyclical earnings peak. Use the consensus "
+            f"non-GAAP EPS as Year 0 (consistent with how exit multiples are applied in the market) "
+            f"and apply the mandatory GAAP/non-GAAP disclosure. Only redirect to GAAP TTM if "
+            f"you have specific evidence this is a cyclical earnings peak (e.g. memory semis, "
+            f"commodity producers) rather than a structural accounting difference.\n"
         )
 
     return (
@@ -639,6 +644,8 @@ You are writing the **narrative sections** of a hold check report. The first ana
 ABSOLUTE PROHIBITION — NO EXCEPTIONS: Never use strikethrough formatting (~~like this~~) anywhere in your response. Not for corrections, not for revisions, not for anything.
 
 ⚠ OUTPUT BUDGET — MANDATORY: You have roughly 7,500 tokens to cover ALL sections below. That is ~600 tokens (≈450 words) per major section on average. Write every bullet in 1–2 sentences — not paragraphs. If any bullet exceeds 3 sentences, condense it. A COMPLETE report with tight bullets is far better than an elaborate report that cuts off before When to Change Your Signal. Do NOT begin Key Risks without confirming you have enough space to finish all remaining sections.
+
+DO NOT write a document title, report header, or any preamble at the start of your response. Begin immediately with the first section (## Conditional Signal or ## Business Quality). No "# TICKER — Hold Check Report" header — the title already exists from Phase 1.
 
 ## Conditional Signal
 [Include this section only when one specific, identifiable assumption is the primary driver of the current signal — meaning changing that single assumption would shift the signal one step up. Skip if the signal reflects multiple equally-weighted factors with no dominant one, or if the business fundamentals alone justify the signal regardless of any contestable assumption.]

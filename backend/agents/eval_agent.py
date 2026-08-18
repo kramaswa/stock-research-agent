@@ -159,6 +159,10 @@ async def run_eval_agent(
 ) -> dict:
     quant_subset = _quant_subset(raw_quant_data)
 
+    # Truncate to keep Haiku latency under Railway's HTTP timeout (~30s).
+    # 5000 chars covers signal, pre-check, 10-year table, and most narrative sections.
+    truncated = hold_check_output[:5000] + ("\n\n...[truncated for length]" if len(hold_check_output) > 5000 else "")
+
     user_message = (
         f"## Investor Profile\n"
         f"- Risk tolerance: {investor_profile.get('risk', 'moderate')}\n"
@@ -167,7 +171,7 @@ async def run_eval_agent(
         f"## Raw Quantitative Data (ground truth)\n"
         f"```json\n{json.dumps(quant_subset, default=str)}\n```\n\n"
         f"## Hold Check Output to Evaluate\n"
-        f"{hold_check_output}"
+        f"{truncated}"
     )
 
     loop = asyncio.get_event_loop()
