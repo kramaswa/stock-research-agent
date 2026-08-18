@@ -8,11 +8,28 @@ from cachetools import TTLCache
 
 def _format_eps_estimates(raw: dict[str, Any]) -> str:
     estimates = raw.get("eps_estimates") or []
+    eps_ttm = raw.get("eps_ttm")  # GAAP TTM EPS — sanity-check anchor
+
     if not estimates:
         fwd_pe = raw.get("forward_pe")
         price = raw.get("current_price")
         if fwd_pe and price and fwd_pe > 0:
             implied_eps = round(price / fwd_pe, 2)
+            # Cyclical distortion check: if market-implied EPS >> GAAP TTM, the low P/E is
+            # pricing in future normalization — compounding this inflated figure for 10 years
+            # produces absurdly optimistic targets. Redirect the model to use GAAP TTM instead.
+            if eps_ttm and eps_ttm > 0 and implied_eps > 2.0 * eps_ttm:
+                ratio = round(implied_eps / eps_ttm, 1)
+                return (
+                    f"\n## Ground Truth Consensus EPS Estimates\n"
+                    f"Not available from provider. Market-implied forward EPS would be "
+                    f"${price:.2f} ÷ {fwd_pe:.2f}x = ${implied_eps:.2f}/share, but this is "
+                    f"{ratio}× GAAP TTM EPS (${eps_ttm:.2f}) — a sign of cyclical P/E compression "
+                    f"where the market prices in near-term earnings but anticipates mean-reversion. "
+                    f"⚠ DO NOT use ${implied_eps:.2f} as Year 0 for the 10-year model — it will "
+                    f"produce absurdly high 10-year targets. Use GAAP TTM EPS of ${eps_ttm:.2f} "
+                    f"as Year 0 and label it '(GAAP TTM — cyclical normalization applied)'.\n"
+                )
             return (
                 f"\n## Ground Truth Consensus EPS Estimates\n"
                 f"Not available from provider. Market-implied forward EPS: "
@@ -20,6 +37,7 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
                 f"Use ${implied_eps:.2f} as Year 0 EPS — label it '(market-implied)' in your analysis.\n"
             )
         return "\n## Ground Truth Consensus EPS Estimates\nNot available from provider — forward P/E also unavailable; do not cite a specific forward EPS figure.\n"
+
     lines = []
     for e in estimates[:3]:
         period = e.get("period", "?")
@@ -31,10 +49,23 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
         range_str = f"(range ${low:.2f}–${high:.2f})" if low is not None and high is not None else ""
         n_str = f", {int(n)} analysts" if n is not None else ""
         lines.append(f"  {period}: consensus {mean_str} {range_str}{n_str}")
+
+    # Warn when eps_estimates itself looks inflated vs GAAP TTM (cyclical peak distortion)
+    first_mean = estimates[0].get("epsAvg") or estimates[0].get("mean")
+    peak_warning = ""
+    if first_mean and eps_ttm and eps_ttm > 0 and first_mean > 2.0 * eps_ttm:
+        ratio = round(first_mean / eps_ttm, 1)
+        peak_warning = (
+            f"\n⚠ CYCLICAL PEAK WARNING: consensus forward EPS (${first_mean:.2f}) is "
+            f"{ratio}× GAAP TTM EPS (${eps_ttm:.2f}). This company is likely at a cyclical "
+            f"earnings peak. Apply the EXCEPTION clause — use normalized through-cycle EPS "
+            f"rather than the peak consensus as Year 0.\n"
+        )
+
     return (
         "\n## Ground Truth Consensus EPS Estimates\n"
         "Cite these as the consensus forward EPS — do not back-calculate or label as 'market-implied' when this data is present.\n"
-        + "\n".join(lines) + "\n"
+        + "\n".join(lines) + peak_warning + "\n"
     )
 
 
@@ -886,7 +917,7 @@ async def run_hold_check_agent(
             "messages": [{"role": "user", "content": msg}],
         }
         if use_thinking:
-            kwargs["thinking"] = {"type": "enabled", "budget_tokens": 3000}
+            kwargs["thinking"] = {"type": "enabled", "budget_tokens": 6000}
         with client.messages.stream(**kwargs) as stream:
             for text in stream.text_stream:
                 parts.append(text)
