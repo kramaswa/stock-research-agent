@@ -58,13 +58,12 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
     if first_mean and eps_ttm and eps_ttm > 0 and first_mean > 2.0 * eps_ttm:
         ratio = round(first_mean / eps_ttm, 1)
         peak_warning = (
-            f"\n📊 GAAP GAP NOTE: consensus forward EPS (${first_mean:.2f}) is {ratio}× "
-            f"GAAP TTM EPS (${eps_ttm:.2f}). This gap most commonly reflects M&A amortization "
-            f"or SBC add-backs — NOT necessarily a cyclical earnings peak. Use the consensus "
-            f"non-GAAP EPS as Year 0 (consistent with how exit multiples are applied in the market) "
-            f"and apply the mandatory GAAP/non-GAAP disclosure. Only redirect to GAAP TTM if "
-            f"you have specific evidence this is a cyclical earnings peak (e.g. memory semis, "
-            f"commodity producers) rather than a structural accounting difference.\n"
+            f"\n📊 GAAP GAP NOTE: Consensus forward EPS (${first_mean:.2f}) is {ratio}× "
+            f"GAAP TTM EPS (${eps_ttm:.2f}). Use the consensus non-GAAP EPS (${first_mean:.2f}) "
+            f"as Year 0 — it is consistent with how exit multiples are priced in the market. "
+            f"The GAAP gap most commonly reflects M&A amortization or SBC, NOT a cyclical earnings "
+            f"peak. Do NOT switch to GAAP TTM as Year 0 unless you have explicit evidence of a "
+            f"cyclical peak (memory semis, commodity producers) — M&A amortization is not cyclical.\n"
         )
 
     return (
@@ -443,6 +442,8 @@ The reason forward EPS matters: exit multiples are forward P/E ratios. Starting 
 **GAAP vs non-GAAP disclosure (mandatory):** Finnhub consensus estimates (eps_estimates) are typically non-GAAP/adjusted EPS, which is what Wall Street models to. The Ground Truth block now includes "EPS TTM (GAAP)" for cross-reference. If the consensus eps_avg materially exceeds EPS TTM (GAAP) — e.g., by more than 20% — the difference is almost certainly stock-based compensation and amortization add-backs. This is acceptable: exit P/E multiples in the market are also applied to non-GAAP EPS, so the model remains internally consistent. However, you MUST disclose the basis in one sentence: "Using non-GAAP consensus forward EPS of $[X]; GAAP TTM EPS is $[Y] for reference — the gap reflects SBC and amortization add-backs standard in analyst models." If the two figures are close (within 15%), no disclosure is needed.
 
 EXCEPTION — use normalized through-cycle EPS when: (a) the business is at a demonstrable cyclical earnings peak (memory semis in HBM upcycle, commodity producers at peak, industrials at cycle top) AND (b) forward EPS substantially exceeds through-cycle EPS. State this explicitly.
+
+THIS EXCEPTION DOES NOT APPLY to GAAP/non-GAAP gaps caused by M&A amortization (e.g., Broadcom after VMware, any large acquirer post-deal). Amortization of acquired intangibles is a finite, predictable accounting treatment that mechanically fades over 5–10 years — it is NOT a cyclical earnings pattern. For such companies, the consensus non-GAAP forward EPS IS the correct Year 0 because (1) exit multiples in the market are applied to non-GAAP EPS, so the model is internally consistent, and (2) the amortization drag will mechanically lift GAAP EPS over the holding period. Using GAAP TTM as Year 0 for a major acquirer produces a misleadingly pessimistic return estimate. If you are unsure, check: does the GAAP/non-GAAP gap come from amortization of acquired intangibles or SBC? If yes → use non-GAAP consensus. Is the gap from cyclically-inflated operating earnings (e.g. peak HBM margins)? If yes → normalize.
 
 STEP 2 — DERIVE THREE REALISTIC GROWTH RATES for the chosen metric:
 
@@ -953,7 +954,10 @@ async def run_hold_check_agent(
     )
 
     full_text = phase1_text + "\n\n" + phase2_text
+    # Strip strikethrough — run twice: non-greedy (handles multiple pairs) then
+    # greedy (catches any remaining single long span the non-greedy missed)
     result = re.sub(r'~~([\s\S]+?)~~', r'\1', full_text)
+    result = re.sub(r'~~([\s\S]+)~~', r'\1', result)
     result = re.sub(r'<del>([\s\S]+?)</del>', r'\1', result, flags=re.IGNORECASE)
     if len(result) > 1500 and "signal:" in result.lower():
         _hold_cache[ck] = result
