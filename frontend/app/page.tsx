@@ -844,7 +844,7 @@ export default function Home() {
                 });
               }
             }
-            else if (data.type === "done") { setHoldProgress(100); completed = true; }
+            else if (data.type === "done") { setHoldProgress(100); completed = true; setHoldLoading(false); }
             else if (data.type === "error") { setHoldError(data.message); streamError = true; }
           } catch {}
         }

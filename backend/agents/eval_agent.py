@@ -174,8 +174,8 @@ async def run_eval_agent(
     response = await loop.run_in_executor(
         None,
         lambda: client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
+            model="claude-haiku-4-5-20251001",
+            max_tokens=2048,
             system=[{"type": "text", "text": EVAL_SYSTEM, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_message}],
         ),
