@@ -197,8 +197,23 @@ async def run_eval_agent(
             raw_text = block.text
             break
 
-    # Strip markdown fences if the model wrapped the JSON
-    raw_text = re.sub(r"^```json\s*", "", raw_text.strip())
-    raw_text = re.sub(r"```\s*$", "", raw_text.strip())
+    # Try direct parse first (ideal case — model returned pure JSON)
+    try:
+        return json.loads(raw_text.strip())
+    except json.JSONDecodeError:
+        pass
 
-    return json.loads(raw_text)
+    # Strip markdown fences and retry
+    cleaned = re.sub(r"^```json\s*", "", raw_text.strip())
+    cleaned = re.sub(r"```\s*$", "", cleaned.strip())
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # Last resort: extract the first {...} JSON object from anywhere in the response
+    match = re.search(r'\{[\s\S]*\}', raw_text)
+    if match:
+        return json.loads(match.group())
+
+    raise ValueError(f"No valid JSON found in eval response. Raw: {raw_text[:200]}")
