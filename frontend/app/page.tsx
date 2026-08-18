@@ -1239,7 +1239,7 @@ export default function Home() {
                 )}
                 <ThesisStatusBanner content={holdResult.content} />
                 <div className="prose prose-gray max-w-none prose-headings:font-semibold prose-h2:text-lg prose-h2:text-gray-800 prose-h3:text-base prose-h3:text-gray-700 prose-p:text-gray-600 prose-li:text-gray-600 prose-strong:text-gray-800">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{holdResult.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{holdResult.content.replace(/~~([\s\S]*?)~~/g, (_m, inner) => inner)}</ReactMarkdown>
                 </div>
                 <div className="mt-5 pt-4 border-t border-gray-100 space-y-3">
                   <EvalPanel

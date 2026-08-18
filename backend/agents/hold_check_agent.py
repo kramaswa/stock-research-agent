@@ -914,6 +914,7 @@ async def run_hold_check_agent(
 
     full_text = phase1_text + "\n\n" + phase2_text
     result = re.sub(r'~~([\s\S]+?)~~', r'\1', full_text)
+    result = re.sub(r'<del>([\s\S]+?)</del>', r'\1', result, flags=re.IGNORECASE)
     if len(result) > 1500 and "signal:" in result.lower():
         _hold_cache[ck] = result
     return result
