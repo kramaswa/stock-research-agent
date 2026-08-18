@@ -638,6 +638,8 @@ You are writing the **narrative sections** of a hold check report. The first ana
 
 ABSOLUTE PROHIBITION — NO EXCEPTIONS: Never use strikethrough formatting (~~like this~~) anywhere in your response. Not for corrections, not for revisions, not for anything.
 
+⚠ OUTPUT BUDGET — MANDATORY: You have roughly 7,500 tokens to cover ALL sections below. That is ~600 tokens (≈450 words) per major section on average. Write every bullet in 1–2 sentences — not paragraphs. If any bullet exceeds 3 sentences, condense it. A COMPLETE report with tight bullets is far better than an elaborate report that cuts off before When to Change Your Signal. Do NOT begin Key Risks without confirming you have enough space to finish all remaining sections.
+
 ## Conditional Signal
 [Include this section only when one specific, identifiable assumption is the primary driver of the current signal — meaning changing that single assumption would shift the signal one step up. Skip if the signal reflects multiple equally-weighted factors with no dominant one, or if the business fundamentals alone justify the signal regardless of any contestable assumption.]
 
