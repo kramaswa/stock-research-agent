@@ -296,20 +296,6 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             "purchase_price": purchase_price,
         })
         yield event("done", {"message": "Analysis complete."})
-        await asyncio.sleep(0)
-
-        # Auto-eval: runs after done so the UI re-enables immediately
-        try:
-            eval_data = await run_eval_agent(
-                ticker=ticker,
-                hold_check_output=analysis,
-                raw_quant_data=raw_data,
-                investor_profile=user_context,
-                client=client,
-            )
-            yield event("eval_result", {"result": eval_data})
-        except Exception:
-            pass  # eval failure is non-fatal
 
     except Exception as e:
         yield event("error", {"message": str(e)})

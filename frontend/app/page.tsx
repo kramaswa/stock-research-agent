@@ -775,6 +775,7 @@ export default function Home() {
       let buffer = "";
       let completed = false;
       let streamError = false;
+      let pendingEvalPayload: { ticker: string; content: string; purchase_price: number } | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -829,22 +830,56 @@ export default function Home() {
                 try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
                 return updated;
               });
+              // Snapshot eval payload while data is in scope — used when done fires
+              pendingEvalPayload = {
+                ticker: data.ticker,
+                content: data.content,
+                purchase_price: data.purchase_price ?? price,
+              };
             }
-            else if (data.type === "eval_result") {
-              const evalData = data.result as EvalResult;
-              setEvalResult(evalData);
-              setEvalLoading(false);
-              if (currentEntryIdRef.current) {
-                setHoldHistory((prev) => {
-                  const updated = prev.map((h) =>
-                    h.id === currentEntryIdRef.current ? { ...h, evalResult: evalData } : h
-                  );
-                  try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
-                  return updated;
-                });
+            else if (data.type === "done") {
+              setHoldProgress(100); completed = true; setHoldLoading(false);
+              // Fire eval as an independent POST so it never blocks the SSE stream
+              if (pendingEvalPayload) {
+                const payload = pendingEvalPayload;
+                const entryId = currentEntryIdRef.current;
+                const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+                const controller = new AbortController();
+                const evalTimeout = setTimeout(() => controller.abort(), 120_000);
+                (async () => {
+                  try {
+                    const res = await fetch(`${base}/holdcheck/eval`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        ticker: payload.ticker,
+                        hold_check_output: payload.content,
+                        risk: userContext.risk,
+                        horizon: userContext.horizon,
+                        goal: userContext.goal,
+                        purchase_price: payload.purchase_price,
+                      }),
+                      signal: controller.signal,
+                    });
+                    if (res.ok) {
+                      const evalData: EvalResult = await res.json();
+                      setEvalResult(evalData);
+                      if (entryId) {
+                        setHoldHistory((prev) => {
+                          const updated = prev.map((h) =>
+                            h.id === entryId ? { ...h, evalResult: evalData } : h
+                          );
+                          try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
+                          return updated;
+                        });
+                      }
+                    }
+                  } catch {}
+                  clearTimeout(evalTimeout);
+                  setEvalLoading(false);
+                })();
               }
             }
-            else if (data.type === "done") { setHoldProgress(100); completed = true; setHoldLoading(false); }
             else if (data.type === "error") { setHoldError(data.message); streamError = true; }
           } catch {}
         }
