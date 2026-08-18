@@ -165,21 +165,27 @@ async def run_eval_agent(
         f"- Time horizon: {investor_profile.get('horizon', 'medium-term')}\n"
         f"- Investment goal: {investor_profile.get('goal', 'growth')}\n\n"
         f"## Raw Quantitative Data (ground truth)\n"
-        f"```json\n{json.dumps(quant_subset, indent=2, default=str)}\n```\n\n"
+        f"```json\n{json.dumps(quant_subset, default=str)}\n```\n\n"
         f"## Hold Check Output to Evaluate\n"
         f"{hold_check_output}"
     )
 
     loop = asyncio.get_event_loop()
-    response = await loop.run_in_executor(
-        None,
-        lambda: client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=2048,
-            system=[{"type": "text", "text": EVAL_SYSTEM, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": user_message}],
-        ),
-    )
+    try:
+        response = await asyncio.wait_for(
+            loop.run_in_executor(
+                None,
+                lambda: client.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    max_tokens=2048,
+                    system=[{"type": "text", "text": EVAL_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+                    messages=[{"role": "user", "content": user_message}],
+                ),
+            ),
+            timeout=55.0,
+        )
+    except asyncio.TimeoutError:
+        raise RuntimeError("Eval timed out — Haiku took > 55s")
 
     raw_text = ""
     for block in response.content:

@@ -873,8 +873,12 @@ export default function Home() {
                           return updated;
                         });
                       }
+                    } else {
+                      setEvalError("Auto-evaluation failed — click 'Evaluate analysis quality' to retry.");
                     }
-                  } catch {}
+                  } catch {
+                    setEvalError("Auto-evaluation failed — click 'Evaluate analysis quality' to retry.");
+                  }
                   clearTimeout(evalTimeout);
                   setEvalLoading(false);
                 })();
