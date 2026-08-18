@@ -878,8 +878,9 @@ async def run_hold_check_agent(
 
     def _run_phase(system_text: str, msg: str, use_thinking: bool, max_tok: int) -> str:
         parts: list[str] = []
+        model = "claude-sonnet-4-6" if use_thinking else "claude-haiku-4-5-20251001"
         kwargs: dict = {
-            "model": "claude-sonnet-4-6",
+            "model": model,
             "max_tokens": max_tok,
             "system": [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
             "messages": [{"role": "user", "content": msg}],
@@ -895,7 +896,7 @@ async def run_hold_check_agent(
 
     # Phase 1: Pre-Check + Signal + 10-Year Outlook (with extended thinking)
     phase1_text = await loop.run_in_executor(
-        None, _run_phase, SYSTEM_PHASE1, user_message, True, 12000
+        None, _run_phase, SYSTEM_PHASE1, user_message, True, 16000
     )
     if not phase1_text:
         return "Hold check unavailable."
