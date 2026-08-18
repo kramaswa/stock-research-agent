@@ -886,7 +886,7 @@ async def run_hold_check_agent(
             "messages": [{"role": "user", "content": msg}],
         }
         if use_thinking:
-            kwargs["thinking"] = {"type": "enabled", "budget_tokens": 6000}
+            kwargs["thinking"] = {"type": "enabled", "budget_tokens": 3000}
         with client.messages.stream(**kwargs) as stream:
             for text in stream.text_stream:
                 parts.append(text)
