@@ -41,19 +41,17 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
     lines = []
     for e in estimates[:3]:
         period = e.get("period", "?")
-        mean = e.get("epsAvg") or e.get("mean")
-        high = e.get("epsHigh") or e.get("high")
-        low = e.get("epsLow") or e.get("low")
-        n = e.get("numberAnalysts") or e.get("n_analysts")
+        # market_tools.py stores snake_case keys; fall back to camelCase for safety
+        mean = e.get("eps_avg") or e.get("epsAvg") or e.get("mean")
+        high = e.get("eps_high") or e.get("epsHigh") or e.get("high")
+        low = e.get("eps_low") or e.get("epsLow") or e.get("low")
+        n = e.get("num_analysts") or e.get("numberAnalysts") or e.get("n_analysts")
         mean_str = f"${mean:.2f}" if mean is not None else "N/A"
         range_str = f"(range ${low:.2f}–${high:.2f})" if low is not None and high is not None else ""
         n_str = f", {int(n)} analysts" if n is not None else ""
         lines.append(f"  {period}: consensus {mean_str} {range_str}{n_str}")
 
-    # Note large GAAP/non-GAAP gap — but do NOT redirect away from the consensus.
-    # A large gap is usually structural (M&A amortization, SBC) not a cyclical peak.
-    # The cyclical normalization exception is already handled in the prompt itself.
-    first_mean = estimates[0].get("epsAvg") or estimates[0].get("mean")
+    first_mean = estimates[0].get("eps_avg") or estimates[0].get("epsAvg") or estimates[0].get("mean")
     peak_warning = ""
     if first_mean and eps_ttm and eps_ttm > 0 and first_mean > 2.0 * eps_ttm:
         ratio = round(first_mean / eps_ttm, 1)
