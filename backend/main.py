@@ -343,6 +343,36 @@ class EvalRequest(BaseModel):
     purchase_price: float = 0.0
 
 
+async def _eval_stream(body: EvalRequest):
+    """SSE generator for eval — keeps Railway connection alive via ping=10."""
+    def event(type: str, payload: dict):
+        return {"data": json.dumps({"type": type, **payload})}
+
+    ticker = body.ticker.upper().strip()
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    investor_profile = {"risk": body.risk, "horizon": body.horizon, "goal": body.goal}
+
+    try:
+        yield event("status", {"message": "Evaluating analysis quality..."})
+        await asyncio.sleep(0)
+
+        loop = asyncio.get_running_loop()
+        raw_data = await loop.run_in_executor(None, get_all_stock_data, ticker)
+
+        result = await run_eval_agent(
+            ticker=ticker,
+            hold_check_output=body.hold_check_output,
+            raw_quant_data=raw_data,
+            investor_profile=investor_profile,
+            client=client,
+        )
+        yield event("eval_result", {"result": result})
+    except Exception as e:
+        yield event("error", {"message": str(e)})
+
+    yield event("done", {})
+
+
 @app.post("/holdcheck/eval")
 @limiter.limit("20/hour")
 async def hold_check_eval(request: Request, body: EvalRequest):
@@ -351,24 +381,7 @@ async def hold_check_eval(request: Request, body: EvalRequest):
         raise HTTPException(status_code=400, detail="Invalid ticker symbol")
     if not body.hold_check_output or len(body.hold_check_output) < 500:
         raise HTTPException(status_code=400, detail="hold_check_output is too short to evaluate")
-
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    investor_profile = {"risk": body.risk, "horizon": body.horizon, "goal": body.goal}
-
-    loop = asyncio.get_event_loop()
-    raw_data = await loop.run_in_executor(None, get_all_stock_data, ticker)
-
-    try:
-        result = await run_eval_agent(
-            ticker=ticker,
-            hold_check_output=body.hold_check_output,
-            raw_quant_data=raw_data,
-            investor_profile=investor_profile,
-            client=client,
-        )
-        return JSONResponse(content=result)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+    return EventSourceResponse(_eval_stream(body), ping=10)
 
 
 @app.get("/health")

@@ -861,20 +861,36 @@ export default function Home() {
                       }),
                       signal: controller.signal,
                     });
-                    if (res.ok) {
-                      const evalData: EvalResult = await res.json();
-                      setEvalResult(evalData);
-                      if (entryId) {
-                        setHoldHistory((prev) => {
-                          const updated = prev.map((h) =>
-                            h.id === entryId ? { ...h, evalResult: evalData } : h
-                          );
-                          try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
-                          return updated;
-                        });
+                    if (!res.ok || !res.body) throw new Error("eval request failed");
+                    const reader = res.body.getReader();
+                    const dec = new TextDecoder();
+                    let buf = "";
+                    while (true) {
+                      const { done, value } = await reader.read();
+                      if (done) break;
+                      buf += dec.decode(value, { stream: true });
+                      const lines = buf.split("\n"); buf = lines.pop() ?? "";
+                      for (const line of lines) {
+                        if (!line.startsWith("data: ")) continue;
+                        try {
+                          const ev = JSON.parse(line.slice(6));
+                          if (ev.type === "eval_result") {
+                            const evalData: EvalResult = ev.result;
+                            setEvalResult(evalData);
+                            if (entryId) {
+                              setHoldHistory((prev) => {
+                                const updated = prev.map((h) =>
+                                  h.id === entryId ? { ...h, evalResult: evalData } : h
+                                );
+                                try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
+                                return updated;
+                              });
+                            }
+                          } else if (ev.type === "error") {
+                            setEvalError("Auto-evaluation failed — click 'Evaluate analysis quality' to retry.");
+                          }
+                        } catch {}
                       }
-                    } else {
-                      setEvalError("Auto-evaluation failed — click 'Evaluate analysis quality' to retry.");
                     }
                   } catch {
                     setEvalError("Auto-evaluation failed — click 'Evaluate analysis quality' to retry.");
@@ -916,20 +932,39 @@ export default function Home() {
           purchase_price: holdResult.purchase_price,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail ?? "Evaluation failed. Please try again.");
-      }
-      const data: EvalResult = await res.json();
-      setEvalResult(data);
-      if (currentEntryIdRef.current) {
-        setHoldHistory((prev) => {
-          const updated = prev.map((h) =>
-            h.id === currentEntryIdRef.current ? { ...h, evalResult: data } : h
-          );
-          try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
-          return updated;
-        });
+      if (!res.ok || !res.body) throw new Error("Evaluation failed. Please try again.");
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n"); buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const ev = JSON.parse(line.slice(6));
+            if (ev.type === "eval_result") {
+              const data: EvalResult = ev.result;
+              setEvalResult(data);
+              if (currentEntryIdRef.current) {
+                setHoldHistory((prev) => {
+                  const updated = prev.map((h) =>
+                    h.id === currentEntryIdRef.current ? { ...h, evalResult: data } : h
+                  );
+                  try { localStorage.setItem("holdCheckHistory", JSON.stringify(updated)); } catch {}
+                  return updated;
+                });
+              }
+            } else if (ev.type === "error") {
+              throw new Error(ev.message ?? "Evaluation failed. Please try again.");
+            }
+          } catch (parseErr) {
+            if (parseErr instanceof Error && parseErr.message !== "Evaluation failed. Please try again.") continue;
+            throw parseErr;
+          }
+        }
       }
     } catch (e: unknown) {
       setEvalError(e instanceof Error ? e.message : "Evaluation failed. Please try again.");

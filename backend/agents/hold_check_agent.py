@@ -426,26 +426,26 @@ ETFs compound via NAV appreciation + distributions, not EPS × exit multiple. Ap
 6. **No exit multiple column**: show "—" for Exit Multiple in all rows.
 7. **S&P 500 baseline row**: keep as-is (~2.85x, ~11%/yr) for comparison.
 
-STEP 1 — CHOOSE PRIMARY METRIC (FCF/share vs EPS):
-Prefer FCF/share over EPS when fcf_per_share_ttm is available and positive — FCF is harder to manipulate and is what ultimately accrues to shareholders. Use EPS only as a fallback when FCF is null, negative, or distorted (e.g., banks, early-stage). State which metric you are using and why.
+STEP 1 — CHOOSE STARTING METRIC (ordered priority — stop at first that applies):
 
-**Metric basis:** Finnhub eps_estimates (eps_avg) are non-GAAP consensus — the same basis Wall Street models use, and what forward P/E exit multiples are priced against. Using non-GAAP consensus as Year 0 with a forward P/E exit multiple is internally consistent. GAAP TTM EPS is a reference point for disclosure only, never the starting base when estimates are available.
-
-**Starting base — two mutually exclusive paths. Follow exactly one.**
-
-**PATH A — eps_estimates IS present in the Ground Truth block (most large-caps):**
-→ Use eps_avg from the first period as Year 0. This is final. No override, no exception.
-→ Even if eps_avg is 2×, 3×, or 4× the GAAP TTM EPS — that gap is a GAAP/non-GAAP accounting difference (SBC add-backs, M&A amortization), NOT a cyclical signal. Use eps_avg anyway.
-→ Disclose in one sentence if the gap is >20%: "Using non-GAAP consensus $[X]; GAAP TTM is $[Y] — gap reflects [SBC/M&A amortization] add-backs standard in analyst models."
+**Priority 1 — eps_estimates present in Ground Truth block (most large-caps):**
+→ Use eps_avg from the first period as Year 0 EPS. STOP. Do not check FCF. Do not apply any exception.
+→ Why: eps_estimates = analyst consensus non-GAAP forward EPS — the same basis exit P/E multiples are priced against. Using it is internally consistent and forward-looking.
+→ Even if eps_avg is 2×, 3×, or 4× the GAAP TTM value: this gap is accounting treatment (SBC, M&A amortization), NOT a cyclical distortion. Use eps_avg. Do NOT switch to GAAP TTM or GAAP FCF.
+→ Disclose if gap > 20%: "Using non-GAAP consensus $[X]; GAAP TTM EPS is $[Y] — gap reflects SBC/amortization add-backs standard in analyst models."
 → Cite as: "Forward EPS: $[X] (Finnhub consensus, [period])."
-→ The cyclical normalization rule below (Path B) does NOT apply when eps_estimates is available.
 
-**PATH B — eps_estimates IS NOT available:**
-→ Use the pre-computed market-implied EPS from the Ground Truth block (current_price ÷ forward_pe).
+**Priority 2 — eps_estimates NOT available AND fcf_per_share_ttm is positive:**
+→ Use fcf_per_share_ttm as Year 0. FCF is harder to manipulate than EPS.
+→ Cite as: "FCF/share: $[X] (Finnhub TTM)."
+→ Note: this is GAAP TTM FCF — for companies with recent large M&A (high interest/amortization drag), FCF TTM may be temporarily depressed; flag this if applicable.
+
+**Priority 3 — neither eps_estimates nor positive FCF available:**
+→ Use the pre-computed market-implied EPS from Ground Truth (current_price ÷ forward_pe).
 → Cite as: "Forward EPS: $[X] (market-implied: $[price] ÷ [fwd_pe]x)."
-→ CYCLICAL EXCEPTION (Path B only): if the business is at a demonstrable cyclical earnings peak (memory semis in HBM upcycle, commodity producers, industrials at cycle top) AND market-implied EPS > 2× GAAP TTM EPS → redirect to GAAP TTM as the through-cycle base. State explicitly why. This exception does NOT apply in Path A.
+→ CYCLICAL EXCEPTION (Priority 3 only): if the business is at a demonstrable cyclical peak (memory semis, commodity producers) AND market-implied EPS > 2× GAAP TTM EPS → use GAAP TTM instead. State why explicitly. This exception does NOT exist in Priority 1 or 2.
 
-The reason forward EPS matters: exit multiples are forward P/E ratios. Starting from TTM EPS silently compresses the multiple across the horizon, systematically understating returns.
+The reason forward consensus beats GAAP TTM: exit multiples are forward P/E ratios. Starting from GAAP TTM silently compresses returns across the horizon. A company with M&A amortization or SBC drag will have GAAP TTM EPS << non-GAAP consensus; using GAAP TTM would systematically understate 10-year returns.
 
 STEP 2 — DERIVE THREE REALISTIC GROWTH RATES for the chosen metric:
 
