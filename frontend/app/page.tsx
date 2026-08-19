@@ -887,13 +887,13 @@ export default function Home() {
                               });
                             }
                           } else if (ev.type === "error") {
-                            setEvalError("Auto-evaluation failed — click 'Evaluate analysis quality' to retry.");
+                            setEvalError(`Eval error: ${ev.message ?? "unknown"} — click 'Evaluate analysis quality' to retry.`);
                           }
                         } catch {}
                       }
                     }
-                  } catch {
-                    setEvalError("Auto-evaluation failed — click 'Evaluate analysis quality' to retry.");
+                  } catch (e) {
+                    setEvalError(`Eval connection error: ${e instanceof Error ? e.message : String(e)}`);
                   }
                   clearTimeout(evalTimeout);
                   setEvalLoading(false);

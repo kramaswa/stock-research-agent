@@ -461,6 +461,12 @@ The law of large numbers applies — large revenue bases cannot sustain historic
 State the calculation explicitly: "eps_growth_5y [Z]% − [discount]pp large-base discount = base case [W]%. Bull ceiling: [B]%."
 Example: Alphabet — eps_growth_5y 20%, revenue ~$350B ($150–400B tier) → 20% − 7pp = **13% base**, bull ceiling = 20% − 3pp = **17%**.
 
+**M&A acquisition adjustment (apply BEFORE table B when relevant):**
+If the company completed a large acquisition in the last 3 years — detectable from news_analysis, earnings transcript, 8-K, or widely-known context — eps_growth_5y is likely M&A-inflated: the acquired entity's earnings fold into the consolidated P&L and make organic growth look faster than it is. Apply an additional 5–8pp downward adjustment to the eps_growth_5y anchor *before* applying table B.
+- State explicitly: "[Company] acquired [target] in [year]. eps_growth_5y ([X]%) likely reflects M&A-boosted earnings; applying [5–8]pp M&A adjustment → organic anchor ≈ [X−adj]%. Now applying large-base discount from table B to this organic anchor."
+- This adjustment is on top of table B — do not substitute one for the other.
+- Skip this adjustment only if the acquisition closed more than 3 years ago or was small enough that it materially has already rolled off the 5-year base (i.e., the pre-acquisition entity represented less than 10% of current revenue).
+
 **C. Set three scenarios using anchors A and B:**
 Industry long-run base: what do comparable companies realistically average over a decade? (Large-cap tech ~10-14%; semiconductors ~10-15% through-cycle; software platforms ~12-18%; consumer staples ~5-8%; utilities ~3-5%.)
 Company-specific adjustments: durable moat → can sustain above-sector longer. Commoditized or cyclical → mean-reverts faster.
