@@ -387,3 +387,18 @@ async def hold_check_eval(request: Request, body: EvalRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/debug/eps/{ticker}")
+async def debug_eps(ticker: str):
+    """Temporary: show exactly what Finnhub returns for eps_estimates."""
+    loop = asyncio.get_running_loop()
+    raw = await loop.run_in_executor(None, get_all_stock_data, ticker.upper())
+    return {
+        "ticker": ticker.upper(),
+        "eps_ttm": raw.get("eps_ttm"),
+        "forward_pe": raw.get("forward_pe"),
+        "current_price": raw.get("current_price"),
+        "eps_estimates": raw.get("eps_estimates"),
+        "eps_estimates_quarterly": raw.get("eps_estimates_quarterly"),
+    }
