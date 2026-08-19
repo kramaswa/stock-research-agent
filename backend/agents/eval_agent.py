@@ -157,11 +157,9 @@ async def run_eval_agent(
     investor_profile: dict,
     client: anthropic.Anthropic,
 ) -> dict:
+    import os
     quant_subset = _quant_subset(raw_quant_data)
-
-    # Truncate to keep Haiku latency under Railway's HTTP timeout (~30s).
-    # 5000 chars covers signal, pre-check, 10-year table, and most narrative sections.
-    truncated = hold_check_output[:5000] + ("\n\n...[truncated for length]" if len(hold_check_output) > 5000 else "")
+    truncated = hold_check_output[:4000] + ("\n\n...[truncated]" if len(hold_check_output) > 4000 else "")
 
     user_message = (
         f"## Investor Profile\n"
@@ -174,26 +172,24 @@ async def run_eval_agent(
         f"{truncated}"
     )
 
-    loop = asyncio.get_running_loop()
+    # Use AsyncAnthropic — proper async client, no thread pool needed
+    async_client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     try:
         response = await asyncio.wait_for(
-            loop.run_in_executor(
-                None,
-                lambda: client.messages.create(
-                    model="claude-haiku-4-5-20251001",
-                    max_tokens=2048,
-                    system=[{"type": "text", "text": EVAL_SYSTEM, "cache_control": {"type": "ephemeral"}}],
-                    messages=[
-                        {"role": "user", "content": user_message},
-                        # Prefill forces JSON-only output — response continues from "{"
-                        {"role": "assistant", "content": "{"},
-                    ],
-                ),
+            async_client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=2048,
+                system=[{"type": "text", "text": EVAL_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+                messages=[
+                    {"role": "user", "content": user_message},
+                    # Prefill forces JSON-only output — response continues from "{"
+                    {"role": "assistant", "content": "{"},
+                ],
             ),
-            timeout=55.0,
+            timeout=90.0,
         )
     except asyncio.TimeoutError:
-        raise RuntimeError("Eval timed out — Haiku took > 55s")
+        raise RuntimeError("Eval timed out after 90s")
 
     raw_text = ""
     for block in response.content:
@@ -201,16 +197,14 @@ async def run_eval_agent(
             raw_text = block.text
             break
 
-    # Prefill "{" is not included in response text — prepend it back
+    # Prefill "{" is not echoed in response — prepend it back
     raw_text = "{" + raw_text
 
-    # Try direct parse (should always succeed with prefill)
     try:
         return json.loads(raw_text.strip())
     except json.JSONDecodeError:
         pass
 
-    # Fallback: extract the first {...} JSON object from anywhere in the response
     match = re.search(r'\{[\s\S]*\}', raw_text)
     if match:
         try:
@@ -218,4 +212,4 @@ async def run_eval_agent(
         except json.JSONDecodeError:
             pass
 
-    raise ValueError(f"Eval JSON parse failed. Raw (first 300 chars): {raw_text[:300]}")
+    raise ValueError(f"Eval JSON parse failed. Raw: {raw_text[:300]}")
