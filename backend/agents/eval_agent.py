@@ -174,7 +174,7 @@ async def run_eval_agent(
         f"{truncated}"
     )
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         response = await asyncio.wait_for(
             loop.run_in_executor(
@@ -183,7 +183,11 @@ async def run_eval_agent(
                     model="claude-haiku-4-5-20251001",
                     max_tokens=2048,
                     system=[{"type": "text", "text": EVAL_SYSTEM, "cache_control": {"type": "ephemeral"}}],
-                    messages=[{"role": "user", "content": user_message}],
+                    messages=[
+                        {"role": "user", "content": user_message},
+                        # Prefill forces JSON-only output — response continues from "{"
+                        {"role": "assistant", "content": "{"},
+                    ],
                 ),
             ),
             timeout=55.0,
@@ -197,23 +201,21 @@ async def run_eval_agent(
             raw_text = block.text
             break
 
-    # Try direct parse first (ideal case — model returned pure JSON)
+    # Prefill "{" is not included in response text — prepend it back
+    raw_text = "{" + raw_text
+
+    # Try direct parse (should always succeed with prefill)
     try:
         return json.loads(raw_text.strip())
     except json.JSONDecodeError:
         pass
 
-    # Strip markdown fences and retry
-    cleaned = re.sub(r"^```json\s*", "", raw_text.strip())
-    cleaned = re.sub(r"```\s*$", "", cleaned.strip())
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        pass
-
-    # Last resort: extract the first {...} JSON object from anywhere in the response
+    # Fallback: extract the first {...} JSON object from anywhere in the response
     match = re.search(r'\{[\s\S]*\}', raw_text)
     if match:
-        return json.loads(match.group())
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
 
-    raise ValueError(f"No valid JSON found in eval response. Raw: {raw_text[:200]}")
+    raise ValueError(f"Eval JSON parse failed. Raw (first 300 chars): {raw_text[:300]}")
