@@ -429,21 +429,23 @@ ETFs compound via NAV appreciation + distributions, not EPS × exit multiple. Ap
 STEP 1 — CHOOSE PRIMARY METRIC (FCF/share vs EPS):
 Prefer FCF/share over EPS when fcf_per_share_ttm is available and positive — FCF is harder to manipulate and is what ultimately accrues to shareholders. Use EPS only as a fallback when FCF is null, negative, or distorted (e.g., banks, early-stage). State which metric you are using and why.
 
-**GAAP-only rule (mandatory, no exceptions):** When using EPS, always use GAAP EPS — never operating EPS, adjusted EPS, non-GAAP EPS, or any other variant. The exit multiples in this framework (sector median P/E values) are GAAP-based forward P/E ratios. Mixing non-GAAP EPS with a GAAP P/E exit multiple systematically misstates returns and produces inconsistent results across runs. If you write "Op. EPS", "Adj. EPS", or any non-GAAP label in the Year-10 column header or calculations, that is a critical error — redo using GAAP EPS.
+**Metric basis:** Finnhub eps_estimates (eps_avg) are non-GAAP consensus — the same basis Wall Street models use, and what forward P/E exit multiples are priced against. Using non-GAAP consensus as Year 0 with a forward P/E exit multiple is internally consistent. GAAP TTM EPS is a reference point for disclosure only, never the starting base when estimates are available.
 
-**Starting base — cite the exact Finnhub field (critical for consistency):**
-State which field you are using and its exact value from the Ground Truth block:
-- **First choice**: eps_estimates block → use the first period's eps_avg as Year 0 forward EPS. Cite it as: "Forward EPS: $[X] (Finnhub consensus, [period])."
-- **Fallback if eps_estimates unavailable**: use the pre-computed market-implied EPS from the Ground Truth block (current_price ÷ forward_pe, pre-calculated for you). Cite it as: "Forward EPS: $[X] (market-implied: $[price] ÷ [fwd_pe]x)."
-- **Never**: do not use TTM EPS as Year 0 unless the business is at a cyclical earnings peak AND forward EPS substantially exceeds through-cycle EPS. Never derive EPS by assuming the sector median P/E — always use the actual forward_pe from Finnhub data.
+**Starting base — two mutually exclusive paths. Follow exactly one.**
 
-The reason forward EPS matters: exit multiples are forward P/E ratios. Starting from TTM EPS silently compresses the multiple across the horizon, systematically understating returns. For example, TTM EPS $14.79 with forward EPS $18.07 on a 21x forward P/E — starting from TTM implicitly assumes the P/E compresses from ~26x to 21x, a drag unrelated to valuation.
+**PATH A — eps_estimates IS present in the Ground Truth block (most large-caps):**
+→ Use eps_avg from the first period as Year 0. This is final. No override, no exception.
+→ Even if eps_avg is 2×, 3×, or 4× the GAAP TTM EPS — that gap is a GAAP/non-GAAP accounting difference (SBC add-backs, M&A amortization), NOT a cyclical signal. Use eps_avg anyway.
+→ Disclose in one sentence if the gap is >20%: "Using non-GAAP consensus $[X]; GAAP TTM is $[Y] — gap reflects [SBC/M&A amortization] add-backs standard in analyst models."
+→ Cite as: "Forward EPS: $[X] (Finnhub consensus, [period])."
+→ The cyclical normalization rule below (Path B) does NOT apply when eps_estimates is available.
 
-**GAAP vs non-GAAP disclosure (mandatory):** Finnhub consensus estimates (eps_estimates) are typically non-GAAP/adjusted EPS, which is what Wall Street models to. The Ground Truth block now includes "EPS TTM (GAAP)" for cross-reference. If the consensus eps_avg materially exceeds EPS TTM (GAAP) — e.g., by more than 20% — the difference is almost certainly stock-based compensation and amortization add-backs. This is acceptable: exit P/E multiples in the market are also applied to non-GAAP EPS, so the model remains internally consistent. However, you MUST disclose the basis in one sentence: "Using non-GAAP consensus forward EPS of $[X]; GAAP TTM EPS is $[Y] for reference — the gap reflects SBC and amortization add-backs standard in analyst models." If the two figures are close (within 15%), no disclosure is needed.
+**PATH B — eps_estimates IS NOT available:**
+→ Use the pre-computed market-implied EPS from the Ground Truth block (current_price ÷ forward_pe).
+→ Cite as: "Forward EPS: $[X] (market-implied: $[price] ÷ [fwd_pe]x)."
+→ CYCLICAL EXCEPTION (Path B only): if the business is at a demonstrable cyclical earnings peak (memory semis in HBM upcycle, commodity producers, industrials at cycle top) AND market-implied EPS > 2× GAAP TTM EPS → redirect to GAAP TTM as the through-cycle base. State explicitly why. This exception does NOT apply in Path A.
 
-EXCEPTION — use normalized through-cycle EPS when: (a) the business is at a demonstrable cyclical earnings peak (memory semis in HBM upcycle, commodity producers at peak, industrials at cycle top) AND (b) forward EPS substantially exceeds through-cycle EPS. State this explicitly.
-
-THIS EXCEPTION DOES NOT APPLY to GAAP/non-GAAP gaps caused by M&A amortization (e.g., Broadcom after VMware, any large acquirer post-deal). Amortization of acquired intangibles is a finite, predictable accounting treatment that mechanically fades over 5–10 years — it is NOT a cyclical earnings pattern. For such companies, the consensus non-GAAP forward EPS IS the correct Year 0 because (1) exit multiples in the market are applied to non-GAAP EPS, so the model is internally consistent, and (2) the amortization drag will mechanically lift GAAP EPS over the holding period. Using GAAP TTM as Year 0 for a major acquirer produces a misleadingly pessimistic return estimate. If you are unsure, check: does the GAAP/non-GAAP gap come from amortization of acquired intangibles or SBC? If yes → use non-GAAP consensus. Is the gap from cyclically-inflated operating earnings (e.g. peak HBM margins)? If yes → normalize.
+The reason forward EPS matters: exit multiples are forward P/E ratios. Starting from TTM EPS silently compresses the multiple across the horizon, systematically understating returns.
 
 STEP 2 — DERIVE THREE REALISTIC GROWTH RATES for the chosen metric:
 
