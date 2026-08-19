@@ -15,26 +15,19 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
         price = raw.get("current_price")
         if fwd_pe and price and fwd_pe > 0:
             implied_eps = round(price / fwd_pe, 2)
-            # Cyclical distortion check: if market-implied EPS >> GAAP TTM, the low P/E is
-            # pricing in future normalization — compounding this inflated figure for 10 years
-            # produces absurdly optimistic targets. Redirect the model to use GAAP TTM instead.
-            if eps_ttm and eps_ttm > 0 and implied_eps > 2.0 * eps_ttm:
+            gaap_note = ""
+            if eps_ttm and eps_ttm > 0 and implied_eps > 1.5 * eps_ttm:
                 ratio = round(implied_eps / eps_ttm, 1)
-                return (
-                    f"\n## Ground Truth Consensus EPS Estimates\n"
-                    f"Not available from provider. Market-implied forward EPS would be "
-                    f"${price:.2f} ÷ {fwd_pe:.2f}x = ${implied_eps:.2f}/share, but this is "
-                    f"{ratio}× GAAP TTM EPS (${eps_ttm:.2f}) — a sign of cyclical P/E compression "
-                    f"where the market prices in near-term earnings but anticipates mean-reversion. "
-                    f"⚠ DO NOT use ${implied_eps:.2f} as Year 0 for the 10-year model — it will "
-                    f"produce absurdly high 10-year targets. Use GAAP TTM EPS of ${eps_ttm:.2f} "
-                    f"as Year 0 and label it '(GAAP TTM — cyclical normalization applied)'.\n"
+                gaap_note = (
+                    f" Note: GAAP TTM EPS is ${eps_ttm:.2f} ({ratio}× lower) — "
+                    f"the gap likely reflects M&A amortization or SBC, not a cyclical peak. "
+                    f"Use ${implied_eps:.2f} unless you have explicit evidence of a cyclical earnings peak."
                 )
             return (
                 f"\n## Ground Truth Consensus EPS Estimates\n"
                 f"Not available from provider. Market-implied forward EPS: "
-                f"${price:.2f} (current price) ÷ {fwd_pe:.2f}x (Finnhub forward P/E) = ${implied_eps:.2f}/share. "
-                f"Use ${implied_eps:.2f} as Year 0 EPS — label it '(market-implied)' in your analysis.\n"
+                f"${price:.2f} ÷ {fwd_pe:.2f}x (Finnhub forward P/E) = ${implied_eps:.2f}/share.{gaap_note} "
+                f"Use ${implied_eps:.2f} as Year 0.\n"
             )
         return "\n## Ground Truth Consensus EPS Estimates\nNot available from provider — forward P/E also unavailable; do not cite a specific forward EPS figure.\n"
 
