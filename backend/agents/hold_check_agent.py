@@ -495,12 +495,14 @@ After setting growth rates, assign a probability to each scenario. Probabilities
 | Competitive market or confirmed structural headwinds (TTD, MU, STX) | 30% | 50% | 20% |
 | Hypergrowth / unproven at scale (PLTR, early-stage) | 35% | 45% | 20% |
 
-**Competitive reclassification (apply BEFORE Step 2):** Scan the news analysis for active competition. If a well-funded competitor has confirmed regulatory approval and is actively commercializing in the same core product/procedure categories, treat the company one tier lower than its structural classification (e.g., a near-monopoly becomes "Strong market leader, moderate competition"). This is mandatory — do not let strong historical financials offset a confirmed, funded competitive threat that is already in the market.
+**Competitive reclassification (apply BEFORE Step 2):** Scan the news analysis for active competition. If a well-funded competitor is confirmed as actively shipping or commercializing competing products/services in the same core categories — this includes: confirmed regulatory approval (medical devices), confirmed customer wins or hyperscaler contracts for competing products (tech/semis), or confirmed market-share gains — treat the company one tier lower than its structural classification (e.g., a near-monopoly becomes "Strong market leader, moderate competition"). This is mandatory — do not let strong historical financials offset a confirmed, funded competitive threat that is already in the market.
 
 **Step 2 — Adjust using Ground Truth signals** (each signal that applies shifts bear probability by the stated amount; base absorbs the difference):
 
 *Signals that INCREASE bear probability (business deteriorating):*
 - News analysis confirms a direct competitor is in late-stage regulatory review (PDUFA/CE mark within 18 months) in the same core categories → **+5pp bear**
+- News analysis confirms a well-funded competitor has active or confirmed customer wins for competing products in the same core categories (e.g., Marvell winning hyperscaler custom silicon alongside AVGO) → **+4pp bear**
+- The company completed a large acquisition in the last 3 years AND integration risk remains elevated (VMware-scale deals, stated synergy targets not yet achieved) → **+3pp bear** (execution risk on top of M&A-inflated baseline)
 - News analysis confirms government-mandated price controls or volume-based procurement (VBP) actively in effect in a market representing ≥10% of the company's revenue or growth runway (e.g., China VBP for medical devices, EU reference pricing caps) → **+4pp bear** (structural margin ceiling in a key growth market)
 - eps_growth_ttm_yoy is more than 5pp below eps_growth_5y → **+4pp bear** (growth decelerating structurally)
 - gross_margin_ttm is declining vs prior year → **+3pp bear** (pricing power eroding)
