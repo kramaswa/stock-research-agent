@@ -274,6 +274,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
                     transcript=transcript_text or "",
                     raw_metrics=raw_metrics,
                     chunk_queue=chunk_queue,
+                    raw_data=raw_data,
                 )
             finally:
                 await chunk_queue.put(None)  # sentinel: always signal completion

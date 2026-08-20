@@ -178,7 +178,7 @@ async def run_eval_agent(
         response = await asyncio.wait_for(
             async_client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=4096,
+                max_tokens=8192,
                 system=[{"type": "text", "text": EVAL_SYSTEM, "cache_control": {"type": "ephemeral"}}],
                 messages=[
                     {"role": "user", "content": user_message},
@@ -212,4 +212,4 @@ async def run_eval_agent(
         except json.JSONDecodeError:
             pass
 
-    raise ValueError(f"Eval JSON parse failed. Raw: {raw_text[:300]}")
+    raise ValueError(f"Eval JSON parse failed. Raw: {raw_text[:800]}")

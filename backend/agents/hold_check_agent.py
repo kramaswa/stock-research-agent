@@ -274,6 +274,129 @@ def _cache_key(
     raw = f"{ticker.upper()}|{risk}|{horizon}|{goal}|{price_bucket}|{user_thesis[:100].strip()}"
     return hashlib.md5(raw.encode()).hexdigest()
 
+def _compute_10yr_model(raw: dict) -> dict | None:
+    """Deterministically compute 10-year model growth anchors from raw Finnhub data."""
+    eps_estimates = raw.get("eps_estimates") or []
+    forward_pe = raw.get("forward_pe")
+    current_price = raw.get("current_price")
+    fcf_per_share = raw.get("fcf_per_share_ttm")
+
+    starting_eps: float | None = None
+    eps_source = ""
+
+    if eps_estimates:
+        first = eps_estimates[0]
+        mean = first.get("eps_avg") or first.get("epsAvg")
+        if mean and float(mean) > 0:
+            starting_eps = round(float(mean), 2)
+            period = first.get("period", "")
+            eps_source = f"consensus forward EPS (Finnhub {period}): ${starting_eps}"
+
+    if starting_eps is None and fcf_per_share and float(fcf_per_share) > 0:
+        starting_eps = round(float(fcf_per_share), 2)
+        eps_source = f"FCF/share TTM (Finnhub): ${starting_eps}"
+
+    if starting_eps is None and forward_pe and current_price and float(forward_pe) > 0:
+        implied = round(float(current_price) / float(forward_pe), 2)
+        if implied > 0:
+            starting_eps = implied
+            eps_source = (
+                f"market-implied forward EPS: "
+                f"${float(current_price):.2f} ÷ {float(forward_pe):.2f}x = ${implied}"
+            )
+
+    if not starting_eps or starting_eps <= 0:
+        return None
+
+    eps_g5y = raw.get("eps_growth_5y")
+    if eps_g5y is None:
+        return None
+    eps_g5y = float(eps_g5y)
+
+    # Revenue in $B for large-base discount tier
+    revenue_b: float | None = None
+    rev_estimates = raw.get("revenue_estimates") or []
+    if rev_estimates:
+        r = rev_estimates[0].get("revenue_avg_billions")
+        if r:
+            revenue_b = float(r)
+    if revenue_b is None:
+        mc_m = float(raw.get("market_cap_millions") or 0)
+        # Rough proxy: large caps' revenue ≈ market_cap × 0.3–0.5 for tech/semis
+        if mc_m >= 500_000:
+            revenue_b = 200.0
+        elif mc_m >= 200_000:
+            revenue_b = 80.0
+        elif mc_m >= 50_000:
+            revenue_b = 20.0
+        elif mc_m >= 10_000:
+            revenue_b = 5.0
+        else:
+            revenue_b = 1.0
+
+    # Large-base discount table
+    if revenue_b < 10:
+        dp, base_cap, bull_cap, bull_offset = 1, None, None, 3
+    elif revenue_b < 50:
+        dp, base_cap, bull_cap, bull_offset = 3, None, None, 1
+    elif revenue_b < 150:
+        dp, base_cap, bull_cap, bull_offset = 5, 18.0, 22.0, -1
+    elif revenue_b < 400:
+        dp, base_cap, bull_cap, bull_offset = 7, 14.0, 18.0, -3
+    else:
+        dp, base_cap, bull_cap, bull_offset = 10, 11.0, 15.0, -5
+
+    base_g = eps_g5y - dp
+    bull_g = eps_g5y + bull_offset
+    if base_cap is not None:
+        base_g = min(base_g, base_cap)
+    if bull_cap is not None:
+        bull_g = min(bull_g, bull_cap)
+    bear_g = max(round(base_g - 5, 1), 3.0)
+    base_g = round(base_g, 1)
+    bull_g = round(bull_g, 1)
+
+    def yr10(g: float) -> float:
+        return round(starting_eps * (1 + g / 100) ** 10, 2)
+
+    return {
+        "starting_eps": starting_eps,
+        "eps_source": eps_source,
+        "eps_g5y": eps_g5y,
+        "revenue_b": revenue_b,
+        "discount_pp": dp,
+        "base_cap": base_cap,
+        "bull_cap": bull_cap,
+        "bear_g": bear_g,
+        "base_g": base_g,
+        "bull_g": bull_g,
+        "yr10_bear": yr10(bear_g),
+        "yr10_base": yr10(base_g),
+        "yr10_bull": yr10(bull_g),
+    }
+
+
+def _format_10yr_anchors(a: dict) -> str:
+    cap_note = f", capped at {a['base_cap']}%" if a["base_cap"] else ""
+    return (
+        f"\n## PRE-COMPUTED 10-YEAR MODEL ANCHORS\n"
+        f"These values are computed in code from Finnhub data. Use them exactly — do not recompute growth rates or Year-10 EPS.\n\n"
+        f"Starting EPS: ${a['starting_eps']} ({a['eps_source']})\n"
+        f"eps_growth_5y (Finnhub): {a['eps_g5y']}%\n"
+        f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n\n"
+        f"| Scenario | Growth Rate | Year-10 EPS |\n"
+        f"|----------|-------------|-------------|\n"
+        f"| Bear     | {a['bear_g']}%       | ${a['yr10_bear']}     |\n"
+        f"| Base     | {a['base_g']}%       | ${a['yr10_base']}     |\n"
+        f"| Bull     | {a['bull_g']}%       | ${a['yr10_bull']}     |\n\n"
+        f"Your job: choose exit multiples for each scenario, assign probabilities (STEP 2b), "
+        f"compute price targets (Year-10 EPS × exit multiple), and write scenario rationale. "
+        f"If this company made a large acquisition in the last 3 years, note it in the rationale "
+        f"(e.g., VMware integration risk) but do NOT change the growth rates above — "
+        f"the large-base cap already constrains them.\n"
+    )
+
+
 SYSTEM_PHASE1 = """You are a senior portfolio manager and fundamental analyst at a top-tier long/short equity fund. Your hold check analyses are used by portfolio managers to make actual buy, hold, and sell decisions. The quality standard is: would a Bridgewater, Sequoia Fund, or Berkshire Hathaway analyst be satisfied with this analysis? Anything less is not acceptable.
 
 You will receive: quantitative data (fundamentals, FCF, ROIC, analyst consensus, price targets, forward estimates, insider activity, short interest), recent news and sentiment, optional peer comparison, the investor's entry context and thesis, and optionally the most recent SEC earnings release (8-K/6-K), management discussion (10-Q/20-F MD&A), and current risk-free rate. Use all available context.
@@ -416,6 +539,9 @@ ETFs compound via NAV appreciation + distributions, not EPS × exit multiple. Ap
 5. **Price %/yr**: (Price Target / current_price)^(1/10) − 1. Use the SAME current_price for all three scenarios.
 6. **No exit multiple column**: show "—" for Exit Multiple in all rows.
 7. **S&P 500 baseline row**: keep as-is (~2.85x, ~11%/yr) for comparison.
+
+**⚠ IF A [PRE-COMPUTED 10-YEAR MODEL ANCHORS] BLOCK IS PRESENT IN THE USER MESSAGE:**
+Skip STEP 1 and STEP 2 growth-rate derivation entirely. The starting EPS, growth rates, and Year-10 EPS are already computed. Go directly to: choose exit multiples → STEP 2b (probabilities) → write rationale. Do not recalculate any of those values.
 
 STEP 1 — CHOOSE STARTING METRIC (ordered priority — stop at first that applies):
 
@@ -823,6 +949,7 @@ async def run_hold_check_agent(
     transcript: str = "",
     raw_metrics: str = "",
     chunk_queue: asyncio.Queue | None = None,
+    raw_data: dict | None = None,
 ) -> str:
     ctx = user_context or {}
     ck = _cache_key(
@@ -898,6 +1025,12 @@ async def run_hold_check_agent(
 
     raw_metrics_section = f"\n{raw_metrics}\n" if raw_metrics else ""
 
+    anchors_section = ""
+    if raw_data:
+        anchors = _compute_10yr_model(raw_data)
+        if anchors:
+            anchors_section = _format_10yr_anchors(anchors)
+
     user_message = (
         f"Analyze the hold thesis for {ticker.upper()}.\n\n"
         f"## Entry Context\n"
@@ -905,6 +1038,7 @@ async def run_hold_check_agent(
         f"{thesis_text}\n"
         f"{profile_text}"
         f"{macro_section}"
+        f"{anchors_section}"
         f"{raw_metrics_section}"
         f"\n## Current Quantitative Data\n"
         f"{quant_analysis}\n"
