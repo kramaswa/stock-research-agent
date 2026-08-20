@@ -200,16 +200,21 @@ async def run_eval_agent(
     # Prefill "{" is not echoed in response — prepend it back
     raw_text = "{" + raw_text
 
-    try:
-        return json.loads(raw_text.strip())
-    except json.JSONDecodeError:
-        pass
+    last_err: Exception | None = None
 
-    match = re.search(r'\{[\s\S]*\}', raw_text)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
+    # strict=False allows literal control chars (e.g. unescaped newlines in strings)
+    for candidate in [raw_text.strip(), None]:
+        if candidate is None:
+            m = re.search(r'\{[\s\S]*\}', raw_text)
+            candidate = m.group() if m else None
+        if candidate is None:
+            break
+        for strict in (True, False):
+            try:
+                return json.loads(candidate, strict=strict)
+            except json.JSONDecodeError as e:
+                last_err = e
 
-    raise ValueError(f"Eval JSON parse failed. Raw: {raw_text[:800]}")
+    raise ValueError(
+        f"Eval JSON parse failed ({last_err}). Raw: {raw_text[:800]}"
+    )
