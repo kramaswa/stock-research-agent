@@ -308,10 +308,26 @@ def _compute_10yr_model(raw: dict) -> dict | None:
     if not starting_eps or starting_eps <= 0:
         return None
 
-    eps_g5y = raw.get("eps_growth_5y")
-    if eps_g5y is None:
+    # Growth anchor: prefer eps_growth_5y; fall back to revenue_growth_3y for
+    # companies with irregular EPS history (losses, heavy M&A amortization)
+    growth_anchor: float | None = None
+    anchor_label = ""
+    raw_eps_g5y = raw.get("eps_growth_5y")
+    if raw_eps_g5y is not None and float(raw_eps_g5y) > 5:
+        growth_anchor = float(raw_eps_g5y)
+        anchor_label = f"eps_growth_5y (Finnhub): {growth_anchor:.1f}%"
+    else:
+        rev_g3y = raw.get("revenue_growth_3y")
+        rev_g5y = raw.get("revenue_growth_5y")
+        if rev_g3y is not None and float(rev_g3y) > 3:
+            growth_anchor = float(rev_g3y)
+            anchor_label = f"revenue_growth_3y (Finnhub, post-M&A organic proxy): {growth_anchor:.1f}%"
+        elif rev_g5y is not None and float(rev_g5y) > 3:
+            growth_anchor = float(rev_g5y)
+            anchor_label = f"revenue_growth_5y (Finnhub): {growth_anchor:.1f}%"
+    if growth_anchor is None:
         return None
-    eps_g5y = float(eps_g5y)
+    eps_g5y = growth_anchor
 
     # Revenue in $B for large-base discount tier
     revenue_b: float | None = None
@@ -363,6 +379,7 @@ def _compute_10yr_model(raw: dict) -> dict | None:
         "starting_eps": starting_eps,
         "eps_source": eps_source,
         "eps_g5y": eps_g5y,
+        "anchor_label": anchor_label,
         "revenue_b": revenue_b,
         "discount_pp": dp,
         "base_cap": base_cap,
@@ -382,7 +399,7 @@ def _format_10yr_anchors(a: dict) -> str:
         f"\n## PRE-COMPUTED 10-YEAR MODEL ANCHORS\n"
         f"These values are computed in code from Finnhub data. Use them exactly — do not recompute growth rates or Year-10 EPS.\n\n"
         f"Starting EPS: ${a['starting_eps']} ({a['eps_source']})\n"
-        f"eps_growth_5y (Finnhub): {a['eps_g5y']}%\n"
+        f"Growth anchor — {a['anchor_label']}\n"
         f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n\n"
         f"| Scenario | Growth Rate | Year-10 EPS |\n"
         f"|----------|-------------|-------------|\n"
@@ -437,6 +454,8 @@ For an aggressive investor with a 5+ year horizon, "Add to Position" is availabl
 
 If all 4 conditions are met → signal is **Add to Position**. You MUST include a "**10-Year Compounder Math:**" line immediately after the ## Signal line (format shown in the output template below) stating the stock can potentially 3X+ in 10 years at consensus growth.
 If condition 1 fails (Q4 = firm NO) → ceiling remains Hold regardless of moat quality. **EXCEPTION for Aggressive/Long-horizon investors**: If the 10-year table base case Adj. Return reaches ≥ 3x using a base exit multiple at or below the sector long-run median, this constitutes a BORDERLINE Q4 for Aggressive/Long investors — the pre-check Q4=NO based on stretched near-term multiples does NOT block Add to Position. The reason: the 10-year base case already embeds conservative multiple compression from today's stretched valuation to the sector median over 10 years, which IS the long-horizon margin of safety analysis. A stock compressing from 100x to 30x while delivering 3x+ adj. return is not the same risk as a stock staying at 100x. The pre-check Q4 flag was designed for near-term investors — for a 10-year horizon investor, the 10-year table supersedes it.
+
+**HARD BLOCK on the EXCEPTION — no override when all three Q2 metrics fire AND Q1 fires:** If Q1=YES AND all three Q2 sub-metrics simultaneously exceed their thresholds (EV/FCF > 40x AND EV/EBITDA > 25x AND forward P/E > 30x), the 10-year DCF exception above is BLOCKED. Q4 must remain NO and the signal ceiling is Strong Hold. Reason: when a stock is at historical extremes on every near-term metric AND has already surged 30%+, no 10-year earnings projection can constitute present-day margin of safety — near-term execution risk is too high, and the 10-year base case is itself a bull assumption at these starting multiples. The exception exists for stocks with one stretched metric and good value on others; it does not exist for stocks stretched on all dimensions simultaneously.
 If condition 3 fails (math shows less than 3x at consensus) → ceiling is Strong Hold (if Q4 is BORDERLINE) or Hold.
 If condition 4 fails (3x+ return is primarily multiple-expansion-driven, not earnings compounding) but conditions 1–3 all pass: ceiling is **Strong Hold** for Aggressive/Long investors. The 3x+ math is real but conviction is lower because the return depends on multiple re-rating rather than earnings compounding. Mark this case with "**10-Year Compounder Math (recovery-dependent):**" instead of the standard label. Do NOT apply the crisis discount check separately — condition 4 already captures the same multiple-expansion uncertainty. Applying both condition 4 failure AND the crisis discount to the same stock double-counts the same risk.
 
