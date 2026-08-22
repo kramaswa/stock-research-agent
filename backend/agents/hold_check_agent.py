@@ -406,11 +406,16 @@ def _format_10yr_anchors(a: dict) -> str:
         f"| Bear     | {a['bear_g']}%       | ${a['yr10_bear']}     |\n"
         f"| Base     | {a['base_g']}%       | ${a['yr10_base']}     |\n"
         f"| Bull     | {a['bull_g']}%       | ${a['yr10_bull']}     |\n\n"
-        f"Your job: choose exit multiples for each scenario, assign probabilities (STEP 2b), "
-        f"compute price targets (Year-10 EPS × exit multiple), and write scenario rationale. "
-        f"If this company made a large acquisition in the last 3 years, note it in the rationale "
-        f"(e.g., VMware integration risk) but do NOT change the growth rates above — "
-        f"the large-base cap already constrains them.\n"
+        f"⚠ THESE GROWTH RATES ARE FINAL — NO ADJUSTMENTS PERMITTED:\n"
+        f"Do NOT apply M&A discounts, organic growth haircuts, margin expansion adjustments, "
+        f"or any other modification to the growth rates or Year-10 EPS above. "
+        f"They were derived in code from Finnhub data using the exact rules in STEP 2. "
+        f"If you believe a different rate is more appropriate, note it in the rationale text only — "
+        f"the table must use the values above exactly as shown.\n\n"
+        f"Your job for the 10-year table: choose exit multiples (bear/base/bull) based on "
+        f"competitive position and growth outlook, assign probabilities (STEP 2b rules), "
+        f"compute price targets as Year-10 EPS × exit multiple, and write scenario rationale. "
+        f"That is all — do not touch the growth rates or Year-10 EPS.\n"
     )
 
 
@@ -805,10 +810,12 @@ This section surfaces what the signal would be for an investor who genuinely and
 
 **Current-data constraint**: A conditional signal must be contingent on a FUTURE observable event or data point that the investor can monitor after reading this analysis. It MUST NOT be contingent on completing research using currently-available information (e.g., "read the 10-Q to confirm X is one-time", "verify from existing SEC filings whether Y applies"). If the information needed to resolve the conditional already exists in public filings or in the data you received, you MUST resolve it yourself before publishing — not defer it to the reader. Publishing a conditional that says "if you read the existing [filing] and confirm X" is not a legitimate forward signal — it outsources unfinished analytical work. A flawed conditional: "Upgrade if you read the 10-Q and confirm the $97.983B other income was non-recurring." A legitimate conditional: "Upgrade if management confirms on the NEXT earnings call that the other income item will not recur."
 
+**ONE CONDITION ONLY — HARD RULE**: This section must state exactly ONE dominant assumption. If you find yourself writing "if X AND Y both happen" or listing two independent conditions, you have not identified the single dominant assumption — pick the one factor that most directly drives the signal and discard the rest. A conditional with two conditions is not a conditional signal; it is a bull case dressed as analysis. If no single assumption clearly dominates, omit this section entirely.
+
 Structure it as follows:
-1. **The dominant assumption**: "The [signal] is primarily driven by [specific risk or assumption], which is suppressing what would otherwise be a [stronger signal]."
-2. **The conditional signal**: "If you assign a materially lower probability to [that specific risk] — or believe [that assumption] does not apply to your holding horizon — the signal would likely be [EXACTLY ONE STEP UP on the six-signal ladder] for [specific investor profile]. The six signals in order are: Exit Signal → Consider Exiting → Consider Trimming → Hold → Strong Hold → Add to Position. One step up from Hold is always Strong Hold — never Add to Position. One step up from Strong Hold is always Add to Position. Do not skip steps. Be precise about which profiles the upgrade applies to and which it does not: for example, removing a geopolitical discount might unlock Strong Hold for an aggressive long-term investor (whose relaxed thresholds and long horizon absorb the remaining valuation stretch), but leave a moderate investor at Hold anyway because 2+ pre-check valuation flags (price run + EV/EBITDA) remain regardless. Name the profile explicitly."
-3. **Honest calibration**: State the specific criteria an investor must honestly meet to apply the alternative signal — not just 'if you're optimistic,' but a genuine self-assessment: e.g., "To apply this: you assign less than X% probability to [the risk] within your holding period, you have sized the position to survive being wrong (i.e., a 40-50% drawdown would not be catastrophic), and you have a specific reason — not just hope — for your lower probability estimate."
+1. **The dominant assumption**: "The [signal] is primarily driven by [ONE specific risk or assumption], which is suppressing what would otherwise be a [stronger signal]."
+2. **The conditional signal**: "If [that single assumption resolves favorably / you assign a materially lower probability to that single risk], the signal would likely be [EXACTLY ONE STEP UP on the six-signal ladder] for [specific investor profile]. The six signals in order: Exit Signal → Consider Exiting → Consider Trimming → Hold → Strong Hold → Add to Position. One step up from Hold is Strong Hold only — never Add to Position. One step up from Strong Hold is Add to Position only. Do not skip steps. Name the specific investor profile this applies to."
+3. **Honest calibration**: State the specific criteria an investor must honestly meet to apply the alternative signal — a genuine self-assessment, not vague optimism.
 
 ## Business Quality
 Assess the underlying business across four dimensions. Use specific numbers from the data.
