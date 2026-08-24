@@ -395,12 +395,25 @@ def _compute_10yr_model(raw: dict) -> dict | None:
 
 def _format_10yr_anchors(a: dict) -> str:
     cap_note = f", capped at {a['base_cap']}%" if a["base_cap"] else ""
+    raw_base = round(a["eps_g5y"] - a["discount_pp"], 1)
+    base_cap_str = (
+        f" → {raw_base}%, capped at {a['base_cap']}% = **{a['base_g']}% base**"
+        if a["base_cap"] and raw_base > a["base_cap"]
+        else f" = **{a['base_g']}% base**"
+    )
+    raw_bull = round(a["eps_g5y"] + (a["bull_cap"] - a["base_cap"] if a["base_cap"] and a["bull_cap"] else 3), 1) if a["bull_cap"] else round(a["eps_g5y"] + 3, 1)
+    bull_cap_str = (
+        f", bull capped at {a['bull_cap']}% = **{a['bull_g']}% bull**"
+        if a["bull_cap"] else f" = **{a['bull_g']}% bull**"
+    )
     return (
         f"\n## PRE-COMPUTED 10-YEAR MODEL ANCHORS\n"
         f"These values are computed in code from Finnhub data. Use them exactly — do not recompute growth rates or Year-10 EPS.\n\n"
         f"Starting EPS: ${a['starting_eps']} ({a['eps_source']})\n"
         f"Growth anchor — {a['anchor_label']}\n"
-        f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n\n"
+        f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n"
+        f"Derivation: {a['eps_g5y']}% − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
+        f"bear = base − 5pp floor at 3% = **{a['bear_g']}%**\n\n"
         f"| Scenario | Growth Rate | Year-10 EPS |\n"
         f"|----------|-------------|-------------|\n"
         f"| Bear     | {a['bear_g']}%       | ${a['yr10_bear']}     |\n"
@@ -442,6 +455,7 @@ Before assigning any signal, explicitly answer these four questions in your reas
 
 1. Is the stock up more than 30% in the trailing 6 months or 50% in the trailing 12 months? [Y/N]
 2. Is EV/FCF above 40x OR EV/EBITDA above 25x OR forward P/E above 30x? [Y/N]
+   **FCF null rule**: If `fcf_per_share_ttm` is null or zero in the Ground Truth block, EV/FCF is unreliable and must NOT count toward Q2. In that case, evaluate Q2 on EV/EBITDA and forward P/E only. State explicitly: "EV/FCF excluded — fcf_per_share_ttm is null."
 3. Does the valuation require above-consensus growth assumptions to justify at current price? [Y/N]
 4. Would a NEW investor buying at today's price — with this investor's risk tolerance and horizon — have a clear margin of safety? [Y/N]
 
@@ -650,6 +664,7 @@ After setting growth rates, assign a probability to each scenario. Probabilities
 **Step 2 — Adjust using Ground Truth signals** (each signal that applies shifts bear probability by the stated amount; base absorbs the difference):
 
 *Signals that INCREASE bear probability (business deteriorating):*
+- Company's primary manufacturing, operations, or revenue (≥30% of total) is domiciled in a region with active geopolitical risk: Taiwan Strait tension (TSM, ASE), China-US trade war escalation risk (Chinese ADRs), or active military conflict → **+10pp bear floor** (minimum bear probability is 15% regardless of other signals; geopolitical shock scenarios are structurally unhedgeable and must be represented in the probability distribution)
 - News analysis confirms a direct competitor is in late-stage regulatory review (PDUFA/CE mark within 18 months) in the same core categories → **+5pp bear**
 - News analysis confirms a well-funded competitor has active or confirmed customer wins for competing products in the same core categories (e.g., Marvell winning hyperscaler custom silicon alongside AVGO) → **+4pp bear**
 - The company completed a large acquisition in the last 3 years AND integration risk remains elevated (VMware-scale deals, stated synergy targets not yet achieved) → **+3pp bear** (execution risk on top of M&A-inflated baseline)
@@ -670,7 +685,7 @@ After setting growth rates, assign a probability to each scenario. Probabilities
 - rating_changes_90d: 2+ upgrades and 0 downgrades → **−2pp bear**
 - insider_transactions: net C-suite buying (>1 buy, 0 sells) → **−2pp bear**
 
-Cap adjustments: bear cannot go below 5% or above 45% regardless of signals. Bull cannot go below 10%.
+Cap adjustments: bear cannot go below 5% or above 45% regardless of signals (15% minimum when geopolitical signal fires). Bull cannot go below 10%.
 
 **Step 3 — State the calculation explicitly:**
 "Starting tier: [type] → bear [X]%, base [Y]%, bull [Z]%.
