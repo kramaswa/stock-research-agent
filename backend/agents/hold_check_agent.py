@@ -251,6 +251,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         f"- PEG TTM:               {fx(raw.get('peg_ttm'))}{peg_note}\n"
         f"- Price/Book:            {fx(raw.get('price_to_book'))}\n"
         f"- FCF per share TTM:     {fcf_line}\n"
+        f"- Operating CF/share TTM:{('$' + format(raw['operating_cf_per_share_ttm'], '.2f')) if raw.get('operating_cf_per_share_ttm') is not None else 'N/A'}\n"
         f"- 26-week price return:  {fx(raw.get('return_26w_pct'), '%')}\n"
         f"- 52-week price return:  {fx(raw.get('return_52w_pct'), '%')}\n"
         f"- EPS TTM (GAAP):        {('$' + format(raw['eps_ttm'], '.2f')) if raw.get('eps_ttm') is not None else 'N/A'}\n"
@@ -296,13 +297,38 @@ def _compute_10yr_model(raw: dict) -> dict | None:
         starting_eps = round(float(fcf_per_share), 2)
         eps_source = f"FCF/share TTM (Finnhub): ${starting_eps}"
 
+    # For high-SBC companies where Finnhub's FCF/share is null (e.g. CRWD, SNOW),
+    # operating cash flow per share is the next best proxy — it adds back SBC and
+    # is closer to non-GAAP earnings than GAAP EPS or market-implied via GAAP forward P/E.
+    if starting_eps is None:
+        ocf = raw.get("operating_cf_per_share_ttm")
+        if ocf and float(ocf) > 0:
+            starting_eps = round(float(ocf), 2)
+            eps_source = f"operating CF/share TTM (Finnhub, SBC add-back proxy): ${starting_eps}"
+
+    # GAAP/non-GAAP gap check: if eps_estimates is present but market-implied is
+    # >1.5x larger, Finnhub's consensus is GAAP-based (common for high-SBC tech).
+    # Using GAAP starting EPS with non-GAAP exit multiples gives wrong 10-year math
+    # — skip anchors and let Phase 1 handle EPS derivation with full context.
+    if starting_eps and forward_pe and current_price and float(forward_pe) > 0:
+        implied_check = float(current_price) / float(forward_pe)
+        if implied_check > starting_eps * 1.5:
+            return None
+
     if starting_eps is None and forward_pe and current_price and float(forward_pe) > 0:
-        implied = round(float(current_price) / float(forward_pe), 2)
+        fwd_pe_float = float(forward_pe)
+        # A forward P/E above 80x almost always means Finnhub is using GAAP earnings
+        # for a high-SBC company (e.g. CRWD, SNOW, NET). Exit multiples in the model
+        # are calibrated to non-GAAP; injecting GAAP starting EPS would produce
+        # systematically understated returns. Return None so Phase 1 handles it.
+        if fwd_pe_float > 80:
+            return None
+        implied = round(float(current_price) / fwd_pe_float, 2)
         if implied > 0:
             starting_eps = implied
             eps_source = (
                 f"market-implied forward EPS: "
-                f"${float(current_price):.2f} ÷ {float(forward_pe):.2f}x = ${implied}"
+                f"${float(current_price):.2f} ÷ {fwd_pe_float:.2f}x = ${implied}"
             )
 
     if not starting_eps or starting_eps <= 0:
@@ -595,10 +621,16 @@ STEP 1 — CHOOSE STARTING METRIC (ordered priority — stop at first that appli
 → Cite as: "FCF/share: $[X] (Finnhub TTM)."
 → Note: this is GAAP TTM FCF — for companies with recent large M&A (high interest/amortization drag), FCF TTM may be temporarily depressed; flag this if applicable.
 
-**Priority 3 — neither eps_estimates nor positive FCF available:**
-→ Use the pre-computed market-implied EPS from Ground Truth (current_price ÷ forward_pe).
-→ Cite as: "Forward EPS: $[X] (market-implied: $[price] ÷ [fwd_pe]x)."
-→ CYCLICAL EXCEPTION (Priority 3 only): if the business is at a demonstrable cyclical peak (memory semis, commodity producers) AND market-implied EPS > 2× GAAP TTM EPS → use GAAP TTM instead. State why explicitly. This exception does NOT exist in Priority 1 or 2.
+**Priority 2b — operating_cf_per_share_ttm is positive (when FCF is null/zero):**
+→ Use operating_cf_per_share_ttm as Year 0. Operating cash flow adds back SBC, making it a closer proxy to non-GAAP earnings than GAAP EPS for high-SBC companies.
+→ Cite as: "Operating CF/share: $[X] (Finnhub TTM — used as non-GAAP proxy, SBC added back)."
+
+**Priority 3 — neither eps_estimates nor positive FCF/OCF available:**
+→ Check forward_pe first: if forward_pe > 80x, DO NOT use market-implied EPS. A forward P/E above 80x signals GAAP-based earnings data (common for high-SBC tech companies like CRWD, SNOW, NET where GAAP EPS ≈ $0–2 but non-GAAP EPS is 3–8x higher). Exit multiples in this model are calibrated to non-GAAP; using GAAP starting EPS with non-GAAP exit multiples systematically understates returns.
+  → Instead, use your knowledge of this company's non-GAAP consensus EPS from analyst models (these are commonly cited in earnings releases and sell-side research). Clearly disclose: "Non-GAAP EPS: ~$[X] (analyst consensus — Finnhub returned only GAAP data; forward_pe of [Y]x is GAAP-based)."
+  → If forward_pe ≤ 80x: use market-implied EPS as normal (current_price ÷ forward_pe).
+→ Cite market-implied as: "Forward EPS: $[X] (market-implied: $[price] ÷ [fwd_pe]x)."
+→ CYCLICAL EXCEPTION (Priority 3 only, only when forward_pe ≤ 80x): if the business is at a demonstrable cyclical peak (memory semis, commodity producers) AND market-implied EPS > 2× GAAP TTM EPS → use GAAP TTM instead. State why explicitly.
 
 The reason forward consensus beats GAAP TTM: exit multiples are forward P/E ratios. Starting from GAAP TTM silently compresses returns across the horizon. A company with M&A amortization or SBC drag will have GAAP TTM EPS << non-GAAP consensus; using GAAP TTM would systematically understate 10-year returns.
 
@@ -1112,8 +1144,9 @@ async def run_hold_check_agent(
         return "".join(parts)
 
     # Phase 1: Pre-Check + Signal + 10-Year Outlook (with extended thinking)
+    # 6000 thinking tokens + up to ~22K output tokens (Crisis Discount + full table)
     phase1_text = await loop.run_in_executor(
-        None, _run_phase, SYSTEM_PHASE1, user_message, True, 16000
+        None, _run_phase, SYSTEM_PHASE1, user_message, True, 28000
     )
     if not phase1_text:
         return "Hold check unavailable."

@@ -219,6 +219,7 @@ def get_all_stock_data(ticker: str) -> dict:
         "dividend_yield": m.get("dividendYieldIndicatedAnnual"),
         # Free cash flow (real earnings power)
         "fcf_per_share_ttm": m.get("freeCashFlowPerShareTTM"),
+        "operating_cf_per_share_ttm": m.get("operatingCashFlowPerShareTTM"),
         "ev_to_fcf_ttm": m.get("currentEv/freeCashFlowTTM"),
         # Capital efficiency
         "roic_ttm": m.get("roicTTM"),
