@@ -30,7 +30,13 @@ Conservative or Moderate (any horizon): if 2+ of Q1–Q3 are YES, or Q4 is NO �
 Short horizon (any risk): same restriction as conservative/moderate.
 Aggressive + Long: relaxed thresholds allowed. Q4 can be BORDERLINE and Strong Hold is still OK. But if Q4 is clearly NO (all multiples stretched, no margin of safety), Strong Hold is still wrong.
 
-Flag any signal that violates these rules as severity "critical".
+**Long-Horizon Compounder Exception** (Aggressive + 5+ year horizon ONLY): "Add to Position" is VALID even when Q4=NO if ALL of the following are met:
+1. Investor is explicitly aggressive with 5+ year horizon.
+2. The analysis explicitly invokes the Long-Horizon Compounder path.
+3. The 10-year base case OR probability-weighted expected adj. return ≥ 3x using exit multiples AT OR BELOW the current forward P/E.
+4. The Hard Block condition is NOT triggered. The Hard Block fires ONLY when Q1=YES (up >30% in 6M or >50% in 12M) AND all three Q2 sub-metrics simultaneously exceed thresholds (EV/FCF > 40x AND EV/EBITDA > 25x AND forward P/E > 30x). **FCF null rule**: if fcf_per_share_ttm is null or zero, EV/FCF is EXCLUDED from Q2 and cannot contribute to the Hard Block — the Hard Block requires all three metrics, so a null EV/FCF means the Hard Block cannot fire. If the Hard Block does NOT fire, Add to Position is valid under this exception — do NOT flag as a violation.
+
+Flag any signal that violates these rules as severity "critical". A signal that correctly invokes the Long-Horizon Compounder Exception (all four conditions above met) is NOT a violation — mark it "likely_correct" or "correct" with a note explaining which condition(s) you verified.
 
 ## STEP 3 — CHECK DATA ACCURACY
 
@@ -38,6 +44,10 @@ Cross-reference specific numbers the analyst cites against the raw JSON. Key che
 - PEG validity: if eps_growth_ttm_yoy is negative (EPS declining YoY), and the hold check uses PEG as a cheapness signal, flag "major" — PEG computed on revenue growth when EPS is declining is a misleading anchor.
 - Quoted valuation multiples: verify ev_to_fcf_ttm, ev_ebitda_ttm, forward_pe match what the analyst stated.
 - Any specific number cited that cannot be found in the raw data is a "minor" issue.
+
+**High-SBC / GAAP-only data exception**: When forward_pe > 80x AND eps_estimates is empty/null, Finnhub is returning GAAP-based data for a high-SBC company (common for CRWD, SNOW, NET, ZS and similar). In this case the hold check agent is explicitly instructed to use analyst consensus non-GAAP EPS from its training knowledge, because GAAP EPS with non-GAAP exit multiples produces systematically understated returns. If the analysis discloses this clearly (e.g., "Non-GAAP EPS: ~$X (analyst consensus — Finnhub returned only GAAP data; forward_pe of Yx is GAAP-based)"), flag the non-GAAP EPS as "major" severity (unverifiable from provided data but expected behavior), NOT "critical" — the GAAP data limitation is the root cause, not an analytical error.
+
+**GAAP margin interpretation for high-SBC companies**: For companies where forward_pe > 80x or the analysis notes material SBC (typically 10–20%+ of revenue for high-growth software), GAAP operating/net margins are suppressed by non-cash SBC expense and are NOT a valid basis to challenge non-GAAP EPS growth claims. Do not flag EPS growth as "lacks credibility" based solely on weak GAAP margins for these companies — that is comparing GAAP costs to non-GAAP earnings, which is an apples-to-oranges error. If GAAP margins are negative but the analysis correctly distinguishes non-GAAP profitability, accept this as valid analysis.
 
 ## STEP 4 — EVALUATE BEAR CASE QUALITY
 
