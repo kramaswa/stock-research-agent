@@ -390,21 +390,31 @@ def _compute_10yr_model(raw: dict) -> dict | None:
 
     # Operating leverage premium: when using revenue as the growth anchor (because
     # eps_growth_5y is unreliable — e.g. PLTR transitioning loss→profit), check if
-    # eps_growth_ttm_yoy materially exceeds revenue growth. If so, add a capped premium
+    # EPS growth materially exceeds revenue growth. If so, add a capped premium
     # to BASE and BULL — in those scenarios, margin expansion drives EPS faster than
     # revenue. Bear keeps the raw revenue anchor (operating leverage doesn't materialize
-    # in the bear case).
+    # in the bear case). Use eps_growth_ttm_yoy first, fall back to eps_growth_3y for
+    # recently-profitable companies where TTM YoY is null (negative base period).
     ol_premium = 0.0
     ol_note = ""
     if anchor_label.startswith("revenue_growth"):
         eps_g_ttm = raw.get("eps_growth_ttm_yoy")
-        if (eps_g_ttm is not None and float(eps_g_ttm) > 0
-                and float(eps_g_ttm) > eps_g5y + 10):
-            gap = float(eps_g_ttm) - eps_g5y
+        eps_g_3y = raw.get("eps_growth_3y")
+        # Pick best available EPS growth signal — prefer TTM, fall back to 3Y
+        eps_check: float | None = None
+        eps_check_label = ""
+        if eps_g_ttm is not None and float(eps_g_ttm) > 0:
+            eps_check = float(eps_g_ttm)
+            eps_check_label = f"eps_growth_ttm_yoy {eps_check:.1f}%"
+        elif eps_g_3y is not None and float(eps_g_3y) > 0:
+            eps_check = float(eps_g_3y)
+            eps_check_label = f"eps_growth_3y {eps_check:.1f}% (TTM null — recently profitable)"
+        if eps_check is not None and eps_check > eps_g5y + 10:
+            gap = eps_check - eps_g5y
             ol_premium = round(min(gap * 0.20, 6.0), 1)
             ol_note = (
                 f" + {ol_premium}pp operating leverage premium "
-                f"(eps_growth_ttm_yoy {float(eps_g_ttm):.1f}% >> revenue anchor {eps_g5y:.1f}%)"
+                f"({eps_check_label} >> revenue anchor {eps_g5y:.1f}%)"
             )
 
     # Bear: raw anchor (no leverage premium — bear case = leverage doesn't materialise)
@@ -464,33 +474,26 @@ def _format_10yr_anchors(a: dict) -> str:
     bear_derivation = f"raw anchor {a['eps_g5y']}% − {a['discount_pp']}pp − 5pp = **{a['bear_g']}%** (no OL premium in bear)" if ol else f"base − 5pp floor at 3% = **{a['bear_g']}%**"
     return (
         f"\n## PRE-COMPUTED 10-YEAR MODEL ANCHORS\n"
-        f"These values are computed in code from Finnhub data. Use them exactly — do not recompute growth rates or Year-10 EPS.\n\n"
         f"Starting EPS: ${a['starting_eps']} ({a['eps_source']})\n"
         f"Growth anchor — {a['anchor_label']}{ol_note}\n"
         f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n"
         f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         f"bear = {bear_derivation}\n\n"
-        f"| Scenario | Growth Rate | Year-10 EPS |\n"
-        f"|----------|-------------|-------------|\n"
-        f"| Bear     | {a['bear_g']}%       | ${a['yr10_bear']}     |\n"
-        f"| Base     | {a['base_g']}%       | ${a['yr10_base']}     |\n"
-        f"| Bull     | {a['bull_g']}%       | ${a['yr10_bull']}     |\n\n"
-        f"⚠ THESE GROWTH RATES ARE FINAL — NO ADJUSTMENTS PERMITTED:\n"
-        f"Do NOT apply M&A discounts, organic growth haircuts, margin expansion adjustments, "
-        f"or any other modification to the growth rates or Year-10 EPS above. "
-        f"They were derived in code from Finnhub data using the exact rules in STEP 2. "
-        f"If you believe a different rate is more appropriate, note it in the rationale text only — "
-        f"the table must use the values above exactly as shown.\n\n"
-        f"⚠ ORDERING RULE — MANDATORY: Bear growth MUST be the lowest, bull the highest. "
-        f"Bear = {a['bear_g']}%, Base = {a['base_g']}%, Bull = {a['bull_g']}%. "
-        f"These are fixed. A bear case where EPS grows faster than base is a logical error — "
-        f"bear means slower growth AND/OR multiple compression, never higher growth than base. "
-        f"If the bear scenario you want to describe is 'multiple compression with sustained growth', "
-        f"express it through a LOW exit multiple on the fixed bear Year-10 EPS, not by raising the growth rate.\n\n"
-        f"Your job for the 10-year table: choose exit multiples (bear/base/bull) based on "
-        f"competitive position and growth outlook, assign probabilities (STEP 2b rules), "
-        f"compute price targets as Year-10 EPS × exit multiple, and write scenario rationale. "
-        f"That is all — do not touch the growth rates or Year-10 EPS.\n"
+        f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
+        f"The growth rates and Year-10 EPS below are mathematically derived (Starting EPS × (1+g)^10) "
+        f"and are LOCKED. Your ONLY job: choose Exit P/E for each scenario, then compute "
+        f"Year-10 Price = Year-10 EPS × Exit P/E, Adj Return, and Probability.\n\n"
+        f"| Scenario | Growth Rate | Year-10 EPS | Exit P/E | Year-10 Price | Adj Return | Prob |\n"
+        f"|----------|-------------|-------------|----------|---------------|------------|------|\n"
+        f"| Bear     | **{a['bear_g']}%** | **${a['yr10_bear']}** | [you choose] | ${a['yr10_bear']} × [P/E] | [calc] | [%] |\n"
+        f"| Base     | **{a['base_g']}%** | **${a['yr10_base']}** | [you choose] | ${a['yr10_base']} × [P/E] | [calc] | [%] |\n"
+        f"| Bull     | **{a['bull_g']}%** | **${a['yr10_bull']}** | [you choose] | ${a['yr10_bull']} × [P/E] | [calc] | [%] |\n\n"
+        f"LOCKED — DO NOT CHANGE:\n"
+        f"  Bear growth = {a['bear_g']}%  →  Year-10 EPS = ${a['yr10_bear']}\n"
+        f"  Base growth = {a['base_g']}%  →  Year-10 EPS = ${a['yr10_base']}\n"
+        f"  Bull growth = {a['bull_g']}%  →  Year-10 EPS = ${a['yr10_bull']}\n\n"
+        f"If you want to model 'bear = multiple compression on sustained growth', use a LOW Exit P/E "
+        f"on the locked ${a['yr10_bear']} bear Year-10 EPS — do NOT raise the bear growth rate above {a['bear_g']}%.\n"
     )
 
 
