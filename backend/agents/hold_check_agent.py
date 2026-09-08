@@ -267,6 +267,109 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
 _hold_cache: TTLCache = TTLCache(maxsize=100, ttl=3600)
 
 
+def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) -> str:
+    """
+    Post-process Phase 1 output to force anchor growth rates and Year-10 EPS into the
+    10-year table, regardless of what the model computed. Preserves the model's exit
+    multiples and probabilities; recomputes Year-10 EPS, Price Target, and Adj Return.
+
+    Strategy: split into lines, find Bear/Base/Bull rows by leading '| Scenario |' pattern,
+    extract exit multiple + original price + adj return, then replace growth/yr10/price/adj.
+    Adj return is scaled by (corrected_price / original_price) to preserve the model's
+    implicit dilution assumption without needing to re-derive it.
+    """
+    if not anchors or not current_price or current_price <= 0:
+        return text
+
+    scenario_anchors = [
+        ("Bear", anchors["bear_g"], anchors["yr10_bear"]),
+        ("Base", anchors["base_g"], anchors["yr10_base"]),
+        ("Bull", anchors["bull_g"], anchors["yr10_bull"]),
+    ]
+
+    lines = text.split("\n")
+    corrected_scenarios: dict[str, tuple[float, float]] = {}  # name → (prob%, adj_return)
+
+    for i, line in enumerate(lines):
+        for scenario_name, anchor_g, anchor_yr10 in scenario_anchors:
+            # Match a markdown table row for this scenario
+            if not re.match(rf"\|\s*\**{scenario_name}\**\s*\|", line, re.IGNORECASE):
+                continue
+            parts = line.split("|")
+            # Expected: ['', 'Bear', 'prob', 'growth', 'rationale', 'yr10_eps', 'exit', 'price', 'adj', 'pct', '']
+            if len(parts) < 10:
+                continue
+
+            growth_part = parts[3]
+            yr10_part   = parts[5]
+            exit_part   = parts[6]
+            price_part  = parts[7]
+            adj_part    = parts[8]
+            prob_part   = parts[2]
+
+            # Check if already correct (within 0.5pp) — still record for Expected row
+            growth_match = re.search(r"(\d+(?:\.\d+)?)\s*%", growth_part)
+            prob_match   = re.search(r"(\d+(?:\.\d+)?)\s*%", prob_part)
+            adj_match    = re.search(r"(\d+(?:\.\d+)?)\s*x", adj_part, re.IGNORECASE)
+
+            if growth_match and abs(float(growth_match.group(1)) - anchor_g) <= 0.5:
+                if prob_match and adj_match:
+                    corrected_scenarios[scenario_name] = (
+                        float(prob_match.group(1)), float(adj_match.group(1))
+                    )
+                continue  # already correct
+
+            # Extract exit multiple
+            exit_m = re.search(r"(\d+(?:\.\d+)?)\s*x", exit_part, re.IGNORECASE)
+            if not exit_m:
+                continue
+            exit_pe = float(exit_m.group(1))
+
+            # Compute corrected price
+            corrected_price_val = anchor_yr10 * exit_pe
+
+            # Scale adj return by (corrected / original) to preserve model's dilution assumption
+            orig_price_m = re.search(r"\$\s*([0-9,]+(?:\.\d+)?)", price_part)
+            orig_adj_m   = re.search(r"(\d+(?:\.\d+)?)\s*x", adj_part, re.IGNORECASE)
+            if orig_price_m and orig_adj_m:
+                orig_price_val = float(orig_price_m.group(1).replace(",", ""))
+                orig_adj_val   = float(orig_adj_m.group(1))
+                ratio = corrected_price_val / orig_price_val if orig_price_val > 0 else 1.0
+                corrected_adj = orig_adj_val * ratio
+            else:
+                # Fallback: assume 3%/yr SBC dilution
+                corrected_adj = corrected_price_val / (current_price * (1.03 ** 10))
+
+            pct_yr = (corrected_adj ** 0.1 - 1) * 100 if corrected_adj > 0 else -99.0
+
+            # Record for Expected row
+            if prob_match:
+                corrected_scenarios[scenario_name] = (float(prob_match.group(1)), corrected_adj)
+
+            # Rebuild the row
+            parts[3] = f" {anchor_g:.1f}% "
+            parts[5] = f" ~${anchor_yr10:.2f} "
+            parts[7] = f" ~${corrected_price_val:.0f} "
+            parts[8] = f" ~{corrected_adj:.2f}x "
+            parts[9] = f" ~{pct_yr:.1f}%/yr "
+            lines[i] = "|".join(parts)
+
+    # Fix Expected row probability-weighted adj return
+    if len(corrected_scenarios) == 3:
+        expected_adj = sum(
+            p * a / 100 for p, a in corrected_scenarios.values()
+        )
+        for i, line in enumerate(lines):
+            if re.match(r"\|\s*\**Expected\**\s*\|", line, re.IGNORECASE):
+                eparts = line.split("|")
+                if len(eparts) >= 9:
+                    eparts[8] = f" ~**{expected_adj:.2f}x** "
+                    lines[i] = "|".join(eparts)
+                break
+
+    return "\n".join(lines)
+
+
 def _cache_key(
     ticker: str, risk: str, horizon: str, goal: str,
     purchase_price: float, user_thesis: str,
@@ -1189,6 +1292,16 @@ async def run_hold_check_agent(
     )
     if not phase1_text:
         return "Hold check unavailable."
+
+    # Deterministically enforce anchor growth rates / Year-10 EPS in the table.
+    # The model sometimes overrides these despite explicit instructions; this post-processor
+    # finds Bear/Base/Bull rows, replaces growth rate and Year-10 EPS with anchor values,
+    # and recomputes Price Target and Adj Return (preserving the model's exit multiples
+    # and implied dilution assumption via ratio-scaling).
+    if anchors and raw_data:
+        cp = raw_data.get("current_price")
+        if cp:
+            phase1_text = _enforce_10yr_table_anchors(phase1_text, anchors, float(cp))
 
     # Phase 2: All narrative sections (no thinking — structured read-and-write)
     phase2_user = (
