@@ -388,13 +388,36 @@ def _compute_10yr_model(raw: dict) -> dict | None:
     else:
         dp, base_cap, bull_cap, bull_offset = 10, 11.0, 15.0, -5
 
-    base_g = eps_g5y - dp
-    bull_g = eps_g5y + bull_offset
+    # Operating leverage premium: when using revenue as the growth anchor (because
+    # eps_growth_5y is unreliable — e.g. PLTR transitioning loss→profit), check if
+    # eps_growth_ttm_yoy materially exceeds revenue growth. If so, add a capped premium
+    # to BASE and BULL — in those scenarios, margin expansion drives EPS faster than
+    # revenue. Bear keeps the raw revenue anchor (operating leverage doesn't materialize
+    # in the bear case).
+    ol_premium = 0.0
+    ol_note = ""
+    if anchor_label.startswith("revenue_growth"):
+        eps_g_ttm = raw.get("eps_growth_ttm_yoy")
+        if (eps_g_ttm is not None and float(eps_g_ttm) > 0
+                and float(eps_g_ttm) > eps_g5y + 10):
+            gap = float(eps_g_ttm) - eps_g5y
+            ol_premium = round(min(gap * 0.20, 6.0), 1)
+            ol_note = (
+                f" + {ol_premium}pp operating leverage premium "
+                f"(eps_growth_ttm_yoy {float(eps_g_ttm):.1f}% >> revenue anchor {eps_g5y:.1f}%)"
+            )
+
+    # Bear: raw anchor (no leverage premium — bear case = leverage doesn't materialise)
+    bear_raw_base = eps_g5y - dp
+    bear_g = max(round(bear_raw_base - 5, 1), 3.0)
+
+    # Base/Bull: anchor + operating leverage premium
+    base_g = eps_g5y + ol_premium - dp
+    bull_g = eps_g5y + ol_premium + bull_offset
     if base_cap is not None:
         base_g = min(base_g, base_cap)
     if bull_cap is not None:
         bull_g = min(bull_g, bull_cap)
-    bear_g = max(round(base_g - 5, 1), 3.0)
     base_g = round(base_g, 1)
     bull_g = round(bull_g, 1)
 
@@ -406,6 +429,8 @@ def _compute_10yr_model(raw: dict) -> dict | None:
         "eps_source": eps_source,
         "eps_g5y": eps_g5y,
         "anchor_label": anchor_label,
+        "ol_premium": ol_premium,
+        "ol_note": ol_note,
         "revenue_b": revenue_b,
         "discount_pp": dp,
         "base_cap": base_cap,
@@ -421,25 +446,30 @@ def _compute_10yr_model(raw: dict) -> dict | None:
 
 def _format_10yr_anchors(a: dict) -> str:
     cap_note = f", capped at {a['base_cap']}%" if a["base_cap"] else ""
-    raw_base = round(a["eps_g5y"] - a["discount_pp"], 1)
+    ol = a.get("ol_premium", 0.0)
+    ol_note = a.get("ol_note", "")
+    # With operating leverage premium, base uses anchor+premium; bear uses raw anchor
+    raw_base_no_ol = round(a["eps_g5y"] - a["discount_pp"], 1)
+    raw_base = round(a["eps_g5y"] + ol - a["discount_pp"], 1)
+    ol_str = f" + {ol}pp OL premium" if ol else ""
     base_cap_str = (
         f" → {raw_base}%, capped at {a['base_cap']}% = **{a['base_g']}% base**"
         if a["base_cap"] and raw_base > a["base_cap"]
         else f" = **{a['base_g']}% base**"
     )
-    raw_bull = round(a["eps_g5y"] + (a["bull_cap"] - a["base_cap"] if a["base_cap"] and a["bull_cap"] else 3), 1) if a["bull_cap"] else round(a["eps_g5y"] + 3, 1)
     bull_cap_str = (
         f", bull capped at {a['bull_cap']}% = **{a['bull_g']}% bull**"
         if a["bull_cap"] else f" = **{a['bull_g']}% bull**"
     )
+    bear_derivation = f"raw anchor {a['eps_g5y']}% − {a['discount_pp']}pp − 5pp = **{a['bear_g']}%** (no OL premium in bear)" if ol else f"base − 5pp floor at 3% = **{a['bear_g']}%**"
     return (
         f"\n## PRE-COMPUTED 10-YEAR MODEL ANCHORS\n"
         f"These values are computed in code from Finnhub data. Use them exactly — do not recompute growth rates or Year-10 EPS.\n\n"
         f"Starting EPS: ${a['starting_eps']} ({a['eps_source']})\n"
-        f"Growth anchor — {a['anchor_label']}\n"
+        f"Growth anchor — {a['anchor_label']}{ol_note}\n"
         f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n"
-        f"Derivation: {a['eps_g5y']}% − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
-        f"bear = base − 5pp floor at 3% = **{a['bear_g']}%**\n\n"
+        f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
+        f"bear = {bear_derivation}\n\n"
         f"| Scenario | Growth Rate | Year-10 EPS |\n"
         f"|----------|-------------|-------------|\n"
         f"| Bear     | {a['bear_g']}%       | ${a['yr10_bear']}     |\n"
