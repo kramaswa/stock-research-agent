@@ -388,6 +388,7 @@ def _compute_10yr_model(raw: dict) -> dict | None:
     starting_eps: float | None = None
     eps_source = ""
 
+    eps_from_estimates = False
     if eps_estimates:
         first = eps_estimates[0]
         mean = first.get("eps_avg") or first.get("epsAvg")
@@ -395,6 +396,7 @@ def _compute_10yr_model(raw: dict) -> dict | None:
             starting_eps = round(float(mean), 2)
             period = first.get("period", "")
             eps_source = f"consensus forward EPS (Finnhub {period}): ${starting_eps}"
+            eps_from_estimates = True
 
     if starting_eps is None and fcf_per_share and float(fcf_per_share) > 0:
         starting_eps = round(float(fcf_per_share), 2)
@@ -403,17 +405,29 @@ def _compute_10yr_model(raw: dict) -> dict | None:
     # For high-SBC companies where Finnhub's FCF/share is null (e.g. CRWD, SNOW),
     # operating cash flow per share is the next best proxy — it adds back SBC and
     # is closer to non-GAAP earnings than GAAP EPS or market-implied via GAAP forward P/E.
+    # Guard: if market-implied EPS is >2× the OCF/share, OCF/share is a poor proxy
+    # (working capital movements or SBC accounting create a wide gap). Skip and let
+    # Priority 3 use market-implied EPS instead (e.g. PLTR: OCF $0.58 vs implied $2.54).
     if starting_eps is None:
         ocf = raw.get("operating_cf_per_share_ttm")
         if ocf and float(ocf) > 0:
-            starting_eps = round(float(ocf), 2)
-            eps_source = f"operating CF/share TTM (Finnhub, SBC add-back proxy): ${starting_eps}"
+            ocf_val = round(float(ocf), 2)
+            if forward_pe and current_price and float(forward_pe) > 0:
+                implied = float(current_price) / float(forward_pe)
+                if implied <= ocf_val * 2:
+                    starting_eps = ocf_val
+                    eps_source = f"operating CF/share TTM (Finnhub, SBC add-back proxy): ${starting_eps}"
+                # else: implied >> OCF — fall through to Priority 3
+            else:
+                starting_eps = ocf_val
+                eps_source = f"operating CF/share TTM (Finnhub, SBC add-back proxy): ${starting_eps}"
 
-    # GAAP/non-GAAP gap check: if eps_estimates is present but market-implied is
-    # >1.5x larger, Finnhub's consensus is GAAP-based (common for high-SBC tech).
-    # Using GAAP starting EPS with non-GAAP exit multiples gives wrong 10-year math
-    # — skip anchors and let Phase 1 handle EPS derivation with full context.
-    if starting_eps and forward_pe and current_price and float(forward_pe) > 0:
+    # GAAP/non-GAAP gap check: ONLY for Priority 1 (eps_estimates).
+    # If Finnhub's consensus EPS is GAAP-based but market-implied non-GAAP is >1.5x higher,
+    # the anchors would systematically understate returns — skip and let Phase 1 handle it.
+    # Do NOT apply this check to FCF/share or OCF/share: those can legitimately differ
+    # from non-GAAP EPS (e.g. PLTR OCF/share $0.58 vs non-GAAP EPS $2.54).
+    if eps_from_estimates and starting_eps and forward_pe and current_price and float(forward_pe) > 0:
         implied_check = float(current_price) / float(forward_pe)
         if implied_check > starting_eps * 1.5:
             return None

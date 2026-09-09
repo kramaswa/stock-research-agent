@@ -403,3 +403,29 @@ async def debug_eps(ticker: str):
         "eps_estimates": raw.get("eps_estimates"),
         "eps_estimates_quarterly": raw.get("eps_estimates_quarterly"),
     }
+
+
+@app.get("/debug/anchors/{ticker}")
+async def debug_anchors(ticker: str):
+    """Show exactly what _compute_10yr_model returns for a ticker (all anchor values)."""
+    from agents.hold_check_agent import _compute_10yr_model
+    loop = asyncio.get_running_loop()
+    raw = await loop.run_in_executor(None, get_all_stock_data, ticker.upper())
+    anchors = _compute_10yr_model(raw)
+    return {
+        "ticker": ticker.upper(),
+        "anchors": anchors,
+        "relevant_raw": {
+            "current_price": raw.get("current_price"),
+            "forward_pe": raw.get("forward_pe"),
+            "fcf_per_share_ttm": raw.get("fcf_per_share_ttm"),
+            "operating_cf_per_share_ttm": raw.get("operating_cf_per_share_ttm"),
+            "eps_growth_5y": raw.get("eps_growth_5y"),
+            "eps_growth_3y": raw.get("eps_growth_3y"),
+            "eps_growth_ttm_yoy": raw.get("eps_growth_ttm_yoy"),
+            "revenue_growth_3y": raw.get("revenue_growth_3y"),
+            "revenue_growth_5y": raw.get("revenue_growth_5y"),
+            "eps_estimates": raw.get("eps_estimates"),
+            "revenue_estimates": raw.get("revenue_estimates"),
+        },
+    }
