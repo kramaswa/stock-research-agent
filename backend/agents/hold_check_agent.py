@@ -510,6 +510,27 @@ def _compute_10yr_model(raw: dict) -> dict | None:
     else:
         dp, base_cap, bull_cap, bull_offset = 10, 11.0, 15.0, -5
 
+    # Forward revenue deceleration check: if analyst consensus for the next 2 annual
+    # periods implies materially slower growth than the historical anchor, lower the
+    # anchor to reflect the changing trajectory. Only caps downward — if forward
+    # estimates are higher than historical, keep the conservative historical anchor.
+    # Threshold: >3pp deceleration = meaningful, not just noise.
+    # Example: INTU historical 17% but consensus implies 8% → anchor drops to 8%.
+    if len(rev_estimates) >= 2:
+        r0 = rev_estimates[0].get("revenue_avg_billions")
+        r1 = rev_estimates[1].get("revenue_avg_billions")
+        if r0 and r1 and float(r0) > 0:
+            fwd_g = round((float(r1) - float(r0)) / float(r0) * 100, 1)
+            p0 = rev_estimates[0].get("period", "Y1")
+            p1 = rev_estimates[1].get("period", "Y2")
+            # Only apply if forward growth is reasonable (>2%) and meaningfully below historical
+            if fwd_g > 2 and fwd_g < eps_g5y - 3:
+                anchor_label = (
+                    f"forward revenue growth {p0}→{p1} (analyst consensus): {fwd_g:.1f}% "
+                    f"[historical {eps_g5y:.1f}% overridden — deceleration signal]"
+                )
+                eps_g5y = fwd_g  # update anchor used for all downstream growth calcs
+
     # Operating leverage premium: when using revenue as the growth anchor (because
     # eps_growth_5y is unreliable — e.g. PLTR transitioning loss→profit), check if
     # EPS growth materially exceeds revenue growth. If so, add a capped premium
