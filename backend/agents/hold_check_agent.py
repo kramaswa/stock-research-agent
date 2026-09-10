@@ -571,46 +571,37 @@ def _compute_10yr_model(raw: dict) -> dict | None:
     def yr10(g: float) -> float:
         return round(starting_eps * (1 + g / 100) ** 10, 2)
 
-    # Dilution estimation: annual net share dilution applied as (1-rate)^10 to adj returns.
-    # High-SBC companies (PLTR, SNOW, CRWD) dilute 3-5%/yr — over 10 years that erodes
-    # 30-40% of per-share value even when business fundamentals are strong.
-    # Heuristics use available signals rather than requiring historical share count data.
+    # Dilution adjustment: only applies when the growth anchor is REVENUE-based.
+    # eps_growth_5y is a per-share metric — dilution is already embedded in it
+    # (EPS = Earnings ÷ Shares, so slower share growth shows up as slower EPS growth).
+    # Revenue growth is a total-company metric — it does NOT account for new shares
+    # issued as SBC. For revenue-anchored companies (PLTR, recently-profitable names),
+    # we must subtract dilution to get the true per-share growth rate.
     fwd_pe_val = float(forward_pe) if forward_pe and float(forward_pe) > 0 else None
-    rev_g5y_raw = raw.get("revenue_growth_5y")
-    eps_g5y_raw = raw.get("eps_growth_5y")
-    div_yield_val = float(raw.get("dividend_yield") or 0)
     fcf_ps = raw.get("fcf_per_share_ttm")
+    div_yield_val = float(raw.get("dividend_yield") or 0)
 
-    annual_dilution = 0.01   # default: 1%/yr (modest net dilution for typical company)
-    dilution_note = "~1%/yr (default — no strong SBC signal)"
+    annual_dilution = 0.0
+    dilution_note = "n/a — EPS-based anchor already embeds per-share dilution"
+    dilution_10yr = 1.0
 
-    if fwd_pe_val and fwd_pe_val > 80:
-        # GAAP-distorted P/E almost always means extreme SBC (CRWD, SNOW, NET, ZS)
-        annual_dilution = 0.04
-        dilution_note = f"~4%/yr (fwd P/E {fwd_pe_val:.0f}x — GAAP distortion signals very high SBC)"
-    elif fcf_ps is None and fwd_pe_val and fwd_pe_val > 40:
-        # FCF null + elevated P/E → SBC is wiping out free cash flow
-        annual_dilution = 0.03
-        dilution_note = f"~3%/yr (FCF/share null + fwd P/E {fwd_pe_val:.0f}x — material SBC likely)"
-    elif fwd_pe_val and fwd_pe_val > 40 and fcf_ps and float(fcf_ps) > 0:
-        # Elevated P/E but positive FCF → growing company with moderate SBC
-        annual_dilution = 0.02
-        dilution_note = f"~2%/yr (elevated fwd P/E {fwd_pe_val:.0f}x + positive FCF — moderate SBC)"
-    elif (rev_g5y_raw is not None and eps_g5y_raw is not None
-          and float(rev_g5y_raw) > 5 and float(eps_g5y_raw) > 0
-          and float(rev_g5y_raw) > float(eps_g5y_raw) + 5):
-        # Revenue grew materially faster than EPS over 5 years → persistent dilution drag
-        annual_dilution = 0.02
-        dilution_note = (
-            f"~2%/yr (revenue_growth_5y {float(rev_g5y_raw):.1f}% >> "
-            f"eps_growth_5y {float(eps_g5y_raw):.1f}% — dilution signal)"
-        )
-    elif div_yield_val > 1.5 and (not fwd_pe_val or fwd_pe_val < 30):
-        # Dividend payer at reasonable valuation — buybacks typically offset dilution
-        annual_dilution = 0.0
-        dilution_note = "~0%/yr (dividend payer at reasonable valuation — buybacks likely offset dilution)"
+    # Only estimate dilution when the growth anchor is revenue-based (not EPS-based)
+    anchor_is_revenue = anchor_label.startswith("revenue_growth") or anchor_label.startswith("forward revenue")
+    if anchor_is_revenue:
+        annual_dilution = 0.02   # default for revenue-anchored: 2%/yr
+        dilution_note = "~2%/yr (revenue anchor — dilution not embedded; estimated from SBC signals)"
 
-    dilution_10yr = round((1 - annual_dilution) ** 10, 4)
+        if fwd_pe_val and fwd_pe_val > 80:
+            annual_dilution = 0.04
+            dilution_note = f"~4%/yr (fwd P/E {fwd_pe_val:.0f}x — GAAP distortion signals very high SBC)"
+        elif fcf_ps is None and fwd_pe_val and fwd_pe_val > 40:
+            annual_dilution = 0.03
+            dilution_note = f"~3%/yr (FCF/share null + fwd P/E {fwd_pe_val:.0f}x — material SBC likely)"
+        elif div_yield_val > 1.5 and (not fwd_pe_val or fwd_pe_val < 30):
+            annual_dilution = 0.005
+            dilution_note = "~0.5%/yr (dividend payer — buybacks largely offset SBC dilution)"
+
+        dilution_10yr = round((1 - annual_dilution) ** 10, 4)
 
     # Calibrate suggested exit P/E based on starting forward P/E to prevent
     # unjustified multiple expansion from inflating expected returns.
