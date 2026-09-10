@@ -282,16 +282,16 @@ def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) 
         return text
 
     scenario_anchors = [
-        ("Bear", anchors["bear_g"], anchors["yr10_bear"]),
-        ("Base", anchors["base_g"], anchors["yr10_base"]),
-        ("Bull", anchors["bull_g"], anchors["yr10_bull"]),
+        ("Bear", anchors["bear_g"], anchors["yr10_bear"], anchors.get("exit_pe_bear")),
+        ("Base", anchors["base_g"], anchors["yr10_base"], anchors.get("exit_pe_base")),
+        ("Bull", anchors["bull_g"], anchors["yr10_bull"], anchors.get("exit_pe_bull")),
     ]
 
     lines = text.split("\n")
     corrected_scenarios: dict[str, tuple[float, float]] = {}  # name → (prob%, adj_return)
 
     for i, line in enumerate(lines):
-        for scenario_name, anchor_g, anchor_yr10 in scenario_anchors:
+        for scenario_name, anchor_g, anchor_yr10, exit_pe_cap in scenario_anchors:
             # Match a markdown table row for this scenario
             if not re.match(rf"\|\s*\**{scenario_name}\**\s*\|", line, re.IGNORECASE):
                 continue
@@ -301,32 +301,38 @@ def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) 
                 continue
 
             growth_part = parts[3]
-            yr10_part   = parts[5]
             exit_part   = parts[6]
             price_part  = parts[7]
             adj_part    = parts[8]
             prob_part   = parts[2]
 
-            # Check if already correct (within 0.5pp) — still record for Expected row
             growth_match = re.search(r"(\d+(?:\.\d+)?)\s*%", growth_part)
             prob_match   = re.search(r"(\d+(?:\.\d+)?)\s*%", prob_part)
             adj_match    = re.search(r"(\d+(?:\.\d+)?)\s*x", adj_part, re.IGNORECASE)
+            exit_m       = re.search(r"(\d+(?:\.\d+)?)\s*x", exit_part, re.IGNORECASE)
 
-            if growth_match and abs(float(growth_match.group(1)) - anchor_g) <= 0.5:
+            growth_ok = growth_match and abs(float(growth_match.group(1)) - anchor_g) <= 0.5
+            # Exit P/E is over cap if a cap is set and the model used more than cap + 1
+            exit_pe_val = float(exit_m.group(1)) if exit_m else None
+            exit_over_cap = (
+                exit_pe_cap is not None
+                and exit_pe_val is not None
+                and exit_pe_val > exit_pe_cap + 1
+            )
+
+            if growth_ok and not exit_over_cap:
+                # Both correct — just record for Expected row
                 if prob_match and adj_match:
                     corrected_scenarios[scenario_name] = (
                         float(prob_match.group(1)), float(adj_match.group(1))
                     )
-                continue  # already correct
+                continue
 
-            # Extract exit multiple
-            exit_m = re.search(r"(\d+(?:\.\d+)?)\s*x", exit_part, re.IGNORECASE)
+            # Need to correct: cap exit P/E if over cap, enforce anchor yr10 EPS
             if not exit_m:
                 continue
-            exit_pe = float(exit_m.group(1))
-
-            # Compute corrected price
-            corrected_price_val = anchor_yr10 * exit_pe
+            effective_exit_pe = min(exit_pe_val, exit_pe_cap) if exit_pe_cap else exit_pe_val
+            corrected_price_val = anchor_yr10 * effective_exit_pe
 
             # Scale adj return by (corrected / original) to preserve model's dilution assumption
             orig_price_m = re.search(r"\$\s*([0-9,]+(?:\.\d+)?)", price_part)
@@ -337,18 +343,17 @@ def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) 
                 ratio = corrected_price_val / orig_price_val if orig_price_val > 0 else 1.0
                 corrected_adj = orig_adj_val * ratio
             else:
-                # Fallback: assume 3%/yr SBC dilution
                 corrected_adj = corrected_price_val / (current_price * (1.03 ** 10))
 
             pct_yr = (corrected_adj ** 0.1 - 1) * 100 if corrected_adj > 0 else -99.0
 
-            # Record for Expected row
             if prob_match:
                 corrected_scenarios[scenario_name] = (float(prob_match.group(1)), corrected_adj)
 
             # Rebuild the row
             parts[3] = f" {anchor_g:.1f}% "
             parts[5] = f" ~${anchor_yr10:.2f} "
+            parts[6] = f" {effective_exit_pe:.0f}x "
             parts[7] = f" ~${corrected_price_val:.0f} "
             parts[8] = f" ~{corrected_adj:.2f}x "
             parts[9] = f" ~{pct_yr:.1f}%/yr "
@@ -551,6 +556,58 @@ def _compute_10yr_model(raw: dict) -> dict | None:
     def yr10(g: float) -> float:
         return round(starting_eps * (1 + g / 100) ** 10, 2)
 
+    # Calibrate suggested exit P/E based on starting forward P/E to prevent
+    # unjustified multiple expansion from inflating expected returns.
+    # When the market has structurally re-rated a stock lower (compressed P/E),
+    # exit multiples should reflect partial recovery — NOT a return to historical peaks.
+    # Example: INTU at 11.57x P/E → base exit 19x (not 30x), preventing a 2.6x
+    # multiple-expansion tailwind that makes adj returns look unrealistically high.
+    exit_pe_bear: int | None = None
+    exit_pe_base: int | None = None
+    exit_pe_bull: int | None = None
+    exit_pe_note = ""
+
+    if forward_pe and float(forward_pe) > 0:
+        fwd = float(forward_pe)
+        if fwd <= 80:  # >80x is GAAP-distorted — let model handle exit multiples freely
+            if fwd < 12:
+                # Deeply compressed — market pricing structural impairment; limit expansion
+                exit_pe_bear = max(round(fwd), 8)
+                exit_pe_base = min(round(fwd * 1.6), 20)
+                exit_pe_bull = min(round(fwd * 2.3), 28)
+                exit_pe_note = (
+                    f"Starting fwd P/E = {fwd:.1f}x (deeply compressed — market pricing structural impairment). "
+                    f"Exit multiples capped: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x. "
+                    f"Do NOT use higher exit multiples — that would assume full mean-reversion the market is explicitly rejecting."
+                )
+            elif fwd < 20:
+                # Moderately cheap — partial recovery plausible
+                exit_pe_bear = max(round(fwd * 0.85), 10)
+                exit_pe_base = min(round(fwd * 1.2), 28)
+                exit_pe_bull = min(round(fwd * 1.6), 38)
+                exit_pe_note = (
+                    f"Starting fwd P/E = {fwd:.1f}x (moderately cheap). "
+                    f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x."
+                )
+            elif fwd < 35:
+                # Normal range — anchor near current multiple, avoid expansion assumption
+                exit_pe_bear = max(round(fwd * 0.65), 12)
+                exit_pe_base = round(fwd * 0.95)
+                exit_pe_bull = min(round(fwd * 1.25), 55)
+                exit_pe_note = (
+                    f"Starting fwd P/E = {fwd:.1f}x (normal range). "
+                    f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x."
+                )
+            else:
+                # Elevated — assume compression across all scenarios
+                exit_pe_bear = max(round(fwd * 0.45), 15)
+                exit_pe_base = max(round(fwd * 0.65), 20)
+                exit_pe_bull = min(round(fwd * 0.85), 80)
+                exit_pe_note = (
+                    f"Starting fwd P/E = {fwd:.1f}x (elevated). "
+                    f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x — assume compression."
+                )
+
     return {
         "starting_eps": starting_eps,
         "eps_source": eps_source,
@@ -568,6 +625,10 @@ def _compute_10yr_model(raw: dict) -> dict | None:
         "yr10_bear": yr10(bear_g),
         "yr10_base": yr10(base_g),
         "yr10_bull": yr10(bull_g),
+        "exit_pe_bear": exit_pe_bear,
+        "exit_pe_base": exit_pe_base,
+        "exit_pe_bull": exit_pe_bull,
+        "exit_pe_note": exit_pe_note,
     }
 
 
@@ -575,8 +636,6 @@ def _format_10yr_anchors(a: dict) -> str:
     cap_note = f", capped at {a['base_cap']}%" if a["base_cap"] else ""
     ol = a.get("ol_premium", 0.0)
     ol_note = a.get("ol_note", "")
-    # With operating leverage premium, base uses anchor+premium; bear uses raw anchor
-    raw_base_no_ol = round(a["eps_g5y"] - a["discount_pp"], 1)
     raw_base = round(a["eps_g5y"] + ol - a["discount_pp"], 1)
     ol_str = f" + {ol}pp OL premium" if ol else ""
     base_cap_str = (
@@ -588,7 +647,29 @@ def _format_10yr_anchors(a: dict) -> str:
         f", bull capped at {a['bull_cap']}% = **{a['bull_g']}% bull**"
         if a["bull_cap"] else f" = **{a['bull_g']}% bull**"
     )
-    bear_derivation = f"raw anchor {a['eps_g5y']}% − {a['discount_pp']}pp − 5pp = **{a['bear_g']}%** (no OL premium in bear)" if ol else f"base − 5pp floor at 3% = **{a['bear_g']}%**"
+    bear_derivation = (
+        f"raw anchor {a['eps_g5y']}% − {a['discount_pp']}pp − 5pp = **{a['bear_g']}%** (no OL premium in bear)"
+        if ol else f"base − 5pp floor at 3% = **{a['bear_g']}%**"
+    )
+
+    # Exit P/E caps section — only shown when calibrated
+    epb = a.get("exit_pe_bear")
+    eps_b = a.get("exit_pe_base")
+    epu = a.get("exit_pe_bull")
+    ep_note = a.get("exit_pe_note", "")
+    if epb and eps_b and epu:
+        exit_cap_block = (
+            f"⚠ EXIT P/E CAPS (MANDATORY — enforced by post-processor):\n"
+            f"{ep_note}\n"
+            f"  Bear ≤{epb}x  |  Base ≤{eps_b}x  |  Bull ≤{epu}x\n\n"
+        )
+        bear_pe_cell  = f"[≤{epb}x]"
+        base_pe_cell  = f"[≤{eps_b}x]"
+        bull_pe_cell  = f"[≤{epu}x]"
+    else:
+        exit_cap_block = ""
+        bear_pe_cell = base_pe_cell = bull_pe_cell = "[you choose]"
+
     return (
         f"\n## PRE-COMPUTED 10-YEAR MODEL ANCHORS\n"
         f"Starting EPS: ${a['starting_eps']} ({a['eps_source']})\n"
@@ -597,14 +678,14 @@ def _format_10yr_anchors(a: dict) -> str:
         f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         f"bear = {bear_derivation}\n\n"
         f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
-        f"The growth rates and Year-10 EPS below are mathematically derived (Starting EPS × (1+g)^10) "
-        f"and are LOCKED. Your ONLY job: choose Exit P/E for each scenario, then compute "
-        f"Year-10 Price = Year-10 EPS × Exit P/E, Adj Return, and Probability.\n\n"
-        f"| Scenario | Growth Rate | Year-10 EPS | Exit P/E | Year-10 Price | Adj Return | Prob |\n"
+        f"Growth rates and Year-10 EPS are mathematically derived and LOCKED. "
+        f"Choose Exit P/E within the caps, compute Year-10 Price = Year-10 EPS × Exit P/E.\n\n"
+        + exit_cap_block
+        + f"| Scenario | Growth Rate | Year-10 EPS | Exit P/E | Year-10 Price | Adj Return | Prob |\n"
         f"|----------|-------------|-------------|----------|---------------|------------|------|\n"
-        f"| Bear     | **{a['bear_g']}%** | **${a['yr10_bear']}** | [you choose] | ${a['yr10_bear']} × [P/E] | [calc] | [%] |\n"
-        f"| Base     | **{a['base_g']}%** | **${a['yr10_base']}** | [you choose] | ${a['yr10_base']} × [P/E] | [calc] | [%] |\n"
-        f"| Bull     | **{a['bull_g']}%** | **${a['yr10_bull']}** | [you choose] | ${a['yr10_bull']} × [P/E] | [calc] | [%] |\n\n"
+        f"| Bear     | **{a['bear_g']}%** | **${a['yr10_bear']}** | {bear_pe_cell} | ${a['yr10_bear']} × [P/E] | [calc] | [%] |\n"
+        f"| Base     | **{a['base_g']}%** | **${a['yr10_base']}** | {base_pe_cell} | ${a['yr10_base']} × [P/E] | [calc] | [%] |\n"
+        f"| Bull     | **{a['bull_g']}%** | **${a['yr10_bull']}** | {bull_pe_cell} | ${a['yr10_bull']} × [P/E] | [calc] | [%] |\n\n"
         f"LOCKED — DO NOT CHANGE:\n"
         f"  Bear growth = {a['bear_g']}%  →  Year-10 EPS = ${a['yr10_bear']}\n"
         f"  Base growth = {a['base_g']}%  →  Year-10 EPS = ${a['yr10_base']}\n"
