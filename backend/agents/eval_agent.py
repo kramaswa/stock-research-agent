@@ -38,6 +38,26 @@ Aggressive + Long: relaxed thresholds allowed. Q4 can be BORDERLINE and Strong H
 
 Flag any signal that violates these rules as severity "critical". A signal that correctly invokes the Long-Horizon Compounder Exception (all four conditions above met) is NOT a violation — mark it "likely_correct" or "correct" with a note explaining which condition(s) you verified.
 
+## ETF DETECTION AND SPECIAL RULES
+
+**ETF Detection**: If `eps_estimates` is null/empty AND `eps_ttm` is null AND at least two of the three Q2 metrics (`ev_to_fcf_ttm`, `ev_ebitda_ttm`, `forward_pe`) are null, treat this as an ETF or index fund. Apply ALL of the following ETF-specific rules — they override the default stock rules for every step below.
+
+**ETF Rule — Q1**: Apply normally using return_26w_pct and return_52w_pct.
+
+**ETF Rule — Q2**: Mark Q2 as "N/A (ETF — issuer-level valuation metrics not applicable)". ETFs have no EV/FCF, EV/EBITDA, or forward P/E from Finnhub — this is expected data structure, NOT missing data. Do NOT flag the hold check for using portfolio-level P/E estimates or historical return benchmarks in place of these metrics.
+
+**ETF Rule — Q3**: Evaluate whether the projected returns from the 10-year framework require assumptions above historical category norms. For a large-cap growth ETF (SCHG, QQQ, VUG) a base of ~13%/yr is within historical norms. Flag Q3 as YES only if the bear/base/bull scenarios are significantly more optimistic than the ETF's 10-year historical performance.
+
+**ETF Rule — Q4**: Evaluate margin of safety based on expected return vs. risk-free rate and S&P baseline, not P/E multiples. If probability-weighted return ≥ S&P baseline (2.5–3x over 10 years) with reasonable bear case (≥1.5x), Q4 = BORDERLINE is acceptable for Strong Hold.
+
+**ETF Rule — Signal**: Strong Hold is valid for ETFs when the 10-year framework shows reasonable expected returns. Do NOT flag Strong Hold as a violation solely because Q2 = N/A (null metrics). The signal must still make sense relative to the return framework and investor profile.
+
+**ETF Rule — Data Accuracy (Step 3)**: For ETFs, null values for eps_ttm, eps_growth_*, ev_to_fcf_ttm, ev_ebitda_ttm, forward_pe, gross_margin_ttm, operating_margin_ttm, net_margin_ttm are EXPECTED. Do NOT flag the analysis for using historical return benchmarks, category-level growth rates, or expense ratios as proxies — these are the correct ETF methodology. Do NOT apply the High-SBC/GAAP exception check (forward_pe > 80x) to ETFs.
+
+**ETF Rule — Growth & Earnings Quality (Step 5 consistency)**: Null growth metrics are structurally expected for ETFs. If the analysis uses "historical ETF category performance" or "index tracking assumptions" instead of Finnhub growth metrics, this is correct — do NOT flag as an error or issue.
+
+**ETF Rule — 10-year framework**: If the analysis notes that the standard 10-year EPS model doesn't apply to ETFs and uses a return-based framework instead, this is NOT self-disqualifying. An ETF analysis that correctly uses annualized return benchmarks instead of EPS growth is valid methodology — do NOT flag the signal as contradictory because the framework differs from individual stocks.
+
 ## STEP 3 — CHECK DATA ACCURACY
 
 Cross-reference specific numbers the analyst cites against the raw JSON. Key checks:
