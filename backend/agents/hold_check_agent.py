@@ -334,16 +334,10 @@ def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) 
             effective_exit_pe = min(exit_pe_val, exit_pe_cap) if exit_pe_cap else exit_pe_val
             corrected_price_val = anchor_yr10 * effective_exit_pe
 
-            # Scale adj return by (corrected / original) to preserve model's dilution assumption
-            orig_price_m = re.search(r"\$\s*([0-9,]+(?:\.\d+)?)", price_part)
-            orig_adj_m   = re.search(r"(\d+(?:\.\d+)?)\s*x", adj_part, re.IGNORECASE)
-            if orig_price_m and orig_adj_m:
-                orig_price_val = float(orig_price_m.group(1).replace(",", ""))
-                orig_adj_val   = float(orig_adj_m.group(1))
-                ratio = corrected_price_val / orig_price_val if orig_price_val > 0 else 1.0
-                corrected_adj = orig_adj_val * ratio
-            else:
-                corrected_adj = corrected_price_val / (current_price * (1.03 ** 10))
+            # Compute adj return deterministically: (Year-10 Price / Current Price) × dilution factor.
+            # dilution_10yr = (1 - annual_dilution_rate)^10, e.g. 0.668 for 4%/yr over 10 years.
+            dilution_10yr = anchors.get("dilution_10yr", 1.0)
+            corrected_adj = (corrected_price_val / current_price) * dilution_10yr
 
             pct_yr = (corrected_adj ** 0.1 - 1) * 100 if corrected_adj > 0 else -99.0
 
@@ -577,6 +571,47 @@ def _compute_10yr_model(raw: dict) -> dict | None:
     def yr10(g: float) -> float:
         return round(starting_eps * (1 + g / 100) ** 10, 2)
 
+    # Dilution estimation: annual net share dilution applied as (1-rate)^10 to adj returns.
+    # High-SBC companies (PLTR, SNOW, CRWD) dilute 3-5%/yr — over 10 years that erodes
+    # 30-40% of per-share value even when business fundamentals are strong.
+    # Heuristics use available signals rather than requiring historical share count data.
+    fwd_pe_val = float(forward_pe) if forward_pe and float(forward_pe) > 0 else None
+    rev_g5y_raw = raw.get("revenue_growth_5y")
+    eps_g5y_raw = raw.get("eps_growth_5y")
+    div_yield_val = float(raw.get("dividend_yield") or 0)
+    fcf_ps = raw.get("fcf_per_share_ttm")
+
+    annual_dilution = 0.01   # default: 1%/yr (modest net dilution for typical company)
+    dilution_note = "~1%/yr (default — no strong SBC signal)"
+
+    if fwd_pe_val and fwd_pe_val > 80:
+        # GAAP-distorted P/E almost always means extreme SBC (CRWD, SNOW, NET, ZS)
+        annual_dilution = 0.04
+        dilution_note = f"~4%/yr (fwd P/E {fwd_pe_val:.0f}x — GAAP distortion signals very high SBC)"
+    elif fcf_ps is None and fwd_pe_val and fwd_pe_val > 40:
+        # FCF null + elevated P/E → SBC is wiping out free cash flow
+        annual_dilution = 0.03
+        dilution_note = f"~3%/yr (FCF/share null + fwd P/E {fwd_pe_val:.0f}x — material SBC likely)"
+    elif fwd_pe_val and fwd_pe_val > 40 and fcf_ps and float(fcf_ps) > 0:
+        # Elevated P/E but positive FCF → growing company with moderate SBC
+        annual_dilution = 0.02
+        dilution_note = f"~2%/yr (elevated fwd P/E {fwd_pe_val:.0f}x + positive FCF — moderate SBC)"
+    elif (rev_g5y_raw is not None and eps_g5y_raw is not None
+          and float(rev_g5y_raw) > 5 and float(eps_g5y_raw) > 0
+          and float(rev_g5y_raw) > float(eps_g5y_raw) + 5):
+        # Revenue grew materially faster than EPS over 5 years → persistent dilution drag
+        annual_dilution = 0.02
+        dilution_note = (
+            f"~2%/yr (revenue_growth_5y {float(rev_g5y_raw):.1f}% >> "
+            f"eps_growth_5y {float(eps_g5y_raw):.1f}% — dilution signal)"
+        )
+    elif div_yield_val > 1.5 and (not fwd_pe_val or fwd_pe_val < 30):
+        # Dividend payer at reasonable valuation — buybacks typically offset dilution
+        annual_dilution = 0.0
+        dilution_note = "~0%/yr (dividend payer at reasonable valuation — buybacks likely offset dilution)"
+
+    dilution_10yr = round((1 - annual_dilution) ** 10, 4)
+
     # Calibrate suggested exit P/E based on starting forward P/E to prevent
     # unjustified multiple expansion from inflating expected returns.
     # When the market has structurally re-rated a stock lower (compressed P/E),
@@ -650,6 +685,9 @@ def _compute_10yr_model(raw: dict) -> dict | None:
         "exit_pe_base": exit_pe_base,
         "exit_pe_bull": exit_pe_bull,
         "exit_pe_note": exit_pe_note,
+        "annual_dilution": annual_dilution,
+        "dilution_note": dilution_note,
+        "dilution_10yr": dilution_10yr,
     }
 
 
@@ -696,6 +734,8 @@ def _format_10yr_anchors(a: dict) -> str:
         f"Starting EPS: ${a['starting_eps']} ({a['eps_source']})\n"
         f"Growth anchor — {a['anchor_label']}{ol_note}\n"
         f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n"
+        f"Dilution: {a['dilution_note']} → 10-yr dilution factor = {a['dilution_10yr']:.3f}x "
+        f"(Adj Return = Year-10 Price ÷ Current Price × {a['dilution_10yr']:.3f})\n"
         f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         f"bear = {bear_derivation}\n\n"
         f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
