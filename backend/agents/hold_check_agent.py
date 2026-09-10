@@ -751,9 +751,10 @@ ETFs compound via NAV appreciation + distributions, not EPS × exit multiple. Ap
 
 1. **Primary metric**: projected total NAV return (price appreciation + dividend/distribution yield). No EPS, no exit multiple, no Year-10 EPS column (show "—").
 2. **Three scenarios**: bear/base/bull total return rates based on the ETF's strategy:
-   - For broad market/factor ETFs: anchor to long-run market return (~10-11%/yr) ± factor premium
-   - For income/covered-call ETFs (JEPI, QYLD): anchor to historical distribution yield + expected NAV appreciation (typically well below market total return)
-   - For sector/thematic ETFs: anchor to sector growth expectations
+   - For **broad market ETFs** (SPY, VOO, VTI, SCHB): anchor base to long-run S&P return (~10-11%/yr). Bear ~7%/yr, Bull ~13-14%/yr.
+   - For **large-cap growth ETFs** (SCHG, QQQ, VUG, IWF, MGK): base = S&P baseline + growth premium. Historical large-cap growth has outperformed S&P by ~2-3%/yr; base should be **~13%/yr**, NOT 11%. Bear ~9%/yr (growth slows, multiples compress), Bull ~17%/yr (AI/tech cycle sustains). Expected return should be meaningfully above S&P baseline for growth-tilted funds.
+   - For **income/covered-call ETFs** (JEPI, QYLD, XYLD): anchor to historical distribution yield + expected NAV appreciation (typically well below market total return).
+   - For **sector/thematic ETFs** (XLK, SOXX, ARKK): anchor base to sector long-run growth rate — tech/semis ~12-15%/yr through-cycle, energy ~8-10%/yr. Add sector-specific bear (commodity cycle / regulatory risk) and bull (cycle acceleration) modifiers.
 3. **Price Target**: current_price × (1 + price_appreciation_only)^10, where price_appreciation = total_return − distribution_yield
 4. **Adj. Return**: (1 + (total_return − expense_ratio) / 100)^10. The ONLY drag for ETFs is the expense ratio — do NOT apply SBC dilution (ETFs do not issue stock-based compensation). Estimate expense ratio from the ETF name/type if not in data: index ETFs ~0.03-0.05%, factor/smart-beta ETFs ~0.15-0.35%, active ETFs ~0.25-0.75%, income/covered-call ETFs ~0.35-0.65%.
 5. **Price %/yr**: (Price Target / current_price)^(1/10) − 1. Use the SAME current_price for all three scenarios.
