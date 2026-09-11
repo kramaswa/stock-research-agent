@@ -504,6 +504,37 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     else:
         dp, base_cap, bull_cap, bull_offset = 10, 11.0, 15.0, -5
 
+    # Forward EPS contraction check: for EPS-anchored companies, if analyst consensus
+    # implies EPS declining or near-flat Y1→Y2, the 5-year historical CAGR is stale.
+    # Only applied when both Y1 EPS and Y2 EPS estimates are positive (avoids distortion
+    # from pre-profitability transitions). Mirrors revenue contraction logic below.
+    eps_estimates_fwd = raw.get("eps_estimates") or []
+    if anchor_label.startswith("eps_growth_5y") and len(eps_estimates_fwd) >= 2:
+        _e0 = eps_estimates_fwd[0].get("eps_avg")
+        _e1 = eps_estimates_fwd[1].get("eps_avg")
+        _ep0 = eps_estimates_fwd[0].get("period", "Y1")
+        _ep1 = eps_estimates_fwd[1].get("period", "Y2")
+        if _e0 and _e1 and float(_e0) > 0:
+            fwd_eps_g = round((float(_e1) - float(_e0)) / float(_e0) * 100, 1)
+            if fwd_eps_g <= 0:
+                anchor_label = (
+                    f"forward EPS {_ep0}→{_ep1} (analyst consensus): {fwd_eps_g:.1f}% "
+                    f"[CONTRACTION — historical {eps_g5y:.1f}% overridden; anchor capped at 1%]"
+                )
+                eps_g5y = 1.0
+            elif fwd_eps_g <= 3 and eps_g5y > 5:
+                anchor_label = (
+                    f"forward EPS {_ep0}→{_ep1} (analyst consensus): {fwd_eps_g:.1f}% "
+                    f"[near-flat — historical {eps_g5y:.1f}% overridden; anchor capped at {fwd_eps_g:.1f}%]"
+                )
+                eps_g5y = max(fwd_eps_g, 1.0)
+            elif fwd_eps_g > 3 and fwd_eps_g < eps_g5y - 3:
+                anchor_label = (
+                    f"forward EPS {_ep0}→{_ep1} (analyst consensus): {fwd_eps_g:.1f}% "
+                    f"[historical {eps_g5y:.1f}% overridden — EPS deceleration signal]"
+                )
+                eps_g5y = fwd_eps_g
+
     # Forward revenue deceleration check: if analyst consensus for the next 2 annual
     # periods implies materially slower growth than the historical anchor, lower the
     # anchor to reflect the changing trajectory. Only caps downward — if forward
