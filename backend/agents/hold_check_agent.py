@@ -345,6 +345,43 @@ def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) 
             parts[9] = f" ~{pct_yr:.1f}%/yr "
             lines[i] = "|".join(parts)
 
+    # Enforce scenario probability ranges before computing Expected row.
+    # Eliminates the last source of run-to-run variance in expected return.
+    # Ranges: Bear [15%, 40%], Base [40%, 60%], Bull [15%, 40%].
+    # Algorithm: clamp each to its range, then distribute any remaining gap
+    # to Base first (widest allowed range), then split evenly between Bear/Bull.
+    if len(corrected_scenarios) == 3:
+        _bp, _ba = corrected_scenarios["Bear"]
+        _sp, _sa = corrected_scenarios["Base"]
+        _up, _ua = corrected_scenarios["Bull"]
+
+        _bp = max(15.0, min(40.0, _bp))
+        _sp = max(40.0, min(60.0, _sp))
+        _up = max(15.0, min(40.0, _up))
+
+        _gap = 100.0 - (_bp + _sp + _up)
+        _sp = max(40.0, min(60.0, _sp + _gap))         # absorb gap in Base first
+        _gap2 = 100.0 - (_bp + _sp + _up)
+        if abs(_gap2) > 0.05:                           # split remainder between Bear/Bull
+            _bp = max(15.0, min(40.0, _bp + _gap2 / 2))
+            _up = max(15.0, min(40.0, _up + _gap2 / 2))
+
+        _bp, _sp, _up = round(_bp, 1), round(_sp, 1), round(_up, 1)
+        corrected_scenarios["Bear"] = (_bp, _ba)
+        corrected_scenarios["Base"] = (_sp, _sa)
+        corrected_scenarios["Bull"] = (_up, _ua)
+
+        # Write enforced probabilities back into the table rows
+        _prob_map = {"Bear": _bp, "Base": _sp, "Bull": _up}
+        for i, line in enumerate(lines):
+            for _sname, _new_p in _prob_map.items():
+                if re.match(rf"\|\s*\**{_sname}\**\s*\|", line, re.IGNORECASE):
+                    _rparts = line.split("|")
+                    if len(_rparts) >= 3:
+                        _rparts[2] = f" {_new_p:.0f}% "
+                        lines[i] = "|".join(_rparts)
+                    break
+
     # Fix Expected row probability-weighted adj return
     if len(corrected_scenarios) == 3:
         expected_adj = sum(
