@@ -572,6 +572,40 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 )
                 eps_g5y = fwd_g  # update anchor used for all downstream growth calcs
 
+    # FCF quality check: large persistent gaps between reported EPS and FCF/share
+    # indicate accrual-heavy earnings. For EPS-anchored companies, discount the growth
+    # anchor to reflect that projected earnings may not fully convert to cash.
+    # Skipped for revenue-anchored companies (FCF/EPS ratio is meaningless pre-profit).
+    fcf_quality_note = ""
+    _fcf_ps = raw.get("fcf_per_share_ttm")
+    _eps_ttm = raw.get("eps_ttm")
+    _anchor_is_eps = not (
+        anchor_label.startswith("revenue_growth") or anchor_label.startswith("forward revenue")
+    )
+    if _anchor_is_eps and _fcf_ps is not None and _eps_ttm is not None:
+        try:
+            _fcf_f = float(_fcf_ps)
+            _eps_f = float(_eps_ttm)
+            if _eps_f > 0.5:  # avoid distortion from near-zero EPS base
+                _ratio = _fcf_f / _eps_f
+                if _ratio < 0.3:
+                    eps_g5y = max(eps_g5y - 4.0, 1.0)
+                    fcf_quality_note = (
+                        f"FCF/EPS = {_ratio:.0%} — severe accrual gap; growth anchor discounted −4pp. "
+                        f"Treat projected EPS with caution: most earnings not converting to cash."
+                    )
+                elif _ratio < 0.5:
+                    eps_g5y = max(eps_g5y - 2.0, 1.0)
+                    fcf_quality_note = (
+                        f"FCF/EPS = {_ratio:.0%} — meaningful accrual gap; growth anchor discounted −2pp."
+                    )
+                elif _ratio >= 1.1:
+                    fcf_quality_note = (
+                        f"FCF/EPS = {_ratio:.0%} — high earnings quality; FCF exceeds EPS (working capital tailwind or low capex)."
+                    )
+        except (TypeError, ValueError, ZeroDivisionError):
+            pass
+
     # Operating leverage premium: when using revenue as the growth anchor (because
     # eps_growth_5y is unreliable — e.g. PLTR transitioning loss→profit), check if
     # EPS growth materially exceeds revenue growth. If so, add a capped premium
@@ -786,6 +820,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         "annual_dilution": annual_dilution,
         "dilution_note": dilution_note,
         "dilution_10yr": dilution_10yr,
+        "fcf_quality_note": fcf_quality_note,
     }
 
 
@@ -834,7 +869,8 @@ def _format_10yr_anchors(a: dict) -> str:
         f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n"
         f"Dilution: {a['dilution_note']} → 10-yr dilution factor = {a['dilution_10yr']:.3f}x "
         f"(Adj Return = Year-10 Price ÷ Current Price × {a['dilution_10yr']:.3f})\n"
-        f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
+        + (f"Earnings quality: {a['fcf_quality_note']}\n" if a.get("fcf_quality_note") else "")
+        + f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         f"bear = {bear_derivation}\n\n"
         f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
         f"Growth rates and Year-10 EPS are mathematically derived and LOCKED. "
