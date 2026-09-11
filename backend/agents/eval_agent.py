@@ -83,6 +83,8 @@ a) Signal vs. tone: if the analysis reads as skeptical throughout but awards Str
 b) Conditional Signal step: if present, it MUST be exactly one step up on the six-signal ladder: Exit Signal → Consider Exiting → Consider Trimming → Hold → Strong Hold → Add to Position. If signal is Hold, conditional must be Strong Hold only — not "Add to Position" or anything else.
 c) Price scenario probabilities must sum to 100%.
 d) "When to Change Signal" must have exactly 3 conditions: upgrade to adjacent signal, downgrade to adjacent, downgrade two steps.
+e) **10-year growth rate sanity check**: If the Price Scenarios table shows a base-case growth rate above 25% OR a bull-case growth rate above 30%, flag as "major" — no company sustains those EPS/revenue CAGRs for a full decade. The best compounders in history (Amazon, Apple, NVDA at peak) achieved ~20–25% sustained EPS CAGR over their best decades. Growth rates above these thresholds almost always reflect a near-zero historical EPS base (recently profitable companies) rather than a genuine 10-year forecast and will produce severely overstated returns. Exception: do NOT flag this for ETFs (Step 3 ETF rules apply).
+f) **Expected return sanity check**: If the probability-weighted expected adj. return exceeds 15x over 10 years (~32%/yr), flag as "major" — this implies the company will grow to implausible scale and almost certainly reflects an unrealistic growth rate anchor. The analysis must explicitly justify why 15x+ is defensible (e.g., cite specific revenue trajectory, market size, and why historical growth rates are sustainable — not merely repeat them). An analysis that reaches 15x+ without this justification has a modeling error, not just an aggressive assumption.
 
 ## STEP 6 — SECTION COMPLETENESS
 
