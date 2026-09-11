@@ -638,6 +638,42 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 f"management consistently beats estimates; anchor may be conservative."
             )
 
+    # Net insider activity: aggregate buy/sell value across all insiders in last 90 days.
+    # Multiple officers selling in unison is a mild bearish flag; clustered buying is bullish.
+    # Isolated single-insider sales are typically diversification — require 3+ sellers for discount.
+    insider_note = ""
+    _insider_txns = raw.get("insider_transactions") or []
+    if _anchor_is_eps and _insider_txns:
+        _buyers: dict[str, float] = {}
+        _sellers: dict[str, float] = {}
+        for _t in _insider_txns:
+            _name = _t.get("name") or "Unknown"
+            _val = abs(_t.get("shares") or 0) * (_t.get("price") or 0)
+            if _t.get("type") == "Buy":
+                _buyers[_name] = _buyers.get(_name, 0.0) + _val
+            elif _t.get("type") == "Sell":
+                _sellers[_name] = _sellers.get(_name, 0.0) + _val
+        _buy_val = sum(_buyers.values())
+        _sell_val = sum(_sellers.values())
+        _n_buy = len(_buyers)
+        _n_sell = len(_sellers)
+        if _n_sell >= 3 and _sell_val > 1_000_000:
+            eps_g5y = max(eps_g5y - 1.0, 1.0)
+            insider_note = (
+                f"{_n_sell} insiders sold ${_sell_val/1e6:.1f}M vs ${_buy_val/1e6:.1f}M bought "
+                f"(90 days) — broad insider selling; growth anchor discounted −1pp."
+            )
+        elif _n_sell >= 2 and _sell_val > 500_000 and _sell_val > _buy_val * 2:
+            insider_note = (
+                f"{_n_sell} insiders sold ${_sell_val/1e6:.1f}M vs ${_buy_val/1e6:.1f}M bought "
+                f"(90 days) — net selling pattern; monitor for continuation."
+            )
+        elif _n_buy >= 2 and _buy_val > 500_000 and _buy_val > _sell_val:
+            insider_note = (
+                f"{_n_buy} insiders bought ${_buy_val/1e6:.1f}M vs ${_sell_val/1e6:.1f}M sold "
+                f"(90 days) — clustered insider buying; bullish signal."
+            )
+
     # Operating leverage premium: when using revenue as the growth anchor (because
     # eps_growth_5y is unreliable — e.g. PLTR transitioning loss→profit), check if
     # EPS growth materially exceeds revenue growth. If so, add a capped premium
@@ -854,6 +890,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         "dilution_10yr": dilution_10yr,
         "fcf_quality_note": fcf_quality_note,
         "surprise_note": surprise_note,
+        "insider_note": insider_note,
     }
 
 
@@ -904,6 +941,7 @@ def _format_10yr_anchors(a: dict) -> str:
         f"(Adj Return = Year-10 Price ÷ Current Price × {a['dilution_10yr']:.3f})\n"
         + (f"FCF quality: {a['fcf_quality_note']}\n" if a.get("fcf_quality_note") else "")
         + (f"Surprise trend: {a['surprise_note']}\n" if a.get("surprise_note") else "")
+        + (f"Insider activity: {a['insider_note']}\n" if a.get("insider_note") else "")
         + f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         f"bear = {bear_derivation}\n\n"
         f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
