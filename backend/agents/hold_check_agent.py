@@ -389,6 +389,27 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
             eps_source = f"consensus forward EPS (Finnhub {period}): ${starting_eps}"
             eps_from_estimates = True
 
+    # Priority 1b: annual eps_estimates empty — try summing 4 quarterly estimates.
+    # More accurate than backward-looking TTM when Finnhub lacks annual estimates
+    # (common for certain companies like INTU where annual data is sparse).
+    if starting_eps is None:
+        eps_q = raw.get("eps_estimates_quarterly") or []
+        if len(eps_q) >= 4:
+            q_avgs = [
+                float(q["eps_avg"]) for q in eps_q[:4]
+                if q.get("eps_avg") is not None
+            ]
+            if len(q_avgs) == 4:
+                fwd_annual = round(sum(q_avgs), 2)
+                if fwd_annual > 0:
+                    _qperiods = [q.get("period", "") for q in eps_q[:4] if q.get("period")]
+                    starting_eps = fwd_annual
+                    eps_source = (
+                        f"sum of 4 quarterly consensus EPS ({', '.join(_qperiods)}): "
+                        f"${starting_eps} (forward-looking)"
+                    )
+                    eps_from_estimates = True
+
     if starting_eps is None and fcf_per_share and float(fcf_per_share) > 0:
         starting_eps = round(float(fcf_per_share), 2)
         eps_source = f"FCF/share TTM (Finnhub): ${starting_eps}"
