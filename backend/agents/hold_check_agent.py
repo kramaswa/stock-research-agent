@@ -328,9 +328,25 @@ def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) 
                 continue
 
             corrected_price_val = anchor_yr10 * effective_exit_pe
-            # Adj return is fully deterministic: Year-10 Price / Current Price × dilution.
+
+            # Cumulative dividends: for dividend-paying stocks, add 10 years of
+            # growing dividends to the numerator. Dividends grow at the scenario
+            # EPS growth rate (anchor_g). Uses geometric series formula.
+            div_yield_pct = anchors.get("div_yield_pct", 0.0)
+            cumulative_divs = 0.0
+            if div_yield_pct > 0.5:
+                annual_div = current_price * div_yield_pct / 100
+                _g = anchor_g / 100
+                cumulative_divs = (
+                    annual_div * ((1 + _g) ** 10 - 1) / _g
+                    if _g > 0.001 else annual_div * 10
+                )
+
+            # Adj return: (capital + dividends) / current price × dilution.
             dilution_10yr = anchors.get("dilution_10yr", 1.0)
-            corrected_adj = (corrected_price_val / current_price) * dilution_10yr
+            corrected_adj = (
+                (corrected_price_val + cumulative_divs) / current_price
+            ) * dilution_10yr
             pct_yr = (corrected_adj ** 0.1 - 1) * 100 if corrected_adj > 0 else -99.0
 
             if prob_match:
@@ -941,6 +957,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         "fcf_quality_note": fcf_quality_note,
         "surprise_note": surprise_note,
         "insider_note": insider_note,
+        "div_yield_pct": div_yield_val,
     }
 
 
@@ -992,6 +1009,11 @@ def _format_10yr_anchors(a: dict) -> str:
         + (f"FCF quality: {a['fcf_quality_note']}\n" if a.get("fcf_quality_note") else "")
         + (f"Surprise trend: {a['surprise_note']}\n" if a.get("surprise_note") else "")
         + (f"Insider activity: {a['insider_note']}\n" if a.get("insider_note") else "")
+        + (
+            f"Dividend: {a['div_yield_pct']:.1f}%/yr (grows with scenario EPS rate) — "
+            f"cumulative dividends included in adj return per scenario\n"
+            if a.get("div_yield_pct", 0) > 0.5 else ""
+        )
         + f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         f"bear = {bear_derivation}\n\n"
         f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
