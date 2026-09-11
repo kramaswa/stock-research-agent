@@ -264,7 +264,7 @@ def build_raw_metrics_block(raw: dict[str, Any]) -> str:
         + _format_adr_premium(raw)
     )
 
-_hold_cache: TTLCache = TTLCache(maxsize=100, ttl=3600)
+_hold_cache: TTLCache = TTLCache(maxsize=100, ttl=21600)  # 6hr — same-day re-runs return identical results
 
 
 def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) -> str:
@@ -302,49 +302,41 @@ def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) 
 
             growth_part = parts[3]
             exit_part   = parts[6]
-            price_part  = parts[7]
             adj_part    = parts[8]
             prob_part   = parts[2]
 
-            growth_match = re.search(r"(\d+(?:\.\d+)?)\s*%", growth_part)
-            prob_match   = re.search(r"(\d+(?:\.\d+)?)\s*%", prob_part)
-            adj_match    = re.search(r"(\d+(?:\.\d+)?)\s*x", adj_part, re.IGNORECASE)
-            exit_m       = re.search(r"(\d+(?:\.\d+)?)\s*x", exit_part, re.IGNORECASE)
-
-            growth_ok = growth_match and abs(float(growth_match.group(1)) - anchor_g) <= 0.5
-            # Exit P/E is over cap if a cap is set and the model used more than cap + 1
+            prob_match = re.search(r"(\d+(?:\.\d+)?)\s*%", prob_part)
+            exit_m     = re.search(r"(\d+(?:\.\d+)?)\s*x", exit_part, re.IGNORECASE)
             exit_pe_val = float(exit_m.group(1)) if exit_m else None
-            exit_over_cap = (
-                exit_pe_cap is not None
-                and exit_pe_val is not None
-                and exit_pe_val > exit_pe_cap + 1
-            )
 
-            if growth_ok and not exit_over_cap:
-                # Both correct — just record for Expected row
-                if prob_match and adj_match:
+            # Hard-enforce exit P/E using the pre-computed required value.
+            # Previously this was a soft cap (min of LLM choice and cap); now we use
+            # the computed value exactly so adj return is deterministic across runs.
+            # Falls back to LLM choice only for GAAP-distorted companies (fwd P/E > 80x)
+            # where no required value is computed.
+            if exit_pe_cap is not None:
+                effective_exit_pe = float(exit_pe_cap)
+            elif exit_pe_val is not None:
+                effective_exit_pe = exit_pe_val
+            else:
+                # No exit P/E at all — record LLM's adj return as-is and skip
+                adj_m = re.search(r"(\d+(?:\.\d+)?)\s*x", adj_part, re.IGNORECASE)
+                if prob_match and adj_m:
                     corrected_scenarios[scenario_name] = (
-                        float(prob_match.group(1)), float(adj_match.group(1))
+                        float(prob_match.group(1)), float(adj_m.group(1))
                     )
                 continue
 
-            # Need to correct: cap exit P/E if over cap, enforce anchor yr10 EPS
-            if not exit_m:
-                continue
-            effective_exit_pe = min(exit_pe_val, exit_pe_cap) if exit_pe_cap else exit_pe_val
             corrected_price_val = anchor_yr10 * effective_exit_pe
-
-            # Compute adj return deterministically: (Year-10 Price / Current Price) × dilution factor.
-            # dilution_10yr = (1 - annual_dilution_rate)^10, e.g. 0.668 for 4%/yr over 10 years.
+            # Adj return is fully deterministic: Year-10 Price / Current Price × dilution.
             dilution_10yr = anchors.get("dilution_10yr", 1.0)
             corrected_adj = (corrected_price_val / current_price) * dilution_10yr
-
             pct_yr = (corrected_adj ** 0.1 - 1) * 100 if corrected_adj > 0 else -99.0
 
             if prob_match:
                 corrected_scenarios[scenario_name] = (float(prob_match.group(1)), corrected_adj)
 
-            # Rebuild the row
+            # Always rebuild the row with enforced values
             parts[3] = f" {anchor_g:.1f}% "
             parts[5] = f" ~${anchor_yr10:.2f} "
             parts[6] = f" {effective_exit_pe:.0f}x "
