@@ -377,7 +377,7 @@ def _cache_key(
     raw = f"{ticker.upper()}|{risk}|{horizon}|{goal}|{price_bucket}|{user_thesis[:100].strip()}"
     return hashlib.md5(raw.encode()).hexdigest()
 
-def _compute_10yr_model(raw: dict) -> dict | None:
+def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict | None:
     """Deterministically compute 10-year model growth anchors from raw Finnhub data."""
     eps_estimates = raw.get("eps_estimates") or []
     forward_pe = raw.get("forward_pe")
@@ -517,8 +517,24 @@ def _compute_10yr_model(raw: dict) -> dict | None:
             fwd_g = round((float(r1) - float(r0)) / float(r0) * 100, 1)
             p0 = rev_estimates[0].get("period", "Y1")
             p1 = rev_estimates[1].get("period", "Y2")
-            # Only apply if forward growth is reasonable (>2%) and meaningfully below historical
-            if fwd_g > 2 and fwd_g < eps_g5y - 3:
+            if fwd_g <= 0:
+                # Revenue contraction — analysts project shrinking revenue next year.
+                # Historical growth anchor is unreliable; cap anchor at 1% (near-zero).
+                anchor_label = (
+                    f"forward revenue growth {p0}→{p1} (analyst consensus): {fwd_g:.1f}% "
+                    f"[CONTRACTION — historical {eps_g5y:.1f}% overridden; anchor capped at 1%]"
+                )
+                eps_g5y = 1.0
+            elif fwd_g <= 2 and eps_g5y > 5:
+                # Near-flat growth (<= 2%) while historical anchor is meaningfully higher.
+                # Treat as a strong deceleration signal — cap at forward estimate.
+                anchor_label = (
+                    f"forward revenue growth {p0}→{p1} (analyst consensus): {fwd_g:.1f}% "
+                    f"[near-flat — historical {eps_g5y:.1f}% overridden; anchor capped at {fwd_g:.1f}%]"
+                )
+                eps_g5y = max(fwd_g, 1.0)
+            elif fwd_g > 2 and fwd_g < eps_g5y - 3:
+                # Meaningful deceleration (>3pp below historical) — cap to forward estimate
                 anchor_label = (
                     f"forward revenue growth {p0}→{p1} (analyst consensus): {fwd_g:.1f}% "
                     f"[historical {eps_g5y:.1f}% overridden — deceleration signal]"
@@ -654,6 +670,66 @@ def _compute_10yr_model(raw: dict) -> dict | None:
                     f"Starting fwd P/E = {fwd:.1f}x (elevated). "
                     f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x — assume compression."
                 )
+
+    # Sector-specific secondary caps — applied on top of forward P/E tier.
+    # Low-multiple sectors (banks, energy, utilities) structurally can't sustain
+    # high exit P/Es regardless of starting multiple. Uses Finnhub industry string.
+    # Only tightens; never loosens what the P/E tier already set.
+    if exit_pe_bear is not None:
+        _s = (raw.get("sector") or "").lower()
+        _sector_caps = [
+            # (keywords, label, bear_max, base_max, bull_max)
+            # Ordered most-specific first so "mortgage reit" matches REIT row, not banks
+            (["mortgage reit", "real estate", "reit"], "Real Estate/REIT", 12, 16, 24),
+            (["bank", "savings", "thrift", "credit union"], "Banks/Lending", 11, 14, 21),
+            (["insurance"], "Insurance", 13, 17, 24),
+            (["oil", "gas", "energy", "coal", "mining", "petro"], "Energy/Commodities", 10, 14, 20),
+            (["utilities", "utility", "electric power", "water supply"], "Utilities", 11, 14, 21),
+            (["telecom", "wireless", "cable tv"], "Telecom", 11, 14, 21),
+            (["industrial", "aerospace", "defense", "machinery", "construction"], "Industrials", 13, 18, 27),
+            (["food", "beverage", "tobacco", "household product", "consumer staples"], "Consumer Staples", 15, 20, 30),
+            (["pharmaceutical", "biotech", "drug", "therapeut"], "Pharma/Biotech", 15, 22, 33),
+        ]
+        for _keywords, _slabel, _bmax, _smax, _umax in _sector_caps:
+            if any(kw in _s for kw in _keywords):
+                _capped = []
+                if exit_pe_bear > _bmax:
+                    exit_pe_bear = _bmax
+                    _capped.append(f"bear→{_bmax}x")
+                if exit_pe_base > _smax:
+                    exit_pe_base = _smax
+                    _capped.append(f"base→{_smax}x")
+                if exit_pe_bull > _umax:
+                    exit_pe_bull = _umax
+                    _capped.append(f"bull→{_umax}x")
+                if _capped:
+                    exit_pe_note += (
+                        f" [{_slabel} sector cap applied — 10-yr median ~{_smax}x; "
+                        f"tightened: {', '.join(_capped)}]"
+                    )
+                break
+
+    # Interest rate adjustment: higher 10Y yields compress justifiable P/E multiples.
+    # Neutral rate is ~3-3.5%; each 100bp above that supports ~5% P/E compression.
+    # Applied as a final multiplier after both P/E tier and sector caps.
+    if exit_pe_bear is not None and treasury_yield is not None:
+        if treasury_yield >= 5.5:
+            _rate_mult = 0.85
+            _rate_note = f"10Y yield {treasury_yield:.1f}% (elevated) → −15% exit P/E"
+        elif treasury_yield >= 4.5:
+            _rate_mult = 0.90
+            _rate_note = f"10Y yield {treasury_yield:.1f}% (high) → −10% exit P/E"
+        elif treasury_yield >= 3.5:
+            _rate_mult = 0.95
+            _rate_note = f"10Y yield {treasury_yield:.1f}% (above neutral) → −5% exit P/E"
+        else:
+            _rate_mult = None
+            _rate_note = None
+        if _rate_mult is not None:
+            exit_pe_bear = max(round(exit_pe_bear * _rate_mult), 8)
+            exit_pe_base = max(round(exit_pe_base * _rate_mult), 10)
+            exit_pe_bull = max(round(exit_pe_bull * _rate_mult), 12)
+            exit_pe_note += f" [{_rate_note}]"
 
     return {
         "starting_eps": starting_eps,
@@ -1390,7 +1466,7 @@ async def run_hold_check_agent(
 
     anchors_section = ""
     if raw_data:
-        anchors = _compute_10yr_model(raw_data)
+        anchors = _compute_10yr_model(raw_data, treasury_yield=treasury_yield)
         if anchors:
             anchors_section = _format_10yr_anchors(anchors)
 
