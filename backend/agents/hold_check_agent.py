@@ -606,6 +606,38 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         except (TypeError, ValueError, ZeroDivisionError):
             pass
 
+    # Earnings surprise trend: persistent misses signal consensus estimates are
+    # chronically too high — the forward EPS anchor inherits that optimism.
+    # Requires 3+ quarters with non-null surprise_pct to make a judgment.
+    surprise_note = ""
+    earnings_hist = raw.get("earnings_history") or []
+    _surprises = [
+        float(e["surprise_pct"])
+        for e in earnings_hist
+        if e.get("surprise_pct") is not None
+    ]
+    if _anchor_is_eps and len(_surprises) >= 3:
+        _miss_ct = sum(1 for s in _surprises if s < -5)
+        _beat_ct = sum(1 for s in _surprises if s > 5)
+        _avg = round(sum(_surprises) / len(_surprises), 1)
+        if _miss_ct >= 3:
+            eps_g5y = max(eps_g5y - 2.0, 1.0)
+            surprise_note = (
+                f"{_miss_ct}/{len(_surprises)} quarters missed by >5% (avg {_avg:+.1f}%) — "
+                f"consensus estimates systematically too high; growth anchor discounted −2pp."
+            )
+        elif _miss_ct >= 2 and _avg < -3:
+            eps_g5y = max(eps_g5y - 1.0, 1.0)
+            surprise_note = (
+                f"{_miss_ct}/{len(_surprises)} quarters missed by >5% (avg {_avg:+.1f}%) — "
+                f"mild systematic miss pattern; growth anchor discounted −1pp."
+            )
+        elif _beat_ct >= 3:
+            surprise_note = (
+                f"{_beat_ct}/{len(_surprises)} quarters beat by >5% (avg {_avg:+.1f}%) — "
+                f"management consistently beats estimates; anchor may be conservative."
+            )
+
     # Operating leverage premium: when using revenue as the growth anchor (because
     # eps_growth_5y is unreliable — e.g. PLTR transitioning loss→profit), check if
     # EPS growth materially exceeds revenue growth. If so, add a capped premium
@@ -821,6 +853,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         "dilution_note": dilution_note,
         "dilution_10yr": dilution_10yr,
         "fcf_quality_note": fcf_quality_note,
+        "surprise_note": surprise_note,
     }
 
 
@@ -869,7 +902,8 @@ def _format_10yr_anchors(a: dict) -> str:
         f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n"
         f"Dilution: {a['dilution_note']} → 10-yr dilution factor = {a['dilution_10yr']:.3f}x "
         f"(Adj Return = Year-10 Price ÷ Current Price × {a['dilution_10yr']:.3f})\n"
-        + (f"Earnings quality: {a['fcf_quality_note']}\n" if a.get("fcf_quality_note") else "")
+        + (f"FCF quality: {a['fcf_quality_note']}\n" if a.get("fcf_quality_note") else "")
+        + (f"Surprise trend: {a['surprise_note']}\n" if a.get("surprise_note") else "")
         + f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         f"bear = {bear_derivation}\n\n"
         f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
