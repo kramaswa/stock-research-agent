@@ -1,6 +1,7 @@
 import os
 import json
 import httpx
+import yfinance as yf
 from datetime import datetime, timedelta
 from cachetools import TTLCache
 
@@ -69,6 +70,28 @@ def get_all_stock_data(ticker: str) -> dict:
                 "eps_low": e.get("epsLow"),
                 "num_analysts": e.get("numberAnalysts"),
             })
+
+    # yfinance fallback: when Finnhub returns no annual EPS estimates, fetch
+    # forwardEps from Yahoo Finance (consensus non-GAAP, same basis as exit multiples).
+    # Only fires when Finnhub data is absent — no impact on tickers with Finnhub estimates.
+    if not eps_estimates:
+        try:
+            yf_info = yf.Ticker(ticker).info
+            fwd_eps = yf_info.get("forwardEps")
+            n_analysts = yf_info.get("numberOfAnalystOpinions")
+            if fwd_eps and float(fwd_eps) > 0:
+                import datetime as _dt
+                next_year = str(_dt.datetime.now().year + 1)
+                eps_estimates.append({
+                    "period": next_year,
+                    "eps_avg": round(float(fwd_eps), 2),
+                    "eps_high": None,
+                    "eps_low": None,
+                    "num_analysts": int(n_analysts) if n_analysts else None,
+                    "source": "yfinance",
+                })
+        except Exception:
+            pass  # yfinance is best-effort; fall through to market-implied
 
     # Forward revenue estimates (next 2 annual periods)
     revenue_estimates = []

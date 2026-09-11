@@ -42,7 +42,9 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
         mean_str = f"${mean:.2f}" if mean is not None else "N/A"
         range_str = f"(range ${low:.2f}–${high:.2f})" if low is not None and high is not None else ""
         n_str = f", {int(n)} analysts" if n is not None else ""
-        lines.append(f"  {period}: consensus {mean_str} {range_str}{n_str}")
+        src = e.get("source", "")
+        src_note = " [Yahoo Finance — Finnhub estimates unavailable]" if src == "yfinance" else ""
+        lines.append(f"  {period}: consensus {mean_str} {range_str}{n_str}{src_note}")
 
     first_mean = estimates[0].get("eps_avg") or estimates[0].get("epsAvg") or estimates[0].get("mean")
     peak_warning = ""
