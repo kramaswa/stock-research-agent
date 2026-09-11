@@ -673,6 +673,22 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                     )
         except (TypeError, ValueError, ZeroDivisionError):
             pass
+    elif _anchor_is_eps and _fcf_ps is None:
+        # FCF null — explain why so the LLM discloses it rather than leaving a gap.
+        _sector_s = (raw.get("sector") or "").lower()
+        _is_fin = any(k in _sector_s for k in ("bank", "lend", "credit", "financ", "insurance", "neobank", "fintech"))
+        if _is_fin:
+            fcf_quality_note = (
+                "FCF/share is null (structural — on-balance-sheet loan origination means loan "
+                "disbursements are classified as operating cash outflows, making traditional FCF "
+                "uninformative for banks and fintech lenders). EV/FCF is similarly distorted. "
+                "Use EV/EBITDA and forward P/E as primary valuation anchors; disclose this explicitly."
+            )
+        else:
+            fcf_quality_note = (
+                "FCF/share unavailable from provider — cannot validate that EPS growth is mirrored "
+                "by cash generation. Treat EPS projections with additional caution."
+            )
 
     # Earnings surprise trend: persistent misses signal consensus estimates are
     # chronically too high — the forward EPS anchor inherits that optimism.
@@ -1207,6 +1223,9 @@ ETFs compound via NAV appreciation + distributions, not EPS × exit multiple. Ap
 **⚠ IF A [PRE-COMPUTED 10-YEAR MODEL ANCHORS] BLOCK IS PRESENT IN THE USER MESSAGE:**
 Skip STEP 1 and STEP 2 growth-rate derivation entirely. The starting EPS, growth rates, and Year-10 EPS are already computed. Go directly to: choose exit multiples → STEP 2b (probabilities) → write rationale. Do not recalculate any of those values.
 
+**⚠ IF THE ANCHORS BLOCK SHOWS "GROWTH RATE CAP APPLIED":**
+The historical anchor exceeded the 20/25/30% bear/base/bull ceiling. You MUST include 2–3 sentences in the Growth & Earnings Quality section explicitly justifying why the capped rates are defensible for the NEXT 10 years — not merely restating historical growth. Required elements: (a) the specific growth driver (e.g., LatAm penetration curve, US market entry, margin expansion from operating leverage), (b) a concrete TAM or penetration stat that supports sustained growth at that rate, and (c) an acknowledgment of what must go right for the base case rate to hold. Without this justification, the expected return is overstated. Example: "Base 25% EPS CAGR requires NU to sustain ~40% revenue growth while expanding net margins from 22% to ~30% as the loan book seasons — achievable if LatAm credit losses remain below 6% of portfolio and US launch reaches $2B+ revenue by Year 5, but not if BRL depreciates >30% or the credit cycle turns."
+
 STEP 1 — CHOOSE STARTING METRIC (ordered priority — stop at first that applies):
 
 **Priority 1 — eps_estimates present in Ground Truth block (most large-caps):**
@@ -1362,7 +1381,8 @@ Per-scenario rules:
 **CRITICAL PRINCIPLE — risk belongs in growth rates, not exit multiples:**
 The base exit multiple represents "the business executes adequately and earns a market-rate multiple." Any risk specific to this company — AV disruption, SBC dilution, integration risk, geographic concentration — belongs in a CONSERVATIVE BASE GROWTH RATE, not in a below-median exit multiple. If you believe the stock deserves a valuation discount, lower the growth rate assumption; do not lower the exit multiple below the sector median. Applying a below-median exit multiple to the base case means you are modeling "the business executes AND the market permanently undervalues it" — that is a bear scenario, not a base.
 
-**SELF-CHECK (required):** After filling in the table, verify all four:
+**SELF-CHECK (required):** After filling in the table, verify all four AND show your derivation inline:
+0. **Exit multiple derivation (mandatory — state this explicitly in the Valuation section):** For each scenario, show the arithmetic: "Bear: [X]% × [sector median]x = [Y]x (floor: [Z]x per bear CAGR rule → [final]x). Base: sector long-run median = [X]x. Bull: min(max([fwd PE], [sector median]), 1.5×[sector median]) = min(max([a], [b]), [c]) = [X]x." This single line prevents the eval from flagging multiples as arbitrary.
 1. Base exit = sector long-run median from the table above — the EXACT value from the table, not an interpolation between categories. **COMMON ERROR**: using the current forward P/E as the base exit. This is always wrong. The current forward P/E is NEVER the base exit multiple — it is only used to calculate the bull exit cap. Base exit = sector median, full stop — **with one exception**: if news analysis confirms that a well-funded competitor has received regulatory approval and is actively gaining clinical traction in the same core categories, apply a competitive discount of 10–15% to the sector median for the base case exit (e.g., medical devices sector median 26x → 22–23x). This reflects that even in the base scenario where the company retains dominant share, credible competition provides hospitals with negotiating leverage that structurally caps per-procedure pricing power by Year 10. State the discount explicitly: "Base exit: [X]x ([sector median]x sector median less [Y]% competitive discount — active competition reduces terminal pricing power even under base assumptions)."
 2. Bull exit = min(max(current forward P/E, sector median), 1.5 × sector median). If current forward P/E < sector median, base and bull share the same exit multiple (both = sector median) — correct and expected; growth rate differentiates the scenarios. If current forward P/E > sector median, bull must be above base.
 3. Sector classification: you MUST use the sector from the table that most precisely matches the business model. Do not interpolate between categories or apply training-knowledge priors. Specific callouts that are frequently mis-classified: Visa and Mastercard are "Financial platforms / networks" (30x) — NOT banks/fintech lending (14x). NVIDIA is "Fabless semis" (24x). Meta and Alphabet are "Consumer internet / social" (24x).
