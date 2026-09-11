@@ -785,6 +785,20 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     base_g = round(base_g, 1)
     bull_g = round(bull_g, 1)
 
+    # Absolute growth rate ceiling: no 10-year projection should assume more than
+    # 20/25/30% CAGR for bear/base/bull. The best businesses in history (Amazon,
+    # Apple, NVDA peak) achieved ~20-25% sustained EPS CAGR over a decade.
+    # Companies with exceptional recent history (hypergrowth from near-zero EPS
+    # base like NU, MELI, pre-profit SaaS) produce anchor values of 40-60%
+    # which compound to 30-50x over 10 years — not a defensible projection.
+    _BEAR_MAX, _BASE_MAX, _BULL_MAX = 20.0, 25.0, 30.0
+    _growth_capped = False
+    if bear_g > _BEAR_MAX or base_g > _BASE_MAX or bull_g > _BULL_MAX:
+        _growth_capped = True
+    bear_g = min(bear_g, _BEAR_MAX)
+    base_g = min(base_g, _BASE_MAX)
+    bull_g = min(bull_g, _BULL_MAX)
+
     def yr10(g: float) -> float:
         return round(starting_eps * (1 + g / 100) ** 10, 2)
 
@@ -960,6 +974,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         "surprise_note": surprise_note,
         "insider_note": insider_note,
         "div_yield_pct": div_yield_val,
+        "growth_capped": _growth_capped,
     }
 
 
@@ -1015,6 +1030,12 @@ def _format_10yr_anchors(a: dict) -> str:
             f"Dividend: {a['div_yield_pct']:.1f}%/yr (grows with scenario EPS rate) — "
             f"cumulative dividends included in adj return per scenario\n"
             if a.get("div_yield_pct", 0) > 0.5 else ""
+        )
+        + (
+            f"⚠ GROWTH RATE CAP APPLIED: historical anchor produced rates above sustainable 10-yr limits "
+            f"(20/25/30% bear/base/bull max). Rates shown below are post-cap. "
+            f"No company sustains >30% EPS CAGR for a decade; use the capped rates in your analysis.\n"
+            if a.get("growth_capped") else ""
         )
         + f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         f"bear = {bear_derivation}\n\n"
