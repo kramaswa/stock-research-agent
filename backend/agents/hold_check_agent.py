@@ -787,11 +787,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 f"({eps_check_label} >> revenue anchor {eps_g5y:.1f}%)"
             )
 
-    # Bear: raw anchor (no leverage premium — bear case = leverage doesn't materialise)
-    bear_raw_base = eps_g5y - dp
-    bear_g = max(round(bear_raw_base - 5, 1), 3.0)
-
-    # Base/Bull: anchor + operating leverage premium
+    # Base/Bull: anchor + operating leverage premium — apply large-base caps first
     base_g = eps_g5y + ol_premium - dp
     bull_g = eps_g5y + ol_premium + bull_offset
     if base_cap is not None:
@@ -800,6 +796,11 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         bull_g = min(bull_g, bull_cap)
     base_g = round(base_g, 1)
     bull_g = round(bull_g, 1)
+
+    # Bear: always 5pp below the CAPPED base, floored at 3%.
+    # Previously used raw anchor (eps_g5y - dp - 5) which could exceed the capped
+    # base when large-base caps bite hard (e.g. MU: raw bear 14.1% > capped base 14.0%).
+    bear_g = max(round(base_g - 5, 1), 3.0)
 
     # Absolute growth rate ceiling: no 10-year projection should assume more than
     # 20/25/30% CAGR for bear/base/bull. The best businesses in history (Amazon,
@@ -1063,7 +1064,10 @@ def _format_10yr_anchors(a: dict) -> str:
         f"bear = {bear_derivation}\n\n"
         f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
         f"Growth rates and Year-10 EPS are mathematically derived and LOCKED. "
-        f"Choose Exit P/E within the caps, compute Year-10 Price = Year-10 EPS × Exit P/E.\n\n"
+        f"Choose Exit P/E within the caps, compute Year-10 Price = Year-10 EPS × Exit P/E.\n"
+        f"⚠ CRITICAL: The post-processor will recompute Adj Return and Expected from the table. "
+        f"Do NOT state an expected return figure in your narrative text — it will conflict with the "
+        f"post-processed table. Instead write: 'See probability-weighted Expected row in the table above.'\n\n"
         + exit_cap_block
         + f"| Scenario | Growth Rate | Year-10 EPS | Exit P/E | Year-10 Price | Adj Return | Prob |\n"
         f"|----------|-------------|-------------|----------|---------------|------------|------|\n"
