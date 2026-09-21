@@ -875,19 +875,25 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                     f"Do NOT use higher exit multiples — that would assume full mean-reversion the market is explicitly rejecting."
                 )
             elif fwd < 20:
-                # Moderately cheap — partial recovery plausible
+                # Moderately cheap — allow mean-reversion toward sector median.
+                # Prior multipliers (1.2/1.6) were too conservative: a stock at 15x
+                # in a 24x-median sector should exit near 24x in the base case.
                 exit_pe_bear = max(round(fwd * 0.85), 10)
-                exit_pe_base = min(round(fwd * 1.2), 28)
-                exit_pe_bull = min(round(fwd * 1.6), 38)
+                exit_pe_base = min(round(fwd * 1.5), 32)
+                exit_pe_bull = min(round(fwd * 1.9), 42)
                 exit_pe_note = (
                     f"Starting fwd P/E = {fwd:.1f}x (moderately cheap). "
                     f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x."
                 )
             elif fwd < 35:
-                # Normal range — anchor near current multiple, avoid expansion assumption
+                # Normal range — allow modest expansion toward sector median.
+                # Prior base multiplier (0.95) anchored to current P/E rather than
+                # sector median, producing exits 5-7x below what the prompt instructs.
+                # New multiplier (1.1) gives ~24x base for a 22x-fwd-P/E stock like
+                # Meta, matching consumer internet sector median.
                 exit_pe_bear = max(round(fwd * 0.65), 12)
-                exit_pe_base = round(fwd * 0.95)
-                exit_pe_bull = min(round(fwd * 1.25), 55)
+                exit_pe_base = min(round(fwd * 1.1), 35)
+                exit_pe_bull = min(round(fwd * 1.5), 55)
                 exit_pe_note = (
                     f"Starting fwd P/E = {fwd:.1f}x (normal range). "
                     f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x."
