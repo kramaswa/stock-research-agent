@@ -518,7 +518,36 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     if not starting_eps or starting_eps <= 0:
         return None
 
-    # Growth anchor: prefer eps_growth_5y; fall back to revenue_growth_3y for
+    # Cyclical peak normalization: when forward P/E is very compressed (<8x) and
+    # starting EPS is NOT from analyst consensus (i.e., market-implied, FCF TTM, or
+    # OCF TTM), AND starting EPS is more than 2× GAAP TTM EPS, the market is
+    # explicitly signaling these earnings are at a cyclical peak and will revert.
+    # Memory semis (MU), commodity producers, and energy companies routinely hit
+    # 4-6x forward P/E at cycle peaks. Running a 10-year model from peak earnings
+    # produces returns that look attractive but are anchored to unsustainable EPS.
+    # Fix: switch to GAAP TTM EPS as the starting anchor — it is lower, often still
+    # elevated vs mid-cycle but much closer to a sustainable level.
+    # Safe-guards: only fires when (1) no analyst consensus overrides, (2) the gap
+    # between starting EPS and GAAP TTM is large (>2×), confirming the peak signal.
+    _eps_ttm_val = raw.get("eps_ttm")
+    if (
+        not eps_from_estimates
+        and fwd_pe_val is not None
+        and fwd_pe_val < 8.0
+        and _eps_ttm_val is not None
+        and float(_eps_ttm_val) > 0
+        and starting_eps > float(_eps_ttm_val) * 2.0
+    ):
+        _ttm = round(float(_eps_ttm_val), 2)
+        eps_source = (
+            f"GAAP TTM EPS ${_ttm} (cyclical normalization: fwd P/E {fwd_pe_val:.1f}x "
+            f"signals peak-cycle earnings; prior anchor ${starting_eps} was "
+            f"{starting_eps / _ttm:.1f}× GAAP TTM — market is pricing a significant "
+            f"earnings decline, so TTM is used as the more stable starting point)"
+        )
+        starting_eps = _ttm
+
+
     # companies with irregular EPS history (losses, heavy M&A amortization)
     growth_anchor: float | None = None
     anchor_label = ""
