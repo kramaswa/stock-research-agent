@@ -430,6 +430,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     forward_pe = raw.get("forward_pe")
     current_price = raw.get("current_price")
     fcf_per_share = raw.get("fcf_per_share_ttm")
+    fwd_pe_val = float(forward_pe) if forward_pe and float(forward_pe) > 0 else None
 
     starting_eps: float | None = None
     eps_source = ""
@@ -854,7 +855,6 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     # Revenue growth is a total-company metric — it does NOT account for new shares
     # issued as SBC. For revenue-anchored companies (PLTR, recently-profitable names),
     # we must subtract dilution to get the true per-share growth rate.
-    fwd_pe_val = float(forward_pe) if forward_pe and float(forward_pe) > 0 else None
     fcf_ps = raw.get("fcf_per_share_ttm")
     div_yield_val = float(raw.get("dividend_yield") or 0)
 
