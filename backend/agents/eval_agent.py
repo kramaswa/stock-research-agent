@@ -93,26 +93,28 @@ Optional: Conditional Signal (only if single dominant assumption drives the sign
 
 ## OUTPUT FORMAT
 
+⚠ TOKEN BUDGET: Your JSON response is capped at 8192 tokens. Every evidence string MUST be ≤80 characters. Every issue description MUST be ≤100 characters. Every feedback/summary sentence MUST be ≤120 characters. Violating these limits causes JSON truncation and a parse failure — be ruthlessly concise.
+
 Respond with ONLY valid JSON — no markdown fences, no explanation text outside the JSON:
 
 {
   "overall_grade": "A" | "B" | "C" | "D" | "F",
   "signal_verdict": "correct" | "likely_correct" | "overcautious" | "overaggressive" | "rule_violation",
-  "signal_explanation": "one concise sentence",
+  "signal_explanation": "one concise sentence ≤120 chars",
   "pre_check": {
-    "q1": {"answer": "YES" | "NO", "evidence": "return_26w_pct = X%, return_52w_pct = Y%"},
-    "q2": {"answer": "YES" | "NO", "evidence": "EV/FCF = Xx, EV/EBITDA = Xx, fwd P/E = Xx"},
-    "q3": {"answer": "YES" | "NO", "evidence": "one sentence"},
-    "q4": {"answer": "YES" | "NO" | "BORDERLINE", "evidence": "one sentence"},
-    "profile_rule": "which rule applies to this profile and why",
-    "signal_allowed": "what signals are permitted under the rule",
+    "q1": {"answer": "YES" | "NO", "evidence": "26w=X%, 52w=Y% ≤80 chars"},
+    "q2": {"answer": "YES" | "NO", "evidence": "EV/FCF=Xx, EV/EBITDA=Xx, fwdPE=Xx ≤80 chars"},
+    "q3": {"answer": "YES" | "NO", "evidence": "≤80 chars"},
+    "q4": {"answer": "YES" | "NO" | "BORDERLINE", "evidence": "≤80 chars"},
+    "profile_rule": "≤80 chars",
+    "signal_allowed": "≤60 chars",
     "violation": null
   },
   "issues": [
-    {"severity": "critical" | "major" | "minor", "section": "section name", "description": "specific issue"}
+    {"severity": "critical" | "major" | "minor", "section": "section name", "description": "≤100 chars"}
   ],
   "bear_case_grade": "A" | "B" | "C" | "D",
-  "bear_case_feedback": "specific actionable critique, max 2 sentences",
+  "bear_case_feedback": "≤120 chars",
   "section_scores": {
     "signal": "A" | "B" | "C" | "D" | "F",
     "business_quality": "A" | "B" | "C" | "D",
@@ -122,9 +124,9 @@ Respond with ONLY valid JSON — no markdown fences, no explanation text outside
     "bear_case": "A" | "B" | "C" | "D",
     "price_scenarios": "A" | "B" | "C" | "D"
   },
-  "strengths": ["strength 1", "strength 2"],
-  "improvements": ["specific improvement 1", "specific improvement 2"],
-  "summary": "2–3 sentence overall assessment"
+  "strengths": ["≤80 chars", "≤80 chars"],
+  "improvements": ["≤80 chars", "≤80 chars"],
+  "summary": "≤200 chars total"
 }"""
 
 

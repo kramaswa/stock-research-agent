@@ -448,6 +448,8 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     # Priority 1b: annual eps_estimates empty — try summing 4 quarterly estimates.
     # More accurate than backward-looking TTM when Finnhub lacks annual estimates
     # (common for certain companies like INTU where annual data is sparse).
+    # Also computes Y2 sum (Q5-Q8) when available, for the deceleration check below.
+    _quarterly_y2_eps: float | None = None  # Year-2 forward EPS from Q5-Q8
     if starting_eps is None:
         eps_q = raw.get("eps_estimates_quarterly") or []
         if len(eps_q) >= 4:
@@ -465,6 +467,17 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                         f"${starting_eps} (forward-looking)"
                     )
                     eps_from_estimates = True
+
+                    # Q5-Q8: second forward year — used for Y1→Y2 deceleration check
+                    if len(eps_q) >= 8:
+                        _q2_avgs = [
+                            float(q["eps_avg"]) for q in eps_q[4:8]
+                            if q.get("eps_avg") is not None
+                        ]
+                        if len(_q2_avgs) == 4:
+                            _y2 = round(sum(_q2_avgs), 2)
+                            if _y2 > 0:
+                                _quarterly_y2_eps = _y2
 
     if starting_eps is None and fcf_per_share and float(fcf_per_share) > 0:
         starting_eps = round(float(fcf_per_share), 2)
@@ -626,7 +639,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                     f"[near-flat — historical {eps_g5y:.1f}% overridden; anchor capped at {fwd_eps_g:.1f}%]"
                 )
                 eps_g5y = max(fwd_eps_g, 1.0)
-            elif fwd_eps_g > 3 and fwd_eps_g < eps_g5y - 3:
+            elif fwd_eps_g > 3 and fwd_eps_g < eps_g5y - 2:
                 anchor_label = (
                     f"forward EPS {_ep0}→{_ep1} (analyst consensus): {fwd_eps_g:.1f}% "
                     f"[historical {eps_g5y:.1f}% overridden — EPS deceleration signal]"
@@ -662,13 +675,44 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                     f"[near-flat — historical {eps_g5y:.1f}% overridden; anchor capped at {fwd_g:.1f}%]"
                 )
                 eps_g5y = max(fwd_g, 1.0)
-            elif fwd_g > 2 and fwd_g < eps_g5y - 3:
-                # Meaningful deceleration (>3pp below historical) — cap to forward estimate
+            elif fwd_g > 2 and fwd_g < eps_g5y - 2:
+                # Meaningful deceleration (>2pp below historical) — cap to forward estimate.
+                # Threshold tightened from 3pp to 2pp: a 1-2pp gap can be noise, but 2pp+
+                # consistently signals that analysts see a structural slowdown ahead.
+                # This catches companies like INTU where historical eps_growth_5y (~17%)
+                # overstates forward prospects but forward rev growth (~14%) is only
+                # slightly below the old 3pp threshold.
                 anchor_label = (
                     f"forward revenue growth {p0}→{p1} (analyst consensus): {fwd_g:.1f}% "
                     f"[historical {eps_g5y:.1f}% overridden — deceleration signal]"
                 )
                 eps_g5y = fwd_g  # update anchor used for all downstream growth calcs
+
+    # Quarterly Y1→Y2 EPS deceleration check: fires only when annual eps_estimates are
+    # absent but quarterly Q5-Q8 are available (e.g. INTU). The existing annual EPS
+    # deceleration check above can't run without 2 annual periods — this fills that gap.
+    # Both Y1 and Y2 are non-GAAP analyst consensus on the same basis, so no GAAP/non-GAAP
+    # gap issue. Same threshold logic as the annual EPS check.
+    if _quarterly_y2_eps is not None and starting_eps and starting_eps > 0:
+        _qy2_g = round((_quarterly_y2_eps - starting_eps) / starting_eps * 100, 1)
+        if _qy2_g <= 0:
+            anchor_label = (
+                f"quarterly EPS Y1→Y2 (analyst consensus): {_qy2_g:.1f}% "
+                f"[CONTRACTION — historical {eps_g5y:.1f}% overridden; anchor capped at 1%]"
+            )
+            eps_g5y = 1.0
+        elif _qy2_g <= 3 and eps_g5y > 5:
+            anchor_label = (
+                f"quarterly EPS Y1→Y2 (analyst consensus): {_qy2_g:.1f}% "
+                f"[near-flat — historical {eps_g5y:.1f}% overridden; anchor capped at {_qy2_g:.1f}%]"
+            )
+            eps_g5y = max(_qy2_g, 1.0)
+        elif _qy2_g > 3 and _qy2_g < eps_g5y - 2:
+            anchor_label = (
+                f"quarterly EPS Y1→Y2 (analyst consensus): {_qy2_g:.1f}% "
+                f"[historical {eps_g5y:.1f}% overridden — EPS deceleration signal]"
+            )
+            eps_g5y = _qy2_g
 
     # FCF quality check: large persistent gaps between reported EPS and FCF/share
     # indicate accrual-heavy earnings. For EPS-anchored companies, discount the growth
@@ -884,15 +928,30 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     # unjustified multiple expansion from inflating expected returns.
     # When the market has structurally re-rated a stock lower (compressed P/E),
     # exit multiples should reflect partial recovery — NOT a return to historical peaks.
-    # Example: INTU at 11.57x P/E → base exit 19x (not 30x), preventing a 2.6x
-    # multiple-expansion tailwind that makes adj returns look unrealistically high.
+    # Example: INTU with derived fwd P/E 12.3x → base exit 18x (not 30x sector median),
+    # preventing a 2.4× multiple-expansion tailwind that inflated expected return to 8.63x.
     exit_pe_bear: int | None = None
     exit_pe_base: int | None = None
     exit_pe_bull: int | None = None
     exit_pe_note = ""
 
-    if forward_pe and float(forward_pe) > 0:
-        fwd = float(forward_pe)
+    # When Finnhub's forwardPE metric is missing (null), derive forward P/E from
+    # current_price / starting_eps. This handles companies like INTU where the metrics
+    # API returns no forward P/E but analyst consensus EPS is available. Without this,
+    # exit P/E caps are never set and the LLM picks unconstrained multiples (e.g. 30x
+    # SaaS sector median) regardless of the company's actual current valuation.
+    # Only fires when starting_eps is from analyst consensus (Priority 1) — FCF/share and
+    # market-implied EPS anchors shouldn't override Finnhub's explicit null.
+    _fwd_pe_for_exits = fwd_pe_val
+    if _fwd_pe_for_exits is None and eps_from_estimates and starting_eps and starting_eps > 0:
+        if current_price and float(current_price) > 0:
+            _derived = round(float(current_price) / starting_eps, 1)
+            if 0 < _derived <= 200:  # guard against extreme outliers
+                _fwd_pe_for_exits = _derived
+
+    if _fwd_pe_for_exits is not None and _fwd_pe_for_exits > 0:
+        fwd = float(_fwd_pe_for_exits)
+        _pe_source = "derived (price ÷ consensus EPS)" if fwd_pe_val is None else "Finnhub metric"
         if fwd <= 80:  # >80x is GAAP-distorted — let model handle exit multiples freely
             if fwd < 12:
                 # Deeply compressed — market pricing structural impairment; limit expansion
@@ -900,7 +959,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 exit_pe_base = min(round(fwd * 1.6), 20)
                 exit_pe_bull = min(round(fwd * 2.3), 28)
                 exit_pe_note = (
-                    f"Starting fwd P/E = {fwd:.1f}x (deeply compressed — market pricing structural impairment). "
+                    f"Starting fwd P/E = {fwd:.1f}x [{_pe_source}] (deeply compressed — market pricing structural impairment). "
                     f"Exit multiples capped: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x. "
                     f"Do NOT use higher exit multiples — that would assume full mean-reversion the market is explicitly rejecting."
                 )
@@ -912,7 +971,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 exit_pe_base = min(round(fwd * 1.5), 32)
                 exit_pe_bull = min(round(fwd * 1.9), 42)
                 exit_pe_note = (
-                    f"Starting fwd P/E = {fwd:.1f}x (moderately cheap). "
+                    f"Starting fwd P/E = {fwd:.1f}x [{_pe_source}] (moderately cheap). "
                     f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x."
                 )
             elif fwd < 35:
@@ -925,7 +984,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 exit_pe_base = min(round(fwd * 1.1), 35)
                 exit_pe_bull = min(round(fwd * 1.5), 55)
                 exit_pe_note = (
-                    f"Starting fwd P/E = {fwd:.1f}x (normal range). "
+                    f"Starting fwd P/E = {fwd:.1f}x [{_pe_source}] (normal range). "
                     f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x."
                 )
             else:
@@ -934,7 +993,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 exit_pe_base = max(round(fwd * 0.65), 20)
                 exit_pe_bull = min(round(fwd * 0.85), 80)
                 exit_pe_note = (
-                    f"Starting fwd P/E = {fwd:.1f}x (elevated). "
+                    f"Starting fwd P/E = {fwd:.1f}x [{_pe_source}] (elevated). "
                     f"Suggested exit: bear ≤{exit_pe_bear}x, base ≤{exit_pe_base}x, bull ≤{exit_pe_bull}x — assume compression."
                 )
 

@@ -158,10 +158,11 @@ def get_all_stock_data(ticker: str) -> dict:
                     "action": item.get("action"),
                 })
 
-    # Quarterly EPS estimates — near-term trajectory (next 4 quarters)
+    # Quarterly EPS estimates — up to 8 quarters (2 full years) so the model can
+    # detect forward EPS deceleration for companies lacking annual estimates (e.g. INTU).
     eps_estimates_quarterly = []
     if isinstance(eps_estimate_quarterly_resp, dict) and eps_estimate_quarterly_resp.get("data"):
-        for e in eps_estimate_quarterly_resp["data"][:4]:
+        for e in eps_estimate_quarterly_resp["data"][:8]:
             eps_estimates_quarterly.append({
                 "period": e.get("period"),
                 "eps_avg": e.get("epsAvg"),
