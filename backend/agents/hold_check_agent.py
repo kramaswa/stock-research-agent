@@ -832,18 +832,16 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 f"(90 days) — clustered insider buying; bullish signal."
             )
 
-    # Market de-rating discount: when the market has heavily de-rated a stock
-    # (large 52w decline AND deeply compressed forward P/E), the market is
-    # signaling the historical growth rate is unsustainable — even if Finnhub's
-    # forward revenue estimates don't show sharp deceleration (because blended
-    # estimates mask product-level headwinds, e.g. INTU's TurboTax erosion hidden
-    # by QuickBooks/Credit Karma growth).
-    # Only fires when: (1) starting EPS is from analyst consensus (not market-implied),
-    # (2) derived P/E < 15x (market structurally re-rated the company), and
-    # (3) anchor is still elevated (>10%) — avoid double-penalizing already-discounted anchors.
-    # Tiers match the severity of the market's de-rating signal.
+    # Market de-rating discount: when a stock trades at a compressed forward P/E
+    # despite high historical EPS growth, the market is signalling the growth rate
+    # is unsustainable — even if Finnhub's forward revenue estimates don't show sharp
+    # deceleration (blended estimates mask product-level headwinds, e.g. INTU's
+    # TurboTax erosion hidden by QuickBooks/Credit Karma growth).
+    # Triggers on P/E compression alone (< 15x with eps_g5y > 10%): a legitimate
+    # 10%-+ grower would trade at 20-30x; anything below 15x means the market
+    # doesn't believe the growth. The 52w-decline condition was removed because a
+    # stock can be structurally re-rated without a fresh 52w drop (prior-year recovery).
     _mkt_disc_note = ""
-    _return_52w = raw.get("return_52w_pct")
     _mkt_fwd_pe = fwd_pe_val
     if _mkt_fwd_pe is None and eps_from_estimates and starting_eps and starting_eps > 0:
         _cp_f = float(current_price) if current_price else 0.0
@@ -853,16 +851,18 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         eps_from_estimates
         and _mkt_fwd_pe is not None
         and _mkt_fwd_pe < 15.0
-        and _return_52w is not None
-        and float(_return_52w) < -30.0
         and eps_g5y > 10.0
     ):
-        _decline = abs(float(_return_52w))
-        _mkt_disc = 2.0 if _decline < 40 else 3.0 if _decline < 50 else 4.0
+        # Discount magnitude scales with P/E compression severity:
+        # P/E < 10 → market pricing near-zero growth  → -4pp
+        # P/E 10-12 → deep skepticism                 → -3pp
+        # P/E 12-15 → moderate skepticism             → -2pp
+        _mkt_disc = 4.0 if _mkt_fwd_pe < 10.0 else 3.0 if _mkt_fwd_pe < 12.0 else 2.0
         eps_g5y = max(round(eps_g5y - _mkt_disc, 1), 3.0)
         _mkt_disc_note = (
-            f"Market de-rating signal: fwd P/E {_mkt_fwd_pe:.1f}x + {_decline:.0f}% 52w decline "
-            f"→ growth anchor discounted −{_mkt_disc:.0f}pp (market pricing structural slowdown)."
+            f"Market de-rating signal: fwd P/E {_mkt_fwd_pe:.1f}x on a {eps_g5y + _mkt_disc:.1f}% "
+            f"historical grower → market pricing structural slowdown; "
+            f"growth anchor discounted −{_mkt_disc:.0f}pp."
         )
 
     # Operating leverage premium: when using revenue as the growth anchor (because
