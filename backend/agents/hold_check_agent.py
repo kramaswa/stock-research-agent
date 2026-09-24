@@ -832,6 +832,39 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 f"(90 days) — clustered insider buying; bullish signal."
             )
 
+    # Market de-rating discount: when the market has heavily de-rated a stock
+    # (large 52w decline AND deeply compressed forward P/E), the market is
+    # signaling the historical growth rate is unsustainable — even if Finnhub's
+    # forward revenue estimates don't show sharp deceleration (because blended
+    # estimates mask product-level headwinds, e.g. INTU's TurboTax erosion hidden
+    # by QuickBooks/Credit Karma growth).
+    # Only fires when: (1) starting EPS is from analyst consensus (not market-implied),
+    # (2) derived P/E < 15x (market structurally re-rated the company), and
+    # (3) anchor is still elevated (>10%) — avoid double-penalizing already-discounted anchors.
+    # Tiers match the severity of the market's de-rating signal.
+    _mkt_disc_note = ""
+    _return_52w = raw.get("return_52w_pct")
+    _mkt_fwd_pe = fwd_pe_val
+    if _mkt_fwd_pe is None and eps_from_estimates and starting_eps and starting_eps > 0:
+        _cp_f = float(current_price) if current_price else 0.0
+        if _cp_f > 0:
+            _mkt_fwd_pe = round(_cp_f / starting_eps, 1)
+    if (
+        eps_from_estimates
+        and _mkt_fwd_pe is not None
+        and _mkt_fwd_pe < 15.0
+        and _return_52w is not None
+        and float(_return_52w) < -30.0
+        and eps_g5y > 10.0
+    ):
+        _decline = abs(float(_return_52w))
+        _mkt_disc = 2.0 if _decline < 40 else 3.0 if _decline < 50 else 4.0
+        eps_g5y = max(round(eps_g5y - _mkt_disc, 1), 3.0)
+        _mkt_disc_note = (
+            f"Market de-rating signal: fwd P/E {_mkt_fwd_pe:.1f}x + {_decline:.0f}% 52w decline "
+            f"→ growth anchor discounted −{_mkt_disc:.0f}pp (market pricing structural slowdown)."
+        )
+
     # Operating leverage premium: when using revenue as the growth anchor (because
     # eps_growth_5y is unreliable — e.g. PLTR transitioning loss→profit), check if
     # EPS growth materially exceeds revenue growth. If so, add a capped premium
@@ -1084,6 +1117,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         "fcf_quality_note": fcf_quality_note,
         "surprise_note": surprise_note,
         "insider_note": insider_note,
+        "mkt_disc_note": _mkt_disc_note,
         "div_yield_pct": div_yield_val,
         "growth_capped": _growth_capped,
     }
@@ -1137,6 +1171,7 @@ def _format_10yr_anchors(a: dict) -> str:
         + (f"FCF quality: {a['fcf_quality_note']}\n" if a.get("fcf_quality_note") else "")
         + (f"Surprise trend: {a['surprise_note']}\n" if a.get("surprise_note") else "")
         + (f"Insider activity: {a['insider_note']}\n" if a.get("insider_note") else "")
+        + (f"Market de-rating: {a['mkt_disc_note']}\n" if a.get("mkt_disc_note") else "")
         + (
             f"Dividend: {a['div_yield_pct']:.1f}%/yr (grows with scenario EPS rate) — "
             f"cumulative dividends included in adj return per scenario\n"
