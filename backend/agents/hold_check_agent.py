@@ -850,14 +850,21 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     if (
         eps_from_estimates
         and _mkt_fwd_pe is not None
-        and _mkt_fwd_pe < 15.0
+        and _mkt_fwd_pe < 20.0
         and eps_g5y > 10.0
     ):
-        # Discount magnitude scales with P/E compression severity:
-        # P/E < 10 → market pricing near-zero growth  → -4pp
-        # P/E 10-12 → deep skepticism                 → -3pp
-        # P/E 12-15 → moderate skepticism             → -2pp
-        _mkt_disc = 4.0 if _mkt_fwd_pe < 10.0 else 3.0 if _mkt_fwd_pe < 12.0 else 2.0
+        # Discount magnitude scales with P/E compression severity.
+        # A 10%+ grower should command 20-30x; below 20x the market is sceptical.
+        # P/E < 10  → pricing near-zero/negative growth → -5pp
+        # P/E 10-12 → deep scepticism                   → -4pp
+        # P/E 12-15 → significant scepticism            → -3pp
+        # P/E 15-20 → moderate scepticism               → -2pp
+        _mkt_disc = (
+            5.0 if _mkt_fwd_pe < 10.0
+            else 4.0 if _mkt_fwd_pe < 12.0
+            else 3.0 if _mkt_fwd_pe < 15.0
+            else 2.0
+        )
         eps_g5y = max(round(eps_g5y - _mkt_disc, 1), 3.0)
         _mkt_disc_note = (
             f"Market de-rating signal: fwd P/E {_mkt_fwd_pe:.1f}x on a {eps_g5y + _mkt_disc:.1f}% "
