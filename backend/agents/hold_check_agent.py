@@ -843,13 +843,12 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
     # stock can be structurally re-rated without a fresh 52w drop (prior-year recovery).
     _mkt_disc_note = ""
     _mkt_fwd_pe = fwd_pe_val
-    if _mkt_fwd_pe is None and eps_from_estimates and starting_eps and starting_eps > 0:
+    if _mkt_fwd_pe is None and starting_eps and starting_eps > 0:
         _cp_f = float(current_price) if current_price else 0.0
         if _cp_f > 0:
             _mkt_fwd_pe = round(_cp_f / starting_eps, 1)
     if (
-        eps_from_estimates
-        and _mkt_fwd_pe is not None
+        _mkt_fwd_pe is not None
         and _mkt_fwd_pe < 20.0
         and eps_g5y > 10.0
     ):
