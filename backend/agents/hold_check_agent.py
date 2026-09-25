@@ -413,6 +413,26 @@ def _enforce_10yr_table_anchors(text: str, anchors: dict, current_price: float) 
                     lines[i] = "|".join(eparts)
                 break
 
+    # Enforce rate-adjusted S&P 500 baseline row
+    sp_mult = anchors.get("sp_10yr_mult")
+    sp_pct = anchors.get("sp_annual_pct")
+    ty = anchors.get("treasury_yield")
+    if sp_mult and sp_pct:
+        sp_rationale = (
+            f"10Y yield {ty:.1f}% + 4% ERP; recent decade ~13%/yr (~3.4x)"
+            if ty else "Long-run avg (price + dividends); recent decade ~13%/yr (~3.4x)"
+        )
+        for i, line in enumerate(lines):
+            if re.search(r"S&P\s*500\s*baseline", line, re.IGNORECASE):
+                sparts = line.split("|")
+                if len(sparts) >= 9:
+                    sparts[3] = f" ~{sp_pct:.1f}%/yr "
+                    sparts[4] = f" {sp_rationale} "
+                    sparts[8] = f" ~{sp_mult:.2f}x "
+                    sparts[9] = f" ~{sp_pct:.1f}%/yr " if len(sparts) > 9 else sparts[9]
+                    lines[i] = "|".join(sparts)
+                break
+
     return "\n".join(lines)
 
 
@@ -1138,6 +1158,10 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
         "mkt_disc_note": _mkt_disc_note,
         "div_yield_pct": div_yield_val,
         "growth_capped": _growth_capped,
+        # Rate-adjusted S&P 500 baseline (10Y yield + 4% equity risk premium)
+        "sp_annual_pct": round((treasury_yield or 3.5) + 4.0, 1),
+        "sp_10yr_mult": round((1 + ((treasury_yield or 3.5) + 4.0) / 100) ** 10, 2),
+        "treasury_yield": treasury_yield,
     }
 
 
@@ -1202,7 +1226,10 @@ def _format_10yr_anchors(a: dict) -> str:
             if a.get("growth_capped") else ""
         )
         + f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
-        f"bear = {bear_derivation}\n\n"
+        f"bear = {bear_derivation}\n"
+        f"S&P 500 baseline (rate-adjusted): {a['sp_annual_pct']:.1f}%/yr → {a['sp_10yr_mult']:.2f}x "
+        f"(10Y yield {(a['treasury_yield'] or 3.5):.1f}% + 4% equity risk premium). "
+        f"Use THIS value — not the hardcoded 2.85x — in the S&P row and 'probability of beating S&P' calculation.\n\n"
         f"⚠ MANDATORY TABLE TEMPLATE — COPY THESE EXACT VALUES FOR THE FIXED COLUMNS:\n"
         f"Growth rates and Year-10 EPS are mathematically derived and LOCKED. "
         f"Choose Exit P/E within the caps, compute Year-10 Price = Year-10 EPS × Exit P/E.\n"
@@ -1916,8 +1943,22 @@ async def run_hold_check_agent(
 
     # Phase 1: Pre-Check + Signal + 10-Year Outlook (with extended thinking)
     # 6000 thinking tokens + up to ~22K output tokens (Crisis Discount + full table)
+    # Substitute rate-adjusted S&P baseline into the system prompt so the LLM's
+    # "probability of beating S&P" threshold and template row match the anchors block.
+    _sp_annual = round((treasury_yield or 3.5) + 4.0, 1)
+    _sp_10yr = round((1 + _sp_annual / 100) ** 10, 2)
+    _phase1_system = (
+        SYSTEM_PHASE1
+        .replace("~2.85x", f"~{_sp_10yr:.2f}x")
+        .replace("~11%/yr", f"~{_sp_annual:.1f}%/yr")
+        .replace(
+            "Long-run total return avg (price + dividends); recent decade ~13%/yr (~3.4x)",
+            f"10Y yield {(treasury_yield or 3.5):.1f}% + 4% ERP = {_sp_annual:.1f}%/yr; recent decade ~13%/yr (~3.4x)"
+        )
+        .replace("adj. return > 2.85x", f"adj. return > {_sp_10yr:.2f}x")
+    )
     phase1_text = await loop.run_in_executor(
-        None, _run_phase, SYSTEM_PHASE1, user_message, True, 28000
+        None, _run_phase, _phase1_system, user_message, True, 28000
     )
     if not phase1_text:
         return "Hold check unavailable."
