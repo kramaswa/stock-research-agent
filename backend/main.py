@@ -21,7 +21,7 @@ from agents.hold_check_agent import run_hold_check_agent, build_raw_metrics_bloc
 from agents.eval_agent import run_eval_agent
 from tools.market_tools import get_all_stock_data
 from tools.edgar_tools import get_recent_8k_text, get_recent_10q_mda, get_earnings_transcript
-from tools.macro_tools import get_treasury_yield_10y
+from tools.macro_tools import get_treasury_yield_10y, get_sp500_fwd_pe
 from tools.adr_tools import get_adr_home_info, calculate_adr_premium
 
 load_dotenv()
@@ -175,6 +175,14 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             except (asyncio.TimeoutError, Exception):
                 return None
 
+        async def fetch_sp500_pe():
+            try:
+                return await asyncio.wait_for(
+                    loop.run_in_executor(None, get_sp500_fwd_pe), timeout=10
+                )
+            except (asyncio.TimeoutError, Exception):
+                return None
+
         async def fetch_transcript():
             try:
                 return await asyncio.wait_for(
@@ -190,6 +198,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             edgar_text,
             mda_text,
             treasury_yield,
+            sp_fwd_pe,
             transcript_text,
         ) = await asyncio.gather(
             run_quant_agent(ticker, client),
@@ -198,6 +207,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             fetch_edgar(),
             fetch_10q(),
             fetch_yield(),
+            fetch_sp500_pe(),
             fetch_transcript(),
         )
         quant_analysis, quant_company, chart_data = quant_result
@@ -238,6 +248,8 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
             sources.append(f"{insider_count} insider transaction{'s' if insider_count != 1 else ''}")
         if treasury_yield is not None:
             sources.append(f"10Y yield ({treasury_yield}%)")
+        if sp_fwd_pe is not None:
+            sources.append(f"SPY fwd P/E ({sp_fwd_pe}x)")
         for sec_text in (edgar_text, mda_text, transcript_text):
             if sec_text:
                 bracket_end = sec_text.find("]")
@@ -271,6 +283,7 @@ async def hold_check_stream(ticker: str, purchase_price: float, thesis: str, ris
                     earnings_release=edgar_text or "",
                     mda_text=mda_text or "",
                     treasury_yield=treasury_yield,
+                    sp_fwd_pe=sp_fwd_pe,
                     transcript=transcript_text or "",
                     raw_metrics=raw_metrics,
                     chunk_queue=chunk_queue,
