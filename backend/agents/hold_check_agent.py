@@ -676,17 +676,29 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None) -> dict 
                 )
                 eps_g5y = max(fwd_g, 1.0)
             elif fwd_g > 2 and fwd_g < eps_g5y - 2:
-                # Meaningful deceleration (>2pp below historical) — cap to forward estimate.
-                # Threshold tightened from 3pp to 2pp: a 1-2pp gap can be noise, but 2pp+
-                # consistently signals that analysts see a structural slowdown ahead.
-                # This catches companies like INTU where historical eps_growth_5y (~17%)
-                # overstates forward prospects but forward rev growth (~14%) is only
-                # slightly below the old 3pp threshold.
+                # Meaningful deceleration (>2pp below historical) — cap to forward estimate,
+                # but add back a buyback/margin-accretion spread when the data supports it.
+                # For capital-return compounders (V, MA, AAPL, etc.), EPS grows 3-5pp faster
+                # than revenue via buybacks — capping eps_g5y at raw revenue growth understates
+                # true EPS compounding. Use the TTM EPS/revenue spread as a proxy and add up
+                # to 5pp back, without exceeding the original anchor.
+                _eps_g_ttm = raw.get("eps_growth_ttm_yoy")
+                _rev_g_ttm = raw.get("revenue_growth_ttm_yoy")
+                _buyback_adj = 0.0
+                if (
+                    _eps_g_ttm is not None and _rev_g_ttm is not None
+                    and float(_rev_g_ttm) > 0
+                    and float(_eps_g_ttm) > float(_rev_g_ttm)
+                ):
+                    _buyback_adj = round(min(float(_eps_g_ttm) - float(_rev_g_ttm), 5.0), 1)
+                _capped = round(min(fwd_g + _buyback_adj, eps_g5y), 1)
+                _adj_note = f" + {_buyback_adj:.1f}pp buyback/margin accretion" if _buyback_adj > 0 else ""
                 anchor_label = (
-                    f"forward revenue growth {p0}→{p1} (analyst consensus): {fwd_g:.1f}% "
+                    f"forward revenue growth {p0}→{p1} (analyst consensus): {fwd_g:.1f}%"
+                    f"{_adj_note} → {_capped:.1f}% "
                     f"[historical {eps_g5y:.1f}% overridden — deceleration signal]"
                 )
-                eps_g5y = fwd_g  # update anchor used for all downstream growth calcs
+                eps_g5y = _capped
 
     # Quarterly Y1→Y2 EPS deceleration check: fires only when annual eps_estimates are
     # absent but quarterly Q5-Q8 are available (e.g. INTU). The existing annual EPS
