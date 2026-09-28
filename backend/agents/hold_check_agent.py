@@ -1252,7 +1252,7 @@ def _format_10yr_anchors(a: dict) -> str:
             if a.get("disc_waived")
             else f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n"
         )
-        f"Dilution: {a['dilution_note']} → 10-yr dilution factor = {a['dilution_10yr']:.3f}x "
+        + f"Dilution: {a['dilution_note']} → 10-yr dilution factor = {a['dilution_10yr']:.3f}x "
         f"(Adj Return = Year-10 Price ÷ Current Price × {a['dilution_10yr']:.3f})\n"
         + (f"FCF quality: {a['fcf_quality_note']}\n" if a.get("fcf_quality_note") else "")
         + (f"Surprise trend: {a['surprise_note']}\n" if a.get("surprise_note") else "")
@@ -1274,7 +1274,7 @@ def _format_10yr_anchors(a: dict) -> str:
             if a.get("disc_waived")
             else f"Derivation: {a['eps_g5y']}%{ol_str} − {a['discount_pp']}pp{base_cap_str}{bull_cap_str}; "
         )
-        f"bear = {bear_derivation}\n"
+        + f"bear = {bear_derivation}\n"
         f"S&P 500 baseline: {a['sp_annual_pct']:.1f}%/yr → {a['sp_10yr_mult']:.2f}x "
         f"({a.get('sp_baseline_method', '10Y yield + 4% ERP')}). "
         f"Use THIS value — not the hardcoded 2.85x — in the S&P row and 'probability of beating S&P' calculation.\n\n"
