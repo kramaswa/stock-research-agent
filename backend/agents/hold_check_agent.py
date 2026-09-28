@@ -637,6 +637,12 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     else:
         dp, base_cap, bull_cap, bull_offset = 10, 11.0, 15.0, -5
 
+    # Flag: set True whenever ANY decel check overrides the historical anchor.
+    # When fired, the resulting eps_g5y is already a forward-looking estimate
+    # (consensus EPS or revenue growth); applying dp on top double-penalizes because
+    # the decel check has already done the work of anchoring to a slower-growth view.
+    _decel_fired = False
+
     # Forward EPS contraction check: for EPS-anchored companies, if analyst consensus
     # implies EPS declining or near-flat Y1→Y2, the 5-year historical CAGR is stale.
     # Only applied when both Y1 EPS and Y2 EPS estimates are positive (avoids distortion
@@ -670,12 +676,6 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                 )
                 eps_g5y = fwd_eps_g
                 _decel_fired = True
-
-    # Flag: set True whenever ANY decel check overrides the historical anchor.
-    # When fired, the resulting eps_g5y is already a forward-looking estimate
-    # (consensus EPS or revenue growth); applying dp on top double-penalizes because
-    # the decel check has already done the work of anchoring to a slower-growth view.
-    _decel_fired = False
 
     # Forward revenue deceleration check: if analyst consensus for the next 2 annual
     # periods implies materially slower growth than the historical anchor, lower the
