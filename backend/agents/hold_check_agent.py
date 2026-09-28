@@ -613,8 +613,11 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
             revenue_b = float(r)
     if revenue_b is None:
         mc_m = float(raw.get("market_cap_millions") or 0)
-        # Rough proxy: large caps' revenue ≈ market_cap × 0.3–0.5 for tech/semis
-        if mc_m >= 500_000:
+        ps_ttm = float(raw.get("price_to_sales_ttm") or 0)
+        if ps_ttm > 0 and mc_m > 0:
+            # P/S ratio gives accurate revenue for any business model
+            revenue_b = round((mc_m / 1000.0) / ps_ttm, 1)
+        elif mc_m >= 500_000:
             revenue_b = 200.0
         elif mc_m >= 200_000:
             revenue_b = 80.0
