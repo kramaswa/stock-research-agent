@@ -969,10 +969,19 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     base_g = round(base_g, 1)
     bull_g = round(bull_g, 1)
 
-    # Bear: always 5pp below the CAPPED base, floored at 3%.
-    # Previously used raw anchor (eps_g5y - dp - 5) which could exceed the capped
-    # base when large-base caps bite hard (e.g. MU: raw bear 14.1% > capped base 14.0%).
-    bear_g = max(round(base_g - 5, 1), 3.0)
+    # Bear: cut scales with base_g — high-growth companies have more room to disappoint
+    # (earnings miss + multiple de-rating compound in stress). Floor at 0%: a real bear
+    # can be near-flat EPS for a decade (buybacks prop up slightly declining earnings).
+    # base > 10%: cut 8pp  (e.g. Visa 11.8% → 3.8%; INTU 15% → 7%)
+    # base 6–10%: cut 5pp  (e.g. typical compounder 8% → 3%)
+    # base < 6%:  cut 3pp  (e.g. mature company 5% → 2%)
+    _bear_cut = 8 if base_g > 10 else (5 if base_g > 6 else 3)
+    if base_g > 10:
+        bear_g = max(round(base_g - 8, 1), 0.0)
+    elif base_g > 6:
+        bear_g = max(round(base_g - 5, 1), 0.0)
+    else:
+        bear_g = max(round(base_g - 3, 1), 0.0)
 
     # Absolute growth rate ceiling: no 10-year projection should assume more than
     # 20/25/30% CAGR for bear/base/bull. The best businesses in history (Amazon,
@@ -1181,6 +1190,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
         "ol_note": ol_note,
         "revenue_b": revenue_b,
         "discount_pp": dp,
+        "bear_cut_pp": _bear_cut,
         "base_cap": base_cap,
         "bull_cap": bull_cap,
         "bear_g": bear_g,
@@ -1226,11 +1236,12 @@ def _format_10yr_anchors(a: dict) -> str:
         f", bull capped at {a['bull_cap']}% = **{a['bull_g']}% bull**"
         if a["bull_cap"] else f" = **{a['bull_g']}% bull**"
     )
+    _bcut = a.get("bear_cut_pp", 5)
     bear_derivation = (
-        f"raw anchor {a['eps_g5y']}% − 5pp = **{a['bear_g']}%** (large-base discount waived; no OL premium in bear)"
+        f"raw anchor {a['eps_g5y']}% − {_bcut}pp = **{a['bear_g']}%** (large-base discount waived; no OL premium in bear)"
         if ol and a.get("disc_waived")
-        else f"raw anchor {a['eps_g5y']}% − {a['discount_pp']}pp − 5pp = **{a['bear_g']}%** (no OL premium in bear)"
-        if ol else f"base − 5pp floor at 3% = **{a['bear_g']}%**"
+        else f"raw anchor {a['eps_g5y']}% − {a['discount_pp']}pp − {_bcut}pp = **{a['bear_g']}%** (no OL premium in bear)"
+        if ol else f"base − {_bcut}pp = **{a['bear_g']}%**"
     )
 
     # Exit P/E caps section — only shown when calibrated
