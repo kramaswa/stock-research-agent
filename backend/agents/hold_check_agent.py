@@ -655,24 +655,27 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                     f"[CONTRACTION — historical {eps_g5y:.1f}% overridden; anchor capped at 1%]"
                 )
                 eps_g5y = 1.0
+                _decel_fired = True
             elif fwd_eps_g <= 3 and eps_g5y > 5:
                 anchor_label = (
                     f"forward EPS {_ep0}→{_ep1} (analyst consensus): {fwd_eps_g:.1f}% "
                     f"[near-flat — historical {eps_g5y:.1f}% overridden; anchor capped at {fwd_eps_g:.1f}%]"
                 )
                 eps_g5y = max(fwd_eps_g, 1.0)
+                _decel_fired = True
             elif fwd_eps_g > 3 and fwd_eps_g < eps_g5y - 2:
                 anchor_label = (
                     f"forward EPS {_ep0}→{_ep1} (analyst consensus): {fwd_eps_g:.1f}% "
                     f"[historical {eps_g5y:.1f}% overridden — EPS deceleration signal]"
                 )
                 eps_g5y = fwd_eps_g
+                _decel_fired = True
 
-    # Flag: set True when BOTH revenue decel AND buyback adjustment fire.
-    # Used below to waive the large-base discount — when both fired, the anchor is
-    # already a forward-looking, company-specific estimate that accounts for slowdown;
-    # applying dp on top double-penalizes buyback compounders (V, MA, AAPL, etc.).
-    _decel_buyback_fired = False
+    # Flag: set True whenever ANY decel check overrides the historical anchor.
+    # When fired, the resulting eps_g5y is already a forward-looking estimate
+    # (consensus EPS or revenue growth); applying dp on top double-penalizes because
+    # the decel check has already done the work of anchoring to a slower-growth view.
+    _decel_fired = False
 
     # Forward revenue deceleration check: if analyst consensus for the next 2 annual
     # periods implies materially slower growth than the historical anchor, lower the
@@ -695,6 +698,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                     f"[CONTRACTION — historical {eps_g5y:.1f}% overridden; anchor capped at 1%]"
                 )
                 eps_g5y = 1.0
+                _decel_fired = True
             elif fwd_g <= 2 and eps_g5y > 5:
                 # Near-flat growth (<= 2%) while historical anchor is meaningfully higher.
                 # Treat as a strong deceleration signal — cap at forward estimate.
@@ -703,6 +707,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                     f"[near-flat — historical {eps_g5y:.1f}% overridden; anchor capped at {fwd_g:.1f}%]"
                 )
                 eps_g5y = max(fwd_g, 1.0)
+                _decel_fired = True
             elif fwd_g > 2 and fwd_g < eps_g5y - 2:
                 # Meaningful deceleration (>2pp below historical) — cap to forward estimate,
                 # but add back a buyback/margin-accretion spread when the data supports it.
@@ -719,8 +724,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                     and float(_eps_g_ttm) > float(_rev_g_ttm)
                 ):
                     _buyback_adj = round(min(float(_eps_g_ttm) - float(_rev_g_ttm), 5.0), 1)
-                if _buyback_adj > 0:
-                    _decel_buyback_fired = True
+                _decel_fired = True
                 _capped = round(min(fwd_g + _buyback_adj, eps_g5y), 1)
                 _adj_note = f" + {_buyback_adj:.1f}pp buyback/margin accretion" if _buyback_adj > 0 else ""
                 anchor_label = (
@@ -743,18 +747,21 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                 f"[CONTRACTION — historical {eps_g5y:.1f}% overridden; anchor capped at 1%]"
             )
             eps_g5y = 1.0
+            _decel_fired = True
         elif _qy2_g <= 3 and eps_g5y > 5:
             anchor_label = (
                 f"quarterly EPS Y1→Y2 (analyst consensus): {_qy2_g:.1f}% "
                 f"[near-flat — historical {eps_g5y:.1f}% overridden; anchor capped at {_qy2_g:.1f}%]"
             )
             eps_g5y = max(_qy2_g, 1.0)
+            _decel_fired = True
         elif _qy2_g > 3 and _qy2_g < eps_g5y - 2:
             anchor_label = (
                 f"quarterly EPS Y1→Y2 (analyst consensus): {_qy2_g:.1f}% "
                 f"[historical {eps_g5y:.1f}% overridden — EPS deceleration signal]"
             )
             eps_g5y = _qy2_g
+            _decel_fired = True
 
     # FCF quality check: large persistent gaps between reported EPS and FCF/share
     # indicate accrual-heavy earnings. For EPS-anchored companies, discount the growth
@@ -942,12 +949,11 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                 f"({eps_check_label} >> revenue anchor {eps_g5y:.1f}%)"
             )
 
-    # Decel+buyback carve-out: when the revenue decel check already replaced the
-    # historical anchor with a forward-consensus estimate AND added buyback accretion,
-    # the resulting eps_g5y is already a conservative, company-specific forward anchor.
-    # Applying the large-base discount on top would double-penalize compounders whose
-    # EPS growth structurally exceeds revenue growth (V, MA, AAPL, etc.).
-    if _decel_buyback_fired:
+    # Decel carve-out: when any decel check overrode the historical anchor with a
+    # forward-looking consensus estimate, the resulting eps_g5y is already conservative.
+    # Applying dp on top double-penalizes — the decel check has already done the work
+    # of reflecting the slower-growth view (whether via EPS or revenue consensus).
+    if _decel_fired:
         dp = 0
 
     # Base/Bull: anchor + operating leverage premium — apply large-base caps first
@@ -1193,7 +1199,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
         "mkt_disc_note": _mkt_disc_note,
         "div_yield_pct": div_yield_val,
         "growth_capped": _growth_capped,
-        "disc_waived": _decel_buyback_fired,
+        "disc_waived": _decel_fired,
         "sp_annual_pct": _sp_annual_val,
         "sp_10yr_mult": _sp_10yr_val,
         "sp_baseline_method": _sp_method,
@@ -1248,7 +1254,7 @@ def _format_10yr_anchors(a: dict) -> str:
         f"Growth anchor — {a['anchor_label']}{ol_note}\n"
         + (
             f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: waived "
-            f"(decel+buyback adj already applied to anchor){cap_note}\n"
+            f"(decel check overrode historical anchor){cap_note}\n"
             if a.get("disc_waived")
             else f"Revenue tier: ~${a['revenue_b']:.0f}B → large-base discount: −{a['discount_pp']}pp{cap_note}\n"
         )
