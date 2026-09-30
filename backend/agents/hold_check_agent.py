@@ -580,6 +580,21 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
         if implied_check > starting_eps * 1.5:
             return None
 
+    # Priority 3.5: high-SBC companies (CRWD, SNOW, NET) where fwd_pe > 80 and
+    # all other EPS proxies are null. Derive post-SBC FCF/share from pfcfShareTTM
+    # and apply 2.5× to approximate non-GAAP EPS (the basis market multiples use).
+    # Only fires when fwd_pe > 80 to avoid mis-applying to normal companies.
+    if starting_eps is None and forward_pe and float(forward_pe) > 80 and current_price:
+        _pfcf = raw.get("pfcf_share_ttm")
+        if _pfcf and float(_pfcf) > 0:
+            _post_sbc = float(current_price) / float(_pfcf)
+            starting_eps = round(_post_sbc * 2.5, 2)
+            eps_source = (
+                f"derived non-GAAP EPS: ${float(current_price):.2f} ÷ {float(_pfcf):.1f}x (P/FCF) "
+                f"× 2.5 SBC-adj = ${starting_eps} "
+                f"(GAAP fwd P/E {float(forward_pe):.0f}x — high-SBC company)"
+            )
+
     if starting_eps is None and forward_pe and current_price and float(forward_pe) > 0:
         fwd_pe_float = float(forward_pe)
         # A forward P/E above 80x almost always means Finnhub is using GAAP earnings
