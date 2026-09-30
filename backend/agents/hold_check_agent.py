@@ -648,6 +648,21 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     if raw_eps_g5y is not None and float(raw_eps_g5y) > 5:
         growth_anchor = float(raw_eps_g5y)
         anchor_label = f"eps_growth_5y (Finnhub): {growth_anchor:.1f}%"
+        # When eps_growth_5y > 40%, the CAGR almost certainly reflects a trough-to-
+        # profitability transition (company went from near-zero/loss EPS to profitable).
+        # This is not a realistic forward rate — it's a base-effect artifact. Fall back
+        # to revenue_growth_3y if available and materially lower (>10pp gap), since
+        # revenue growth is the better forward proxy when EPS base was near zero.
+        # Example: NOW eps_growth_5y 70% vs revenue_growth_3y ~20% — anchor should be 20%.
+        if growth_anchor > 40:
+            _rev_g3y = raw.get("revenue_growth_3y")
+            if _rev_g3y is not None and float(_rev_g3y) > 3 and float(_rev_g3y) < growth_anchor - 10:
+                _raw_eps_label = f"{growth_anchor:.1f}%"
+                growth_anchor = float(_rev_g3y)
+                anchor_label = (
+                    f"revenue_growth_3y (Finnhub): {growth_anchor:.1f}% "
+                    f"[eps_growth_5y {_raw_eps_label} excluded — trough-to-profitability base effect]"
+                )
     else:
         rev_g3y = raw.get("revenue_growth_3y")
         rev_g5y = raw.get("revenue_growth_5y")
