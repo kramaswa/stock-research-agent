@@ -614,17 +614,14 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     if not starting_eps or starting_eps <= 0:
         return None
 
-    # Cyclical peak normalization: when forward P/E is very compressed (<8x) and
-    # starting EPS is NOT from analyst consensus (i.e., market-implied, FCF TTM, or
-    # OCF TTM), AND starting EPS is more than 2× GAAP TTM EPS, the market is
-    # explicitly signaling these earnings are at a cyclical peak and will revert.
-    # Memory semis (MU), commodity producers, and energy companies routinely hit
-    # 4-6x forward P/E at cycle peaks. Running a 10-year model from peak earnings
-    # produces returns that look attractive but are anchored to unsustainable EPS.
-    # Fix: switch to GAAP TTM EPS as the starting anchor — it is lower, often still
-    # elevated vs mid-cycle but much closer to a sustainable level.
-    # Safe-guards: only fires when (1) no analyst consensus overrides, (2) the gap
-    # between starting EPS and GAAP TTM is large (>2×), confirming the peak signal.
+    # Cyclical peak normalization: when forward P/E is very compressed (<8x) AND
+    # GAAP TTM EPS is meaningfully higher than the market-implied forward EPS, the
+    # market is signaling that current earnings are at a cyclical peak and will fall.
+    # Classic example: MU in 2019 — TTM EPS $11, forward EPS $6 at 5× P/E.
+    # Guard: only fires when TTM > forward × 1.2 (TTM is the peak, forward is lower).
+    # When forward >> TTM (earnings ramping), do NOT normalize — that is a ramp
+    # scenario (HBM / AI demand driving earnings acceleration), not a peak. Using TTM
+    # as the anchor in a ramp scenario understates returns dramatically.
     _eps_ttm_val = raw.get("eps_ttm")
     if (
         not eps_from_estimates
@@ -632,14 +629,14 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
         and fwd_pe_val < 8.0
         and _eps_ttm_val is not None
         and float(_eps_ttm_val) > 0
-        and starting_eps > float(_eps_ttm_val) * 2.0
+        and float(_eps_ttm_val) > starting_eps * 1.2  # TTM > forward = earnings expected to fall
     ):
         _ttm = round(float(_eps_ttm_val), 2)
         eps_source = (
             f"GAAP TTM EPS ${_ttm} (cyclical normalization: fwd P/E {fwd_pe_val:.1f}x "
-            f"signals peak-cycle earnings; prior anchor ${starting_eps} was "
-            f"{starting_eps / _ttm:.1f}× GAAP TTM — market is pricing a significant "
-            f"earnings decline, so TTM is used as the more stable starting point)"
+            f"and TTM ${_ttm} > implied forward ${round(starting_eps, 2)} — "
+            f"market is pricing in an earnings decline from current peak; "
+            f"TTM used as the more conservative starting point)"
         )
         starting_eps = _ttm
 
@@ -1019,6 +1016,13 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     if _decel_fired:
         dp = 0
 
+    # Cyclical anchor haircut: eps_growth_5y for commodity cyclicals (MU, energy) is
+    # measured from trough-to-peak, so the 5-year CAGR is far above the realistic
+    # through-cycle forward rate. Add 5pp extra to dp (only when not already waived
+    # by decel) to bring the base case toward a sustainable 10-year growth estimate.
+    if fwd_pe_val is not None and fwd_pe_val < 8.0 and not _decel_fired:
+        dp += 5
+
     # Base/Bull: anchor + operating leverage premium — apply large-base caps first
     base_g = eps_g5y + ol_premium - dp
     bull_g = eps_g5y + ol_premium + bull_offset
@@ -1029,19 +1033,25 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     base_g = round(base_g, 1)
     bull_g = round(bull_g, 1)
 
-    # Bear: cut scales with base_g — high-growth companies have more room to disappoint
-    # (earnings miss + multiple de-rating compound in stress). Floor at 0%: a real bear
-    # can be near-flat EPS for a decade (buybacks prop up slightly declining earnings).
+    # Bear: cut scales with base_g — high-growth companies have more room to disappoint.
+    # For NON-cyclicals: floor at 0% (a real bear is near-flat EPS, not outright decline).
+    # For CYCLICALS (fwd P/E < 8x — memory semis, commodity producers, energy): the bear
+    # case is a cycle trough where earnings can fall 50-80%. Add 12pp extra cut and lower
+    # floor to -15% so the model can capture cycle collapse (e.g. MU EPS $163 → $57 over
+    # 10yr at -10%/yr, reflecting AI demand craters → trough → partial recovery).
     # base > 10%: cut 8pp  (e.g. Visa 11.8% → 3.8%; INTU 15% → 7%)
     # base 6–10%: cut 5pp  (e.g. typical compounder 8% → 3%)
     # base < 6%:  cut 3pp  (e.g. mature company 5% → 2%)
-    _bear_cut = 8 if base_g > 10 else (5 if base_g > 6 else 3)
+    _is_cyclical = fwd_pe_val is not None and fwd_pe_val < 8.0
+    _BEAR_FLOOR = -15.0 if _is_cyclical else 0.0
+    _cyclical_extra = 12 if _is_cyclical else 0
     if base_g > 10:
-        bear_g = max(round(base_g - 8, 1), 0.0)
+        _bear_cut = 8 + _cyclical_extra
     elif base_g > 6:
-        bear_g = max(round(base_g - 5, 1), 0.0)
+        _bear_cut = 5 + _cyclical_extra
     else:
-        bear_g = max(round(base_g - 3, 1), 0.0)
+        _bear_cut = 3 + _cyclical_extra
+    bear_g = max(round(base_g - _bear_cut, 1), _BEAR_FLOOR)
 
     # Absolute growth rate ceiling: no 10-year projection should assume more than
     # 20/25/30% CAGR for bear/base/bull. The best businesses in history (Amazon,
@@ -1049,7 +1059,12 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     # Companies with exceptional recent history (hypergrowth from near-zero EPS
     # base like NU, MELI, pre-profit SaaS) produce anchor values of 40-60%
     # which compound to 30-50x over 10 years — not a defensible projection.
-    _BEAR_MAX, _BASE_MAX, _BULL_MAX = 20.0, 25.0, 30.0
+    # For cyclicals (fwd P/E < 8x), the anchor is trough-to-peak distorted, so cap
+    # bull more aggressively: 15% vs 30%. A commodity semi growing 15%/yr for 10yr
+    # is already an exceptional outcome; 20%+ is fantasy territory from a high base.
+    _BEAR_MAX = 20.0
+    _BASE_MAX = 25.0
+    _BULL_MAX = 15.0 if _is_cyclical else 30.0
     _growth_capped = False
     if bear_g > _BEAR_MAX or base_g > _BASE_MAX or bull_g > _BULL_MAX:
         _growth_capped = True
