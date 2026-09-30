@@ -15,6 +15,30 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
         price = raw.get("current_price")
         if fwd_pe and price and fwd_pe > 0:
             implied_eps = round(price / fwd_pe, 2)
+
+            # fwd_pe > 80 almost always means Finnhub is using GAAP EPS for a high-SBC
+            # company (CRWD, SNOW, NET, etc.). GAAP-implied EPS (e.g. $1.55) severely
+            # understates earnings power — do NOT tell the LLM to use it as Year 0.
+            # OCF/share adds back SBC and is a far better proxy for economic earnings.
+            if fwd_pe > 80:
+                ocf = raw.get("operating_cf_per_share_ttm")
+                if ocf and float(ocf) > 0:
+                    ocf_val = round(float(ocf), 2)
+                    return (
+                        f"\n## Ground Truth Consensus EPS Estimates\n"
+                        f"Not available from provider. Finnhub forward P/E is {fwd_pe:.0f}x — "
+                        f"this is GAAP-based; implied EPS (${implied_eps:.2f}) severely understates "
+                        f"earnings power due to stock-based compensation. "
+                        f"Use operating CF/share TTM (${ocf_val:.2f}) as Year 0 instead — "
+                        f"it adds back SBC and is consistent with how high-growth software multiples are priced.\n"
+                    )
+                return (
+                    f"\n## Ground Truth Consensus EPS Estimates\n"
+                    f"Not available from provider. Finnhub forward P/E is {fwd_pe:.0f}x (GAAP) — "
+                    f"implied EPS (${implied_eps:.2f}) is unreliable due to SBC. "
+                    f"Do NOT use ${implied_eps:.2f} as Year 0; estimate non-GAAP EPS from context instead.\n"
+                )
+
             gaap_note = ""
             if eps_ttm and eps_ttm > 0 and implied_eps > 1.5 * eps_ttm:
                 ratio = round(implied_eps / eps_ttm, 1)
