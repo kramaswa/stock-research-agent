@@ -17,9 +17,8 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
             implied_eps = round(price / fwd_pe, 2)
 
             # fwd_pe > 80 almost always means Finnhub is using GAAP EPS for a high-SBC
-            # company (CRWD, SNOW, NET, etc.). GAAP-implied EPS (e.g. $1.55) severely
-            # understates earnings power — do NOT tell the LLM to use it as Year 0.
-            # OCF/share adds back SBC and is a far better proxy for economic earnings.
+            # company (CRWD, SNOW, NET, etc.). GAAP-implied EPS severely understates
+            # earnings power — do NOT tell the LLM to use it as Year 0.
             if fwd_pe > 80:
                 ocf = raw.get("operating_cf_per_share_ttm")
                 if ocf and float(ocf) > 0:
@@ -32,11 +31,28 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
                         f"Use operating CF/share TTM (${ocf_val:.2f}) as Year 0 instead — "
                         f"it adds back SBC and is consistent with how high-growth software multiples are priced.\n"
                     )
+                # No OCF/share — try to give the LLM concrete FCF data to anchor on.
+                # pfcf_share_ttm = price / FCF/share → FCF/share = price / pfcf_share_ttm.
+                # This is post-SBC FCF (conservative), but combined with the 5yr FCF CAGR
+                # and revenue/share gives the LLM enough to estimate non-GAAP EPS.
+                pfcf = raw.get("pfcf_share_ttm")
+                focf_cagr = raw.get("focf_cagr_5y")
+                rev_per_share = raw.get("revenue_per_share_ttm")
+                fcf_hint = ""
+                if pfcf and float(pfcf) > 0 and price:
+                    fcf_per_sh = round(float(price) / float(pfcf), 2)
+                    cagr_str = f"; 5yr FCF CAGR {focf_cagr:.1f}%" if focf_cagr else ""
+                    rev_str = f"; revenue/share TTM ${float(rev_per_share):.2f}" if rev_per_share else ""
+                    fcf_hint = (
+                        f" Derived FCF/share TTM (post-SBC) = ${fcf_per_sh:.2f}{cagr_str}{rev_str}. "
+                        f"Non-GAAP EPS is typically 1.5–3× post-SBC FCF/share for high-growth software "
+                        f"(market prices pre-SBC free cash flow). Use these to estimate a Year 0 non-GAAP EPS."
+                    )
                 return (
                     f"\n## Ground Truth Consensus EPS Estimates\n"
                     f"Not available from provider. Finnhub forward P/E is {fwd_pe:.0f}x (GAAP) — "
-                    f"implied EPS (${implied_eps:.2f}) is unreliable due to SBC. "
-                    f"Do NOT use ${implied_eps:.2f} as Year 0; estimate non-GAAP EPS from context instead.\n"
+                    f"implied EPS (${implied_eps:.2f}) is unreliable due to SBC.{fcf_hint} "
+                    f"Do NOT use ${implied_eps:.2f} as Year 0.\n"
                 )
 
             gaap_note = ""

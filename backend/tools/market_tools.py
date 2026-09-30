@@ -245,6 +245,9 @@ def get_all_stock_data(ticker: str) -> dict:
         "fcf_per_share_ttm": m.get("freeCashFlowPerShareTTM"),
         "operating_cf_per_share_ttm": m.get("operatingCashFlowPerShareTTM"),
         "ev_to_fcf_ttm": m.get("currentEv/freeCashFlowTTM"),
+        "pfcf_share_ttm": m.get("pfcfShareTTM"),        # price-to-FCF/share; derive FCF/share = price/this
+        "focf_cagr_5y": m.get("focfCagr5Y"),            # FCF CAGR 5yr — growth anchor for FCF-based names
+        "revenue_per_share_ttm": m.get("revenuePerShareTTM"),  # helps LLM estimate non-GAAP EPS from margins
         # Capital efficiency
         "roic_ttm": m.get("roicTTM"),
         "roic_5y_avg": m.get("roic5Y"),
