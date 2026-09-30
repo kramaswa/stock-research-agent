@@ -41,12 +41,17 @@ def _format_eps_estimates(raw: dict[str, Any]) -> str:
                 fcf_hint = ""
                 if pfcf and float(pfcf) > 0 and price:
                     fcf_per_sh = round(float(price) / float(pfcf), 2)
+                    # Non-GAAP EPS ≈ 2–3× post-SBC FCF for high-growth software
+                    # (market prices on pre-SBC FCF; SBC is ~40-60% of post-SBC FCF for names like CRWD)
+                    ngaap_lo = round(fcf_per_sh * 2.0, 2)
+                    ngaap_hi = round(fcf_per_sh * 3.0, 2)
                     cagr_str = f"; 5yr FCF CAGR {focf_cagr:.1f}%" if focf_cagr else ""
                     rev_str = f"; revenue/share TTM ${float(rev_per_share):.2f}" if rev_per_share else ""
                     fcf_hint = (
-                        f" Derived FCF/share TTM (post-SBC) = ${fcf_per_sh:.2f}{cagr_str}{rev_str}. "
-                        f"Non-GAAP EPS is typically 1.5–3× post-SBC FCF/share for high-growth software "
-                        f"(market prices pre-SBC free cash flow). Use these to estimate a Year 0 non-GAAP EPS."
+                        f" Post-SBC FCF/share TTM = ${fcf_per_sh:.2f}{cagr_str}{rev_str}. "
+                        f"Estimated non-GAAP EPS (pre-SBC) = ${ngaap_lo:.2f}–${ngaap_hi:.2f} "
+                        f"(2–3× post-SBC FCF/share, consistent with how high-growth software is priced). "
+                        f"Use a value in the ${ngaap_lo:.2f}–${ngaap_hi:.2f} range as Year 0."
                     )
                 return (
                     f"\n## Ground Truth Consensus EPS Estimates\n"
