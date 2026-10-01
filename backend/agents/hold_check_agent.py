@@ -662,6 +662,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     # companies with irregular EPS history (losses, heavy M&A amortization)
     growth_anchor: float | None = None
     anchor_label = ""
+    _margin_expansion_distortion = False
     raw_eps_g5y = raw.get("eps_growth_5y")
     if raw_eps_g5y is not None and float(raw_eps_g5y) > 5:
         growth_anchor = float(raw_eps_g5y)
@@ -681,6 +682,21 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                     f"revenue_growth_3y (Finnhub): {growth_anchor:.1f}% "
                     f"[eps_growth_5y {_raw_eps_label} excluded — trough-to-profitability base effect]"
                 )
+        elif growth_anchor > 20:
+            # Margin expansion distortion: EPS grew faster than revenue because margins
+            # expanded from low levels, not because of faster underlying business growth.
+            # This is a one-time catch-up, not a repeatable forward rate.
+            # Example: NFLX eps_growth_5y=33% vs revenue_growth_3y=12.6% — gap=20pp.
+            _rev_g3y = raw.get("revenue_growth_3y")
+            if _rev_g3y is not None and float(_rev_g3y) > 3 and float(_rev_g3y) < growth_anchor - 15:
+                _raw_eps_label = f"{growth_anchor:.1f}%"
+                growth_anchor = float(_rev_g3y)
+                anchor_label = (
+                    f"revenue_growth_3y (Finnhub): {growth_anchor:.1f}% "
+                    f"[eps_growth_5y {_raw_eps_label} excluded — margin expansion distortion; "
+                    f"EPS grew faster than revenue via one-time margin expansion, not sustainable]"
+                )
+                _margin_expansion_distortion = True
     else:
         rev_g3y = raw.get("revenue_growth_3y")
         rev_g5y = raw.get("revenue_growth_5y")
@@ -1022,13 +1038,15 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     # recently-profitable companies where TTM YoY is null (negative base period).
     ol_premium = 0.0
     ol_note = ""
-    if anchor_label.startswith("revenue_growth"):
+    if anchor_label.startswith("revenue_growth") and not _margin_expansion_distortion:
         eps_g_ttm = raw.get("eps_growth_ttm_yoy")
         eps_g_3y = raw.get("eps_growth_3y")
-        # Pick best available EPS growth signal — prefer TTM, fall back to 3Y
+        # Pick best available EPS growth signal — prefer TTM, fall back to 3Y.
+        # Skip TTM > 500%: trough-to-profitability artifact (company went from losses
+        # to small profit in one quarter; GAAP EPS is not a reliable OL signal).
         eps_check: float | None = None
         eps_check_label = ""
-        if eps_g_ttm is not None and float(eps_g_ttm) > 0:
+        if eps_g_ttm is not None and float(eps_g_ttm) > 0 and float(eps_g_ttm) <= 500:
             eps_check = float(eps_g_ttm)
             eps_check_label = f"eps_growth_ttm_yoy {eps_check:.1f}%"
         elif eps_g_3y is not None and float(eps_g_3y) > 0:
