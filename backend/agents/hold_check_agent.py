@@ -605,6 +605,24 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
             return None
         implied = round(float(current_price) / fwd_pe_float, 2)
         if implied > 0:
+            # GAAP/non-GAAP mismatch guard: when GAAP TTM EPS is near-zero (<$1) but
+            # operating CF/share is meaningfully positive AND much higher than the
+            # market-implied EPS, Finnhub's forwardPE is likely based on GAAP consensus
+            # while the market prices on non-GAAP. The implied EPS would be understated.
+            # Return None so Phase 1 (LLM) handles the starting EPS correctly.
+            # Only fires in the 20–79x fwd P/E range (>80 already returns None above;
+            # <20 is cyclical territory where low GAAP EPS is normal and expected).
+            _g_eps_ttm = raw.get("eps_ttm")
+            _g_ocf = raw.get("operating_cf_per_share_ttm")
+            if (
+                fwd_pe_float >= 20
+                and _g_eps_ttm is not None
+                and float(_g_eps_ttm) < 1.0       # near-zero GAAP TTM EPS
+                and _g_ocf is not None
+                and float(_g_ocf) > 0
+                and float(_g_ocf) > implied * 2.0  # OCF >> implied → GAAP mismatch signal
+            ):
+                return None
             starting_eps = implied
             eps_source = (
                 f"market-implied forward EPS: "
