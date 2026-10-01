@@ -1105,8 +1105,37 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     base_g = min(base_g, _BASE_MAX)
     bull_g = min(bull_g, _BULL_MAX)
 
-    def yr10(g: float) -> float:
-        return round(starting_eps * (1 + g / 100) ** 10, 2)
+    # Growth decay model: high-growth companies never sustain their peak rate for a
+    # full decade — they decelerate as they scale. A single constant rate overstates
+    # 10-year returns by ~1.5–2× when the anchor is above ~12%.
+    # Approach: assume growth decays linearly from g_start to a terminal rate, making
+    # the effective 10-year CAGR ≈ average of start and terminal.
+    # Terminal rate is calibrated to revenue scale (larger companies grow more slowly).
+    # Only fires when g > terminal; low-growth companies are already at mature rate.
+    # Cyclicals are exempt — their model is cycle-based, not secular deceleration.
+    _apply_decay = not (fwd_pe_val is not None and fwd_pe_val < 8.0)
+    if revenue_b is not None and revenue_b >= 50:
+        _terminal_base = 8.0
+    elif revenue_b is not None and revenue_b >= 20:
+        _terminal_base = 9.0
+    else:
+        _terminal_base = 10.0
+    # Per-scenario terminals: bear decays faster (structural headwinds), bull slower
+    _terminal_bear = max(_terminal_base - 2.0, 2.0)
+    _terminal_bull = min(_terminal_base + 2.0, 15.0)
+    _decay_note = (
+        f"Growth decay applied (terminal {_terminal_base:.0f}%): "
+        f"bear→{_terminal_bear:.0f}%, base→{_terminal_base:.0f}%, bull→{_terminal_bull:.0f}% "
+        f"(linear decel from anchor; effective CAGR = avg of start + terminal)"
+        if _apply_decay else ""
+    )
+
+    def yr10(g: float, terminal: float | None = None) -> float:
+        t = terminal if terminal is not None else _terminal_base
+        if not _apply_decay or g <= t:
+            return round(starting_eps * (1 + g / 100) ** 10, 2)
+        g_eff = (g + t) / 2
+        return round(starting_eps * (1 + g_eff / 100) ** 10, 2)
 
     # Dilution adjustment: only applies when the growth anchor is REVENUE-based.
     # eps_growth_5y is a per-share metric — dilution is already embedded in it
@@ -1304,9 +1333,10 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
         "bear_g": bear_g,
         "base_g": base_g,
         "bull_g": bull_g,
-        "yr10_bear": yr10(bear_g),
-        "yr10_base": yr10(base_g),
-        "yr10_bull": yr10(bull_g),
+        "yr10_bear": yr10(bear_g, _terminal_bear),
+        "yr10_base": yr10(base_g, _terminal_base),
+        "yr10_bull": yr10(bull_g, _terminal_bull),
+        "decay_note": _decay_note,
         "exit_pe_bear": exit_pe_bear,
         "exit_pe_base": exit_pe_base,
         "exit_pe_bull": exit_pe_bull,
@@ -1396,6 +1426,12 @@ def _format_10yr_anchors(a: dict) -> str:
             f"(20/25/30% bear/base/bull max). Rates shown below are post-cap. "
             f"No company sustains >30% EPS CAGR for a decade; use the capped rates in your analysis.\n"
             if a.get("growth_capped") else ""
+        )
+        + (
+            f"⚠ GROWTH DECAY MODEL: {a['decay_note']}\n"
+            f"  The Year-10 EPS values in the table below already incorporate this decay "
+            f"(effective CAGR < stated rate). Do NOT recalculate them from the stated growth rate.\n"
+            if a.get("decay_note") else ""
         )
         + (
             f"Derivation: {a['eps_g5y']}%{ol_str} (no large-base discount — waived){base_cap_str}{bull_cap_str}; "
