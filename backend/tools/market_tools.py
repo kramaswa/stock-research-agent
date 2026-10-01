@@ -71,25 +71,52 @@ def get_all_stock_data(ticker: str) -> dict:
                 "num_analysts": e.get("numberAnalysts"),
             })
 
-    # yfinance fallback: when Finnhub returns no annual EPS estimates, fetch
-    # forwardEps from Yahoo Finance (consensus non-GAAP, same basis as exit multiples).
-    # Only fires when Finnhub data is absent — no impact on tickers with Finnhub estimates.
+    # yfinance fallback: when Finnhub returns no annual EPS estimates.
+    # Priority: annual fiscal-year estimates (0y / +1y) > NTM forwardEps.
+    # Annual estimates are preferred because forwardEps is NTM-weighted and can
+    # be inflated for companies in an earnings ramp (e.g. DASH FY26=$2.58 vs NTM=$3.81
+    # because FY27=$4.47 pulls the NTM up). Fiscal-year EPS is the cleaner starting anchor.
     if not eps_estimates:
         try:
-            yf_info = yf.Ticker(ticker).info
-            fwd_eps = yf_info.get("forwardEps")
-            n_analysts = yf_info.get("numberOfAnalystOpinions")
-            if fwd_eps and float(fwd_eps) > 0:
-                import datetime as _dt
-                next_year = str(_dt.datetime.now().year + 1)
-                eps_estimates.append({
-                    "period": next_year,
-                    "eps_avg": round(float(fwd_eps), 2),
-                    "eps_high": None,
-                    "eps_low": None,
-                    "num_analysts": int(n_analysts) if n_analysts else None,
-                    "source": "yfinance",
-                })
+            import datetime as _dt
+            yf_ticker = yf.Ticker(ticker)
+
+            # Try annual earnings estimates first (fiscal-year basis, not NTM)
+            try:
+                _ee = yf_ticker.earnings_estimate
+                if _ee is not None and not _ee.empty:
+                    _cur_year = _dt.datetime.now().year
+                    for _key, _yr in [("0y", str(_cur_year)), ("+1y", str(_cur_year + 1))]:
+                        if _key in _ee.index:
+                            _avg = _ee.loc[_key, "avg"] if "avg" in _ee.columns else None
+                            _n   = _ee.loc[_key, "numberOfAnalysts"] if "numberOfAnalysts" in _ee.columns else None
+                            if _avg is not None and float(_avg) > 0:
+                                eps_estimates.append({
+                                    "period": _yr,
+                                    "eps_avg": round(float(_avg), 2),
+                                    "eps_high": None,
+                                    "eps_low": None,
+                                    "num_analysts": int(_n) if _n and not (isinstance(_n, float) and _n != _n) else None,
+                                    "source": "yfinance_annual",
+                                })
+            except Exception:
+                pass
+
+            # Fall back to NTM forwardEps when annual estimates are unavailable
+            if not eps_estimates:
+                yf_info = yf_ticker.info
+                fwd_eps = yf_info.get("forwardEps")
+                n_analysts = yf_info.get("numberOfAnalystOpinions")
+                if fwd_eps and float(fwd_eps) > 0:
+                    next_year = str(_dt.datetime.now().year + 1)
+                    eps_estimates.append({
+                        "period": next_year,
+                        "eps_avg": round(float(fwd_eps), 2),
+                        "eps_high": None,
+                        "eps_low": None,
+                        "num_analysts": int(n_analysts) if n_analysts else None,
+                        "source": "yfinance",
+                    })
         except Exception:
             pass  # yfinance is best-effort; fall through to market-implied
 
