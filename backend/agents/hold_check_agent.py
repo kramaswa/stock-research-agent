@@ -663,6 +663,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     growth_anchor: float | None = None
     anchor_label = ""
     _margin_expansion_distortion = False
+    _trough_profitability_revenue_fallback = False
     raw_eps_g5y = raw.get("eps_growth_5y")
     if raw_eps_g5y is not None and float(raw_eps_g5y) > 5:
         growth_anchor = float(raw_eps_g5y)
@@ -682,6 +683,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                     f"revenue_growth_3y (Finnhub): {growth_anchor:.1f}% "
                     f"[eps_growth_5y {_raw_eps_label} excluded — trough-to-profitability base effect]"
                 )
+                _trough_profitability_revenue_fallback = True
         elif growth_anchor > 20:
             # Margin expansion distortion: EPS grew faster than revenue because margins
             # expanded from low levels, not because of faster underlying business growth.
@@ -745,6 +747,16 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
         dp, base_cap, bull_cap, bull_offset = 7, 14.0, 18.0, -3
     else:
         dp, base_cap, bull_cap, bull_offset = 10, 11.0, 15.0, -5
+
+    # Tighten caps for trough-to-profitability revenue fallback on large companies.
+    # When eps_growth_5y > 40% forced the model to fall back to revenue_growth_3y,
+    # the revenue CAGR itself is often inflated by M&A (e.g. AVGO/VMware doubling revenue).
+    # The OL premium is also suppressed for this case (see below) — so the tighter cap
+    # is the controlling guardrail. Only applies to the $50-150B tier; larger companies
+    # already have tighter base_caps (14%/11%) that handle this naturally.
+    if _trough_profitability_revenue_fallback and 50 <= revenue_b < 150:
+        base_cap = 15.0
+        bull_cap = 19.0
 
     # Flag: set True whenever ANY decel check overrides the historical anchor.
     # When fired, the resulting eps_g5y is already a forward-looking estimate
@@ -1038,7 +1050,7 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     # recently-profitable companies where TTM YoY is null (negative base period).
     ol_premium = 0.0
     ol_note = ""
-    if anchor_label.startswith("revenue_growth") and not _margin_expansion_distortion:
+    if anchor_label.startswith("revenue_growth") and not _margin_expansion_distortion and not _trough_profitability_revenue_fallback:
         eps_g_ttm = raw.get("eps_growth_ttm_yoy")
         eps_g_3y = raw.get("eps_growth_3y")
         # Pick best available EPS growth signal — prefer TTM, fall back to 3Y.
