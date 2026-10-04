@@ -1079,6 +1079,16 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     if _decel_fired:
         dp = 0
 
+    # Margin expansion distortion carve-out: when the distortion guard dropped the
+    # anchor from eps_growth_5y to revenue_growth_3y, it already applied significant
+    # conservatism (e.g. GOOGL: 29.82% → 12.51%). Applying the full large-base dp on
+    # top double-penalizes — the primary anchor adjustment was already made.
+    # Halve dp to avoid compounding two separate discount mechanisms on the same anchor.
+    # Does not apply when _decel_fired (dp already zeroed) or trough-profitability
+    # fallback (that path uses different logic).
+    if _margin_expansion_distortion and not _decel_fired:
+        dp = dp // 2
+
     # Cyclical anchor haircut: eps_growth_5y for commodity cyclicals (MU, energy) is
     # measured from trough-to-peak, so the 5-year CAGR is far above the realistic
     # through-cycle forward rate. Add 5pp extra to dp (only when not already waived
