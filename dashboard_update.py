@@ -123,7 +123,8 @@ def validate_entry(e: StockEntry, expected_tol: float = 3.0, adj_tol: float = 25
                 f"  Hint: if this scenario uses growth decay, pass the effective CAGR as `growth`, not the starting rate."
             )
 
-    # ── 4. Implied price/sales guard (blocking) ────────────────────────────────
+    # ── 4. Anchor coherence, then the implied price/sales guard (both blocking) ─
+    _check_net_margin(e)
     _check_ps_expansion(e)
 
     # ── 5. Sanity checks (warnings, not errors) ────────────────────────────────
@@ -222,6 +223,70 @@ def implied_ps_expansion(adj_return: float, dilution: float, eps_growth_pct: flo
     if rev_cagr_pct is None:
         rev_cagr_pct = eps_growth_pct * 0.75
     return (adj_return / dilution ** 2) / ((1 + rev_cagr_pct / 100) ** 10)
+
+
+# Net income cannot exceed revenue. Above ~60% is implausible outside software
+# and a handful of exchanges/asset managers; at or above 100% the inputs are
+# simply contradictory.
+_NET_MARGIN_IMPLAUSIBLE = 0.60
+_NET_MARGIN_IMPOSSIBLE = 1.00
+
+_SHARES_PAT = re.compile(r'~?([\d.]+)\s*([BM])\s*(?:shares|sh\b)', re.I)
+_MCAP_PAT = re.compile(r'(?:market cap|mkt cap|\bcap)\s*~?\$\s*([\d.]+)\s*([BMT])', re.I)
+
+
+def _shares_from_chips(chips, price: float | None = None) -> float | None:
+    """Share count in billions, read from the chips or backed out of a market cap."""
+    for chip in (chips or []):
+        m = _SHARES_PAT.search(chip)
+        if m:
+            v = float(m.group(1))
+            return v / 1000 if m.group(2).upper() == 'M' else v
+    if price and price > 0:
+        for chip in (chips or []):
+            m = _MCAP_PAT.search(chip)
+            if m:
+                mult = {'T': 1000.0, 'B': 1.0, 'M': 0.001}[m.group(2).upper()]
+                return float(m.group(1)) * mult / price
+    return None
+
+
+def _check_net_margin(e: StockEntry) -> None:
+    """Raise if NTM EPS and revenue imply an impossible or implausible net margin.
+
+    This is the check that was missing when NVDA carried an NTM EPS of $14.20
+    against $304.7B of revenue -- $346B of net income on $304.7B of revenue, a
+    114% net margin, which deflated its stated forward P/E to 17x when the real
+    figure was ~39x. Every multiple-based check passed it, because the multiples
+    were fine; the anchor was not.
+
+    A too-cheap-looking P/E is the symptom to watch for: an overstated EPS
+    divides the price down.
+    """
+    rev_b = _revenue_from_chips(e.chips)
+    shares_b = _shares_from_chips(e.chips, e.price)
+    if rev_b is None or not rev_b:
+        return
+    if shares_b is None:
+        # Loud, not silent. A silent skip here is exactly how NVDA survived.
+        print(f"[net-margin] {e.ticker}: SKIPPED -- no share count or market cap in chips, "
+              f"so EPS/revenue coherence cannot be checked. Add '~N.NB shares' to a chip.")
+        return
+    margin = (e.ntm_eps * shares_b) / rev_b
+    if margin >= _NET_MARGIN_IMPOSSIBLE:
+        raise ValueError(
+            f"{e.ticker}: NTM EPS and revenue are contradictory.\n"
+            f"  EPS ${e.ntm_eps:.2f} x {shares_b:.2f}B shares = ${e.ntm_eps * shares_b:.0f}B of net income\n"
+            f"  against ${rev_b:.1f}B of revenue -> a {margin * 100:.0f}% net margin.\n"
+            f"  Net income cannot exceed revenue. One of EPS, revenue or share count is wrong.\n"
+            f"  If price and revenue cohere (check market cap / revenue against the sector's\n"
+            f"  normal price/sales), the EPS is the bad input -- back it out from a sector-\n"
+            f"  typical net margin instead."
+        )
+    if margin > _NET_MARGIN_IMPLAUSIBLE:
+        print(f"[net-margin] {e.ticker}: WARNING -- implied net margin {margin * 100:.0f}% "
+              f"(EPS ${e.ntm_eps:.2f} x {shares_b:.2f}B sh / ${rev_b:.1f}B rev). "
+              f"Plausible only for software or an exchange; verify the EPS anchor.")
 
 
 def _check_ps_expansion(e: StockEntry) -> None:
