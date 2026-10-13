@@ -643,7 +643,7 @@ def insert_card_at_end(html: str, card_html: str) -> str:
 def _ret_class(expected: float) -> str:
     if expected >= 3.5:
         return "ret-high"
-    elif expected >= 2.25:
+    elif expected >= 2.45:
         return "ret-mid"
     else:
         return "ret-low"
