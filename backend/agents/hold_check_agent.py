@@ -641,8 +641,18 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
     # scenario (HBM / AI demand driving earnings acceleration), not a peak. Using TTM
     # as the anchor in a ramp scenario understates returns dramatically.
     _eps_ttm_val = raw.get("eps_ttm")
+    # Guard: if eps_ttm > price × 20 (implied P/E < 0.05×), the value is in a foreign
+    # currency (e.g. KRW for SKHY). Cyclical normalization with such a value would set
+    # starting_eps to a number thousands of times too large — skip it entirely.
+    _corrupt_eps_currency = (
+        current_price is not None
+        and float(current_price) > 0
+        and _eps_ttm_val is not None
+        and float(_eps_ttm_val) > float(current_price) * 20
+    )
     if (
-        not eps_from_estimates
+        not _corrupt_eps_currency
+        and not eps_from_estimates
         and fwd_pe_val is not None
         and fwd_pe_val < 8.0
         and _eps_ttm_val is not None
@@ -725,6 +735,11 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
         if ps_ttm > 0 and mc_m > 0:
             # P/S ratio gives accurate revenue for any business model
             revenue_b = round((mc_m / 1000.0) / ps_ttm, 1)
+            # For Korean NASDAQ listings (country == 'KR'), Finnhub returns
+            # market_cap_millions in KRW (not USD). Convert to USD at ~1350 KRW/USD
+            # so the large-base discount tier is computed correctly.
+            if raw.get("country") == "KR":
+                revenue_b = round(revenue_b / 1350.0, 1)
         elif mc_m >= 500_000:
             revenue_b = 200.0
         elif mc_m >= 200_000:
