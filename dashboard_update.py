@@ -272,7 +272,27 @@ def _check_net_margin(e: StockEntry) -> None:
         print(f"[net-margin] {e.ticker}: SKIPPED -- no share count or market cap in chips, "
               f"so EPS/revenue coherence cannot be checked. Add '~N.NB shares' to a chip.")
         return
-    margin = (e.ntm_eps * shares_b) / rev_b
+    # NTM EPS is forward; the revenue chip is usually trailing. For a company
+    # growing revenue fast those are different years, and comparing them
+    # manufactures a false alarm -- MU tripped this at a nominal 139% margin
+    # while its filings were entirely correct, because its FY2027 EPS was being
+    # measured against FY2026 revenue during an ~80% YoY ramp. Scale revenue
+    # forward by the base growth rate before comparing.
+    known_fwd = e.rev_cagr is not None
+    fwd_rev_b = rev_b * (1 + (e.rev_cagr if known_fwd else e.base.growth * 0.75) / 100)
+    margin = (e.ntm_eps * shares_b) / fwd_rev_b
+
+    # Only hard-block when forward revenue is actually known. Without rev_cagr the
+    # denominator is a guess off a 10-year CAGR, which cannot track a near-term
+    # ramp: MU looked like a 139% margin while its filings were correct, because
+    # FY2027 EPS was being measured against FY2026 revenue mid-supercycle.
+    # Flagging a human beats blocking on an ambiguous signal.
+    if margin >= _NET_MARGIN_IMPOSSIBLE and not known_fwd:
+        print(f"[net-margin] {e.ticker}: CHECK THIS -- implied net margin {margin * 100:.0f}% "
+              f"(EPS ${e.ntm_eps:.2f} x {shares_b:.2f}B sh / ~${fwd_rev_b:.1f}B fwd rev). "
+              f"Either an input is wrong, or NTM EPS and the revenue chip are different "
+              f"fiscal years during a fast ramp. Pass rev_cagr=<pct> to resolve it.")
+        return
     if margin >= _NET_MARGIN_IMPOSSIBLE:
         raise ValueError(
             f"{e.ticker}: NTM EPS and revenue are contradictory.\n"
