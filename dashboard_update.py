@@ -126,6 +126,7 @@ def validate_entry(e: StockEntry, expected_tol: float = 3.0, adj_tol: float = 25
     # ── 4. Anchor coherence, then the implied price/sales guard (both blocking) ─
     _check_net_margin(e)
     _check_ps_expansion(e)
+    _check_implied_revenue(e)
 
     # ── 5. Sanity checks (warnings, not errors) ────────────────────────────────
     _sanity_check(e)
@@ -380,6 +381,62 @@ _EXIT_PE_CAPS = [
     (150, 400, 22),   # $150–400B: base exit PE up to 22×
     (400, 1e9, 18),   # > $400B: base exit PE up to 18×
 ]
+
+# ── Implied-revenue check (the external/TAM screen) ───────────────────────────
+# Every other guard compares a company to itself, so a card can be internally
+# perfect and still require more revenue than its market will ever supply.
+# PAYP (#1) needed $126/user in a shrinking Japan; FORM (#2) needed 50-60% of
+# the world probe-card market. Both passed every other test.
+#
+# No share count or market cap needed. Since EPS_2036/EPS_ntm = (1+g)^10 and
+# adj_return = NTM_EPS x (1+g)^10 x exit_PE x dilution / price:
+#
+#   net_income_multiple = (adj_return / dilution) x (entry_PE / exit_PE)
+#
+# At flat margins that is also the revenue multiple. Use the margin basis the
+# EPS is struck on -- mixing a GAAP margin with a non-GAAP EPS overstates it.
+#
+# Deliberately applied at EVERY revenue size. The EPS-CAGR caps only bind above
+# $1B of revenue, which is precisely the hole a niche supplier falls through.
+_IMPLIED_REV_CAGR_BASE = 13.0
+_IMPLIED_REV_CAGR_BULL = 17.5
+
+
+def implied_revenue_multiple(adj_return: float, dilution: float,
+                             entry_pe: float, exit_pe: float) -> float:
+    """Revenue in 10yr as a multiple of today's, at flat margins."""
+    if dilution <= 0 or exit_pe <= 0 or entry_pe <= 0:
+        return float("nan")
+    return (adj_return / dilution) * (entry_pe / exit_pe)
+
+
+def _check_implied_revenue(e: StockEntry) -> None:
+    """Print implied 2036 revenue for every card; warn when the CAGR is extreme.
+
+    A warning is not a verdict -- it means the number needs checking against the
+    size of the market, which no code here knows. Judge it as share of that
+    market, or as revenue per user against a known comparable.
+    """
+    if not e.fwd_pe or e.fwd_pe <= 0:
+        return
+    rev_b = _revenue_from_chips(e.chips + e.warns)
+    for label, sc, cap in (("Base", e.base, _IMPLIED_REV_CAGR_BASE),
+                           ("Bull", e.bull, _IMPLIED_REV_CAGR_BULL)):
+        mult = implied_revenue_multiple(sc.ret, e.dilution, e.fwd_pe, sc.exit_pe)
+        if mult != mult or mult <= 0:
+            continue
+        cagr = (mult ** 0.1 - 1) * 100
+        if rev_b:
+            print(f"[implied-revenue] {e.ticker} {label}: {mult:.2f}x today's revenue "
+                  f"= ${rev_b * mult:,.1f}B by exit ({cagr:+.1f}%/yr from ${rev_b:,.2f}B)")
+        else:
+            print(f"[implied-revenue] {e.ticker} {label}: {mult:.2f}x today's revenue "
+                  f"({cagr:+.1f}%/yr) -- NO REVENUE in chips, cannot size it")
+        if cagr > cap:
+            print(f"  !! {e.ticker} {label} implies {cagr:.1f}%/yr revenue growth for a "
+                  f"decade, above the {cap:g}% ceiling. Check this against the market's "
+                  f"size before trusting it -- as share of TAM, or revenue per user.")
+
 
 def _sanity_check(e: StockEntry) -> None:
     """Print warnings for entries that pass formula checks but have
