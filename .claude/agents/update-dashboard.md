@@ -250,3 +250,20 @@ Then publish:
 - After any update: publish to the artifact URL above with `label` describing what changed.
 - Hold_check stocks have custom probabilities (e.g., NOW 26/49/25, MSFT 7/61/32, META 16/52/32, TSM 25/55/20). These are preserved in the card's expected formula. Do NOT assume 20/55/25 for hold_check stocks — always read the formula from the card.
 - Exit PEs were checked against projected revenue at exit ((1+g)^10 × current_rev). Caps: <$50B→35×, $50-150B→26×, $150-400B→22×, >$400B→18×. Exceptional companies allowed up to 20% above cap.
+
+## Yahoo screener source (checked Oct 14 2026)
+
+The "batch" stocks came from Yahoo's predefined growth-technology screener. The
+page is client-paginated at 25 rows, so fetch the JSON API instead and page it:
+
+    https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?scrIds=growth_technology_stocks&count=100&start=0
+
+It refreshes daily. As of Oct 14 2026 it returned 60 entries, of which 4 are not
+common stock (ORCL-PD, SMCIP preferreds; CORZW, CORZZ warrants). All 56 common
+stocks were already on the dashboard, so there was nothing to add.
+
+Diff it for membership, but the screener's prices are the more useful output: it
+caught SMCI displaying ~$45 against a market price of $35.87. A stale price alone
+does not change a return (EPS is derived as price / fwd P/E, so price cancels),
+but a price that stale usually means the paired multiple is stale too, and that
+DOES move the return.
