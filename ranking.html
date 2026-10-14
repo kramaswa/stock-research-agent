@@ -751,9 +751,9 @@
 <div class="rank-row">
     <span class="rank">#77</span>
     <span class="rticker">MU</span>
-    <span class="rationale">~$1,075 · fwd P/E ~6.5× on PEAK earnings (~27× mid-cycle) · bear 0.43×, base 1.10×, bull 2.88×, expected ~0.96× — reframed as mean reversion off the peak; $1.2T cap already prices the supercycle as permanent — muddle-through case added; base no longer assumes the re-rating — bear no longer assumes a re-rating</span>
-    <span class="ret-low">~0.96×</span>
-    <span class="vs-sp">expected ~0.96× vs S&P 1.92×</span>
+    <span class="rationale">~$1,075 · fwd P/E ~6.5× on PEAK earnings · bear 0.21×, base 1.10×, bull 2.88×, expected ~1.10× — muddle removed: a peak multiple held onto falling earnings double-counts the pessimism for a cyclical</span>
+    <span class="ret-low">~1.10×</span>
+    <span class="vs-sp">expected ~1.10× vs S&P 1.92×</span>
   </div>
 
 <div class="rank-row">
@@ -4062,6 +4062,7 @@
     <span class="chip">Revenue: $133.2B · dp=10pp (5 std + 5 cyclical) · capped=True · no growth decay (cyclical fwd P/E <8×)</span>
     <span class="chip">AI/HBM thesis: Micron is the leading HBM3E/HBM4 supplier for AI training (NVIDIA H200/B200/GB200); revenue tripled on AI memory demand; cycle upswing real but duration uncertain</span>
     <span class="warn" style="background:#fef3c7;border-color:#d97706;">Revised Oct 13 2026, 1.19× from 2.86× — the scenarios compounded growth <em>from</em> peak-cycle earnings. NTM EPS $164.80 sits above FY2026’s reported $74.33, itself a boom against roughly $7 in FY2025; memory swings ~10× across a cycle, and treating the top as a new baseline is the classic cyclical trap. <strong>At $1,074.89 Micron is a ~$1.2T company, which requires ~$80B of NORMALISED earnings at 15×, or ~$267B of sustained revenue at a 30% margin.</strong> FY2027 guidance annualises near $246B, so the price already assumes the supercycle is permanent. Scenarios now model mean reversion (−12%/yr bear, −5%/yr base) against a structural-HBM bull (+3%/yr). The 6.52× entry multiple is cheap only against peak earnings — against a mid-cycle anchor near $40 it is closer to 27×.</span>
+    <span class="warn">Muddle row REMOVED Oct 13 2026, 1.10× from 0.96×. Muddle-through means “the business works, the market never re-rates it” and exits at today’s multiple by construction. That holds for a de-rated compounder, where the multiple is depressed by doubt about the <em>business</em>. It does not hold for a cyclical bought at a peak: <strong>MU’s 6.5× is low precisely because the earnings are at a peak</strong>, and for cyclicals the P/E and the E move inversely — the multiple expands as earnings normalise, which is why trough memory trades above 20× and peak memory near 5×. Holding a peak multiple onto earnings falling 7%/yr charged this card twice for the same pessimism, making its “muddle” (0.52×) not a distinct outcome but a mis-specified base. Back to three scenarios.</span>
     <span class="warn">Bear exit corrected Oct 13 2026, 0.96× from 1.18×. The bear exited at 10× against a 7.0× entry — <strong>a re-rating inside the downside case</strong>, which is incoherent: a 7× entry cannot re-rate 43% while memory margins collapse. Adding the muddle row is what exposed it, since a muddle exits at today’s multiple by construction, so a bear above today’s multiple shows up beating its own muddle. Reset to 5×. Muddle growth also corrected: the “base minus 2pp” rule was floored at zero, which pushed MU’s muddle to 0%/yr — better growth than its own −5% base. Now −7%.</span>
     <span class="warn">Muddle-through scenario added Oct 13 2026. This card’s base exited at 12.0× against a 7.00× entry — a 71% re-rating — so it was pricing two separate things at once: the business working, and the market agreeing. For a stock already de-rated those do not follow from each other. The new case isolates it: same business, growth two points lower, exit at today’s multiple → <strong>1.07× instead of 1.10×</strong>. Probabilities: the old base weight splits 60/40 into muddle/base, since for a discounted stock “no re-rating” is the likelier half. Expected 1.18×.</span>
     <span class="warn">Data VERIFIED Oct 13 2026 — an earlier DATA UNRELIABLE flag on this card was my error. SEC filings confirm FY2026 revenue $133.19B, net income $84.97B, diluted EPS $74.33 and a ~$1.1T market cap. Micron genuinely became a trillion-dollar company in the memory supercycle. The net-margin check misfired because it compared NTM EPS on an FY2027 basis against FY2026 revenue; against FY2027’s ~$246B annualised guidance the implied margin is ~75%, in line with the 64% actually reported.</span>
@@ -4072,15 +4073,9 @@
   </div>
   <div class="scenario-row row-bear">
     <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
-    <div class="s-cell val-bear">-12.0% (Memory does what memory does: Samsung and SK Hynix add HBM capacity, the 64% net margin competes away, EPS reverts ~12%/yr from a cycle peak; exits at 10×) / 5×</div>
+    <div class="s-cell val-bear">-12.0% (Memory does what memory does: Samsung and SK Hynix add HBM capacity, the 64% net margin competes away, EPS reverts ~12%/yr from a cycle peak; exits at 5×) / 5×</div>
     <div class="s-cell">~$230</div>
     <div class="s-cell val-bear">~0.21×</div>
-  </div>
-  <div class="scenario-row" style="background:#f8fafc;">
-    <div class="s-label"><span class="dot" style="background:#64748b"></span>Muddle</div>
-    <div class="s-cell" style="color:#475569;">−7.0% (Supercycle margins fade only partially, but memory never earns a durable re-rating) / 7.0× — exits at TODAY’s multiple; the business works, the market never agrees</div>
-    <div class="s-cell">~$559</div>
-    <div class="s-cell" style="color:#475569;font-weight:700;">~0.52×</div>
   </div>
   <div class="scenario-row row-base">
     <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
@@ -4096,8 +4091,8 @@
   </div>
   <div class="scenario-row row-exp">
     <div class="s-label" style="font-weight:700;">Expected</div>
-    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.40×0.21 + 0.24×0.52 + 0.16×1.10 + 0.20×2.88 = 0.96× (bear exit 10→5×: a 7× entry cannot re-rate 43% while memory margins collapse)</div>
-    <div class="s-cell val-exp">~0.96×</div>
+    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.40×0.21 + 0.40×1.10 + 0.20×2.88 = 1.10× (muddle removed Oct 13 2026 — the concept does not apply to a cyclical bought at a peak)</div>
+    <div class="s-cell val-exp">~1.10×</div>
   </div>
   <div class="note"><strong>Revised Oct 13 2026 to 1.19× from 2.86×.</strong> The data on this card is verified correct — SEC filings confirm FY2026 revenue $133.19B, net income $84.97B, EPS $74.33 — and an earlier “data unreliable” flag here was my error. The real problem is the shape of the model: it compounded EPS growth forward from the peak of a memory cycle. <strong>This is a binary on whether 60%+ memory margins are structural or cyclical.</strong> If HBM genuinely re-rates Micron into a specialty supplier with contracted pricing, the bull case holds. If capacity floods in as it always has in memory, the bear does. The price embeds the optimistic answer already, which is why even the base case now loses money. Micron supplies HBM3E/HBM4 for NVIDIA AI GPUs; memory bandwidth is a hard constraint on AI training throughput. Revenue grew $25B→$133B on HBM demand. At 6.52× fwd P/E, MU trades at a steep discount reflecting cycle uncertainty. Base revised to 12% EPS CAGR (from hold_check model 18%): the 18% was anchored on 65.7% 5yr eps growth, which is trough-to-boom, not a predictive long-run rate. Bull exit P/E revised to 12× (from 14×): DRAM manufacturers do not exit at software multiples even in the best case. Bear (1.0×) is a cycle correction scenario; the large revenue base makes a full collapse less likely than prior cycles. S&P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
@@ -4185,6 +4180,7 @@
   </div>
   <div class="note"><strong>Revised Oct 2026: 0.70×.</strong> Entry is 53.2× — extreme for optical networking equipment, which historically trades 15–25×. The prior bull compounded 26% EPS CAGR for a decade and implied $373B at 7.2× sales, against a 2–3× historical norm. Most of the loss here is the entry multiple, not the business. Revised: growth spreads widened from ±1pp batch-add template to reflect realistic bear/bull scenarios. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
+
 
 
 
