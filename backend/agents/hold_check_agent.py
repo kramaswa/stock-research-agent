@@ -629,6 +629,70 @@ def _compute_10yr_model(raw: dict, treasury_yield: float | None = None, sp_fwd_p
                 f"${float(current_price):.2f} ÷ {fwd_pe_float:.2f}x = ${implied}"
             )
 
+    # ── Coherence guard: a derived EPS must imply a possible net margin ───────
+    # Every derivation above is ultimately price ÷ some multiple, which is
+    # circular: the resulting P/E is whatever multiple went in. When the provider's
+    # multiple is wrong the EPS is wrong too, and nothing downstream notices —
+    # the card just displays a cheap-looking P/E as the symptom.
+    #
+    # revenue_per_share_ttm makes the check trivial and needs no share count:
+    #   net margin = starting_eps ÷ revenue per share
+    # Net income cannot exceed revenue, so a ratio at or above 1.0 is proof an
+    # input is wrong. Observed in practice: NVDA 114%, AVGO 99%, TSM 83% (against
+    # a stated 67.7% GROSS margin), all of which shipped undetected.
+    #
+    # starting_eps is forward while revenue_per_share_ttm is trailing, so scale
+    # revenue forward first — otherwise a company growing revenue fast trips this
+    # for no reason (MU looked like 139% mid-supercycle while its filings were correct).
+    _rps = raw.get("revenue_per_share_ttm")
+    if starting_eps and _rps and float(_rps) > 0:
+        _rev_g = raw.get("revenue_growth_ttm_yoy")
+        try:
+            _fwd_rps = float(_rps) * (1 + float(_rev_g) / 100.0) if _rev_g is not None else float(_rps)
+        except (TypeError, ValueError):
+            _fwd_rps = float(_rps)
+        if _fwd_rps > 0:
+            _tk = raw.get("ticker", "?")
+            _implied_margin = starting_eps / _fwd_rps
+
+            # Absolute test: net income cannot exceed revenue, at any growth rate.
+            if _implied_margin >= 1.0:
+                print(
+                    f"[eps-coherence] {_tk}: REJECTED derived EPS ${starting_eps} — implies a "
+                    f"{_implied_margin * 100:.0f}% net margin against forward revenue/share of "
+                    f"${_fwd_rps:.2f}. Net income cannot exceed revenue. Falling through to Phase 1."
+                )
+                return None
+
+            # Relative test, which is the one that actually discriminates. An absolute
+            # threshold cannot separate a wrong anchor from a real margin: NVDA's bad
+            # EPS and MU's correct one both imply ~72% forward margins. What separates
+            # them is each company's OWN trailing margin — NVDA's implied figure was
+            # 1.4x its actual, MU's only 1.2x, because MU really does earn that.
+            _eps_ttm_c = raw.get("eps_ttm")
+            try:
+                _ttm_margin = float(_eps_ttm_c) / float(_rps) if _eps_ttm_c is not None else None
+            except (TypeError, ValueError, ZeroDivisionError):
+                _ttm_margin = None
+            # Only meaningful when the trailing margin is itself positive and non-trivial;
+            # a near-zero GAAP base (high-SBC names) makes the ratio explode spuriously.
+            # This one WARNS and does not reject, deliberately. It cannot separate a
+            # wrong anchor from a legitimate non-GAAP one: VEEV's correct EPS implies
+            # 1.48x expansion (non-GAAP forward against a GAAP trailing base) while
+            # NVDA's wrong one implies only 1.42x. Nothing in `raw` says which basis an
+            # EPS is on, so any threshold that catches NVDA also rejects VEEV. Surfacing
+            # the candidate for a human beats blocking on a test known to misfire.
+            if _ttm_margin is not None and _ttm_margin > 0.05:
+                _expansion = _implied_margin / _ttm_margin
+                if _expansion > 1.35:
+                    print(
+                        f"[eps-coherence] {_tk}: CHECK THIS — derived EPS ${starting_eps} implies a "
+                        f"{_implied_margin * 100:.0f}% net margin against a trailing "
+                        f"{_ttm_margin * 100:.0f}%, i.e. {_expansion:.2f}x margin expansion in one "
+                        f"year. Either the forward P/E is wrong, or the forward EPS is non-GAAP "
+                        f"while the trailing one is GAAP. Verify before trusting the multiple."
+                    )
+
     if not starting_eps or starting_eps <= 0:
         return None
 
