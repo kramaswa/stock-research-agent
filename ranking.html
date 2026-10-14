@@ -53,12 +53,14 @@
   .chip {
     background: var(--chip-bg); color: var(--chip-text);
     font-size: 11px; font-family: 'IBM Plex Mono', monospace;
-    padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+    padding: 5px 11px; border-radius: 12px;
+    white-space: normal; max-width: 100%; line-height: 1.55; overflow-wrap: break-word;
   }
   .warn {
     background: #FEF9EC; color: #92600A;
     font-size: 11px; font-family: 'IBM Plex Mono', monospace;
-    padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+    padding: 5px 11px; border-radius: 12px;
+    white-space: normal; max-width: 100%; line-height: 1.55; overflow-wrap: break-word;
   }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .warn { background: #2A1F0A; color: #F6B94A; } }
   :root[data-theme="dark"] .warn { background: #2A1F0A; color: #F6B94A; }
@@ -151,7 +153,7 @@
 <div class="rank-row">
     <span class="rank">#2</span>
     <span class="rticker">ISRG</span>
-    <span class="rationale">~$401 · fwd P/E ~34× · bear 1.43×, base 2.91×, bull 5.08×, expected ~3.01× — hold_check (revised: exit PEs 32/46→26/35 for competition + scale) — exit multiples reset (revised Oct 2026)</span>
+    <span class="rationale">~$401 · fwd P/E ~34× · bear 1.43×, base 2.91×, bull 4.50×, expected ~3.01× — hold_check (revised: exit PEs 32/46→26/35 for competition + scale) — exit multiples reset (revised Oct 2026)</span>
     <span class="ret-mid">~3.01×</span>
     <span class="vs-sp">expected ~3.01× vs S&P 1.92×</span>
   </div>
@@ -175,9 +177,9 @@
 <div class="rank-row">
     <span class="rank">#5</span>
     <span class="rticker">AMZN</span>
-    <span class="rationale">~$252 · fwd P/E ~23× · bear 1.20×, base 2.64×, bull 4.83×, expected ~2.90× — returns recomputed with current EPS $11.06; exit PEs 19/22/26</span>
-    <span class="ret-mid">~2.90×</span>
-    <span class="vs-sp">expected ~2.90× vs S&P 1.92×</span>
+    <span class="rationale">~$252 · fwd P/E ~23× · bear 1.20×, base 2.52×, bull 4.83×, expected ~2.83× — returns recomputed with current EPS $11.06; exit PEs 19/22/26</span>
+    <span class="ret-mid">~2.83×</span>
+    <span class="vs-sp">expected ~2.83× vs S&P 1.92×</span>
   </div>
 
 <div class="rank-row">
@@ -191,7 +193,7 @@
 <div class="rank-row">
     <span class="rank">#7</span>
     <span class="rticker" style="color:#b45309">SMCI</span>
-    <span class="rationale">~$45 · fwd P/E ~9× · bear 0.65×, base 3.11×, bull 5.17×, expected ~2.80× — DOJ probe + accounting discount; bull cut 17→13% growth — verified against live data Oct 13 2026</span>
+    <span class="rationale">~$45 · fwd P/E ~9× · bear 0.67×, base 3.17×, bull 5.27×, expected ~2.80× — DOJ probe + accounting discount; bull cut 17→13% growth — verified against live data Oct 13 2026</span>
     <span class="ret-mid">~2.80×</span>
     <span class="vs-sp">expected ~2.80× vs S&P 1.92×</span>
   </div>
@@ -238,18 +240,18 @@
 
 <div class="rank-row">
     <span class="rank">#13</span>
-    <span class="rticker">META</span>
-    <span class="rationale">~$728 · fwd P/E ~22× · bear 0.81×, base 2.91×, bull 4.89×, expected ~2.66× — revised: exit PEs 22/30→22/26</span>
-    <span class="ret-mid">~2.66×</span>
-    <span class="vs-sp">expected ~2.99× vs S&P 1.92×</span>
-  </div>
-
-<div class="rank-row">
-    <span class="rank">#14</span>
     <span class="rticker">DLO</span>
     <span class="rationale">~$15 · fwd P/E ~15× · bear 0.64×, base 2.75×, bull 4.30×, expected ~2.61× — LatAm currency drag + no PE expansion in base</span>
     <span class="ret-mid">~2.61×</span>
     <span class="vs-sp">expected ~2.61× vs S&P 1.92×</span>
+  </div>
+
+<div class="rank-row">
+    <span class="rank">#14</span>
+    <span class="rticker">META</span>
+    <span class="rationale">~$728 · fwd P/E ~22× · bear 0.81×, base 2.38×, bull 3.86×, expected ~2.60× — revised: exit PEs 22/30→22/26</span>
+    <span class="ret-mid">~2.60×</span>
+    <span class="vs-sp">expected ~2.60× vs S&P 1.92×</span>
   </div>
 
 <div class="rank-row">
@@ -270,14 +272,6 @@
 
 <div class="rank-row">
     <span class="rank">#17</span>
-    <span class="rticker">MSFT</span>
-    <span class="rationale">~$518 · fwd P/E ~24× · bear 0.73×, base 2.44×, bull 4.12×, expected ~2.53× — revised: exit PEs 24/32→22/26</span>
-    <span class="ret-mid">~2.53×</span>
-    <span class="vs-sp">expected ~2.52× vs S&P 1.92×</span>
-  </div>
-
-<div class="rank-row">
-    <span class="rank">#18</span>
     <span class="rticker">LIF</span>
     <span class="rationale">~$44 · fwd P/E ~38× · bear 0.72×, base 2.11×, bull 4.85×, expected ~2.52× — revised: growth spreads widened</span>
     <span class="ret-mid">~2.52×</span>
@@ -285,11 +279,19 @@
   </div>
 
 <div class="rank-row">
-    <span class="rank">#19</span>
+    <span class="rank">#18</span>
     <span class="rticker">FLYW</span>
     <span class="rationale">~$19 · fwd P/E ~30× · bear 0.47×, base 2.61×, bull 4.35×, expected ~2.51× — bear reset for student-visa policy exposure; bull no longer holds the entry multiple</span>
     <span class="ret-mid">~2.51×</span>
     <span class="vs-sp">expected ~2.51× vs S&P 1.92×</span>
+  </div>
+
+<div class="rank-row">
+    <span class="rank">#19</span>
+    <span class="rticker">MSFT</span>
+    <span class="rationale">~$518 · fwd P/E ~24× · bear 0.75×, base 2.14×, bull 3.47×, expected ~2.47× — revised: exit PEs 24/32→22/26</span>
+    <span class="ret-mid">~2.47×</span>
+    <span class="vs-sp">expected ~2.47× vs S&P 1.92×</span>
   </div>
 
 <div class="rank-row">
@@ -310,14 +312,6 @@
 
 <div class="rank-row">
     <span class="rank">#22</span>
-    <span class="rticker">AVGO</span>
-    <span class="rationale">~$352.82 · fwd P/E ~25× (verified) · bear 1.00×, base 2.48×, bull 3.53×, expected ~2.45× — corrected upward: the card’s $89.1B revenue was stale, FY2027 is ~$145B</span>
-    <span class="ret-mid">~2.45×</span>
-    <span class="vs-sp">expected ~2.45× vs S&P 1.92×</span>
-  </div>
-
-<div class="rank-row">
-    <span class="rank">#23</span>
     <span class="rticker">VEEV</span>
     <span class="rationale">$301.63 · fwd P/E 31.24× · dilution 0.91× · bear 0.65×, base 2.60×, bull 3.91×, expected ~2.44× — non-GAAP EPS with 1.00× dilution was double-counting the SBC benefit</span>
     <span class="ret-low">~2.44×</span>
@@ -325,7 +319,7 @@
   </div>
 
 <div class="rank-row">
-    <span class="rank">#24</span>
+    <span class="rank">#23</span>
     <span class="rticker">CRM</span>
     <span class="rationale">$234 · fwd P/E 14.34× · bear 0.79×, base 2.55×, bull 4.42×, expected ~2.43× — 9.2% EPS anchor; 15% bear (growth stalls) / 58% base (Agentforce traction) / 27% bull (AI platform re-rating); hold_check at ~$224 entry; bear 0.79× below S&amp;P — muddle-through case added; base no longer assumes the re-rating</span>
     <span class="ret-low">~2.43×</span>
@@ -333,11 +327,19 @@
   </div>
 
 <div class="rank-row">
-    <span class="rank">#25</span>
+    <span class="rank">#24</span>
     <span class="rticker">ADBE</span>
     <span class="rationale">$237 · fwd P/E 8.79× · bear 0.98×, base 2.10×, bull 4.25×, expected ~2.41× on the conservative FY26 EPS basis (~3.0× on FY27 NTM $27.04) — down 46% from peak on AI disruption fears; deep-value opportunity or value trap depending on Firefly traction</span>
     <span class="ret-low">~2.40×</span>
     <span class="vs-sp">deep-value opportunity or value trap</span>
+  </div>
+
+<div class="rank-row">
+    <span class="rank">#25</span>
+    <span class="rticker">AVGO</span>
+    <span class="rationale">~$352.82 · fwd P/E ~25× (verified) · bear 1.00×, base 2.37×, bull 3.53×, expected ~2.39× — corrected upward: the card’s $89.1B revenue was stale, FY2027 is ~$145B</span>
+    <span class="ret-low">~2.39×</span>
+    <span class="vs-sp">expected ~2.39× vs S&P 1.92×</span>
   </div>
 
 <div class="rank-row">
@@ -359,7 +361,7 @@
 <div class="rank-row">
     <span class="rank">#28</span>
     <span class="rticker">UBER</span>
-    <span class="rationale">$68.11 · fwd P/E 20.25× · base 2.16×, bear 0.77× — revenue anchor 17.7%, dp=5pp ($55.2B); delivery segment diversifies AV disruption risk vs LYFT; 0.82× dilution drag</span>
+    <span class="rationale">$68.11 · fwd P/E 20.25× · base 2.18×, bear 0.77× — revenue anchor 17.7%, dp=5pp ($55.2B); delivery segment diversifies AV disruption risk vs LYFT; 0.82× dilution drag</span>
     <span class="ret-low">~2.30×</span>
     <span class="vs-sp">roughly S&amp;P</span>
   </div>
@@ -367,7 +369,7 @@
 <div class="rank-row">
     <span class="rank">#29</span>
     <span class="rticker">STX</span>
-    <span class="rationale">~$887 · fwd P/E ~23× · bear 1.22×, base 2.66×, bull 4.52×, expected ~2.21× — manual estimate at ~$887 — verified against live data Oct 13 2026</span>
+    <span class="rationale">~$887 · fwd P/E ~23× · bear 1.09×, base 2.05×, bull 3.47×, expected ~2.21× — manual estimate at ~$887 — verified against live data Oct 13 2026</span>
     <span class="ret-low">~2.21×</span>
     <span class="vs-sp">expected ~2.21× vs S&P 1.92×</span>
   </div>
@@ -390,14 +392,6 @@
 
 <div class="rank-row">
     <span class="rank">#32</span>
-    <span class="rticker">TSM</span>
-    <span class="rationale">$442.19 · fwd P/E 28.5× (verified; card had 18.88× = an impossible 83% net margin) · bear 0.74×, base 2.40×, bull 3.41×, expected ~2.18× — base 2.40× beats the S&P base 1.80×; only the 10% Taiwan tail pulls the headline down</span>
-    <span class="ret-low">~2.18×</span>
-    <span class="vs-sp">expected ~2.18× vs S&P 1.92×</span>
-  </div>
-
-<div class="rank-row">
-    <span class="rank">#33</span>
     <span class="rticker">DASH</span>
     <span class="rationale">~$189 · fwd P/E ~48× · bear 0.99×, base 2.14×, bull 3.14×, expected ~2.16× — revised: exit PEs 28/37→28/32</span>
     <span class="ret-low">~2.16×</span>
@@ -405,7 +399,7 @@
   </div>
 
 <div class="rank-row">
-    <span class="rank">#34</span>
+    <span class="rank">#33</span>
     <span class="rticker">FN</span>
     <span class="rationale">~$486 · fwd P/E ~29× · bear 0.68×, base 1.72×, bull 4.31×, expected ~2.16× — revised: growth spreads widened</span>
     <span class="ret-low">~2.16×</span>
@@ -413,15 +407,15 @@
   </div>
 
 <div class="rank-row">
-    <span class="rank">#35</span>
+    <span class="rank">#34</span>
     <span class="rticker">SKHY</span>
-    <span class="rationale">~$184 · fwd P/E ~4× · bear 0.88×, base 3.77×, bull 5.96×, expected ~2.14× — cyclical peak treatment; base 7% (below MU's 8%, above prior 5%) — muddle-through case added; base no longer assumes the re-rating — bear no longer assumes a re-rating</span>
+    <span class="rationale">~$184 · fwd P/E ~4× · bear 0.33×, base 3.77×, bull 5.96×, expected ~2.14× — cyclical peak treatment; base 7% (below MU's 8%, above prior 5%) — muddle-through case added; base no longer assumes the re-rating — bear no longer assumes a re-rating</span>
     <span class="ret-low">~2.14×</span>
     <span class="vs-sp">expected ~2.14× vs S&P 1.92×</span>
   </div>
 
 <div class="rank-row">
-    <span class="rank">#36</span>
+    <span class="rank">#35</span>
     <span class="rticker">P</span>
     <span class="rationale">~$154 · fwd P/E ~54× · bear 0.52×, base 1.65×, bull 4.50×, expected ~2.14× — revised: growth spreads widened</span>
     <span class="ret-low">~2.14×</span>
@@ -429,9 +423,17 @@
   </div>
 
 <div class="rank-row">
+    <span class="rank">#36</span>
+    <span class="rticker">TSM</span>
+    <span class="rationale">$442.19 · fwd P/E 28.5× (verified; card had 18.88× = an impossible 83% net margin) · bear 0.74×, base 2.29×, bull 3.41×, expected ~2.13× — base 2.29× beats the S&P base 1.80×; only the 10% Taiwan tail pulls the headline down</span>
+    <span class="ret-low">~2.13×</span>
+    <span class="vs-sp">expected ~2.13× vs S&P 1.92×</span>
+  </div>
+
+<div class="rank-row">
     <span class="rank">#37</span>
     <span class="rticker">FIS</span>
-    <span class="rationale">~$34 · fwd P/E ~5× · bear 1.39×, base 3.02×, bull 5.59×, expected ~2.11× — manual estimate (batch add from Yahoo growth tech screener) — muddle-through case added; base no longer assumes the re-rating — bear no longer assumes a re-rating</span>
+    <span class="rationale">~$34 · fwd P/E ~5× · bear 0.56×, base 3.02×, bull 5.59×, expected ~2.11× — manual estimate (batch add from Yahoo growth tech screener) — muddle-through case added; base no longer assumes the re-rating — bear no longer assumes a re-rating</span>
     <span class="ret-low">~2.11×</span>
     <span class="vs-sp">expected ~2.11× vs S&P 1.92×</span>
   </div>
@@ -479,9 +481,9 @@
 <div class="rank-row">
     <span class="rank">#43</span>
     <span class="rticker">GOOGL</span>
-    <span class="rationale">~$353.78 (verified; card had $414, 17% stale) · fwd P/E 26.18× · bear 0.90×, base 1.81×, bull 2.85×, expected ~1.99× — bull exit 26→24× for &gt;$400B projected-revenue scale</span>
-    <span class="ret-low">~1.99×</span>
-    <span class="vs-sp">expected ~1.99× vs S&P 1.92×</span>
+    <span class="rationale">~$353.78 (verified; card had $414, 17% stale) · fwd P/E 26.18× · bear 0.90×, base 1.73×, bull 2.85×, expected ~1.94× — bull exit 26→24× for &gt;$400B projected-revenue scale</span>
+    <span class="ret-low">~1.94×</span>
+    <span class="vs-sp">expected ~1.94× vs S&P 1.92×</span>
   </div>
 
 <div class="rank-row">
@@ -495,7 +497,7 @@
 <div class="rank-row">
     <span class="rank">#45</span>
     <span class="rticker">NFLX</span>
-    <span class="rationale">$67.06 (post 10:1 split Nov 2025) · fwd P/E 19.21× · base 2.69×, bear 0.93×, expected ~1.92× — dp=1pp (decel waiver); revenue anchor 10.6%; mature at $48.4B revenue; live sports rights emerging wildcard — revised Oct 2026</span>
+    <span class="rationale">$67.06 (post 10:1 split Nov 2025) · fwd P/E 19.21× · base 2.13×, bear 0.93×, expected ~1.92× — dp=1pp (decel waiver); revenue anchor 10.6%; mature at $48.4B revenue; live sports rights emerging wildcard — revised Oct 2026</span>
     <span class="ret-low">~1.92×</span>
     <span class="vs-sp">expected ~1.92× vs S&P 1.92×</span>
   </div>
@@ -511,7 +513,7 @@
 <div class="rank-row">
     <span class="rank">#47</span>
     <span class="rticker">AMD</span>
-    <span class="rationale">~$643 · fwd P/E ~41× · bear 0.70×, base 2.66×, bull 5.56×, expected ~1.87× — manual estimate — 18% base revised up from 16% on Oct 2026 OpenAI deployment news — revised Oct 2026</span>
+    <span class="rationale">~$643 · fwd P/E ~41× · bear 0.70×, base 1.71×, bull 3.16×, expected ~1.87× — manual estimate — 18% base revised up from 16% on Oct 2026 OpenAI deployment news — revised Oct 2026</span>
     <span class="ret-low">~1.87×</span>
     <span class="vs-sp">expected ~1.87× vs S&P 1.92×</span>
   </div>
@@ -519,7 +521,7 @@
 <div class="rank-row">
     <span class="rank">#48</span>
     <span class="rticker">CORZ</span>
-    <span class="rationale">~$15 · fwd P/E ~0× · bear 0.24×, base 2.48×, bull 7.20×, expected ~1.87× — manual estimate — GAAP-neg equity-value model (batch add) — revised Oct 2026</span>
+    <span class="rationale">~$15 · fwd P/E ~0× · bear 0.24×, base 1.70×, bull 4.71×, expected ~1.87× — manual estimate — GAAP-neg equity-value model (batch add) — revised Oct 2026</span>
     <span class="ret-low">~1.87×</span>
     <span class="vs-sp">expected ~1.87× vs S&P 1.92×</span>
   </div>
@@ -567,7 +569,7 @@
 <div class="rank-row">
     <span class="rank">#54</span>
     <span class="rticker">PAY</span>
-    <span class="rationale">~$32 · fwd P/E ~30× · bear 0.89×, base 2.54×, bull 5.79×, expected ~1.78× — revised: growth spreads widened — exit multiples reset (revised Oct 2026)</span>
+    <span class="rationale">~$32 · fwd P/E ~30× · bear 0.60×, base 1.77×, bull 3.57×, expected ~1.78× — revised: growth spreads widened — exit multiples reset (revised Oct 2026)</span>
     <span class="ret-low">~1.78×</span>
     <span class="vs-sp">expected ~1.78× vs S&P 1.92×</span>
   </div>
@@ -575,7 +577,7 @@
 <div class="rank-row">
     <span class="rank">#55</span>
     <span class="rticker">CRWD</span>
-    <span class="rationale">$278.22 · fwd P/E 168.78× (non-GAAP) · bear ~1.05×, base ~2.64×, bull ~5.87×, expected ~1.75× — CrowdStrike; ARR $5.84B +25% YoY re-accelerating; Charlotte AI platform; AI security supercycle; LLM constant-growth (hold_check at ~$262); bear 1.05× at 18× exit despite 168× entry P/E; bull 5.87× if AI security supercycle sustains — exit multiples reset (revised Oct 2026)</span>
+    <span class="rationale">$278.22 · fwd P/E 168.78× (non-GAAP) · bear ~0.62×, base ~1.73×, bull ~3.53×, expected ~1.75× — CrowdStrike; ARR $5.84B +25% YoY re-accelerating; Charlotte AI platform; AI security supercycle; LLM constant-growth (hold_check at ~$262); bear 0.62× at 18× exit despite 168× entry P/E; bull 3.53× if AI security supercycle sustains — exit multiples reset (revised Oct 2026)</span>
     <span class="ret-low">~1.75×</span>
     <span class="vs-sp">expected ~1.75× vs S&P 1.92×</span>
   </div>
@@ -695,7 +697,7 @@
 <div class="rank-row">
     <span class="rank">#70</span>
     <span class="rticker">PLTR</span>
-    <span class="rationale">~$192 · fwd P/E ~82× · bear 0.50×, base 2.07×, bull 6.98×, expected ~1.42× — revised: exit PEs capped for projected-revenue scale — exit multiples reset (revised Oct 2026)</span>
+    <span class="rationale">~$192 · fwd P/E ~82× · bear 0.50×, base 1.36×, bull 2.94×, expected ~1.42× — revised: exit PEs capped for projected-revenue scale — exit multiples reset (revised Oct 2026)</span>
     <span class="ret-low">~1.42×</span>
     <span class="vs-sp">expected ~1.42× vs S&P 1.92×</span>
   </div>
@@ -711,7 +713,7 @@
 <div class="rank-row">
     <span class="rank">#72</span>
     <span class="rticker">TER</span>
-    <span class="rationale">~$403 · fwd P/E ~34× · bear 0.96×, base 2.52×, bull 5.85×, expected ~1.32× — revised: growth spreads widened — exit multiples reset (revised Oct 2026)</span>
+    <span class="rationale">~$403 · fwd P/E ~34× · bear 0.51×, base 1.28×, bull 2.61×, expected ~1.32× — revised: growth spreads widened — exit multiples reset (revised Oct 2026)</span>
     <span class="ret-low">~1.32×</span>
     <span class="vs-sp">expected ~1.32× vs S&P 1.92×</span>
   </div>
@@ -719,7 +721,7 @@
 <div class="rank-row">
     <span class="rank">#73</span>
     <span class="rticker">SMTC</span>
-    <span class="rationale">~$187 · fwd P/E ~38× · bear 0.68×, base 2.00×, bull 4.62×, expected ~1.28× — revised: growth spreads widened — revised Oct 2026</span>
+    <span class="rationale">~$187 · fwd P/E ~38× · bear 0.47×, base 1.27×, bull 2.48×, expected ~1.28× — revised: growth spreads widened — revised Oct 2026</span>
     <span class="ret-low">~1.28×</span>
     <span class="vs-sp">expected ~1.28× vs S&P 1.92×</span>
   </div>
@@ -735,7 +737,7 @@
 <div class="rank-row">
     <span class="rank">#75</span>
     <span class="rticker">ALAB</span>
-    <span class="rationale">~$342 · fwd P/E ~61× · bear 0.66×, base 2.08×, bull 4.31×, expected ~1.17× — base 24→20%, bull 32→26% — revised Oct 2026</span>
+    <span class="rationale">~$342 · fwd P/E ~61× · bear 0.43×, base 1.13×, bull 2.36×, expected ~1.17× — base 24→20%, bull 32→26% — revised Oct 2026</span>
     <span class="ret-low">~1.17×</span>
     <span class="vs-sp">expected ~1.17× vs S&P 1.92×</span>
   </div>
@@ -759,7 +761,7 @@
 <div class="rank-row">
     <span class="rank">#78</span>
     <span class="rticker">SNOW</span>
-    <span class="rationale">$341 · base 2.48×, bear 1.1×, expected ~0.94× — 31.4% revenue CAGR; dp=1pp ($5.4B revenue); 0.66× dilution drag is the primary headwind; bear above S&amp;P floor notable for high-growth speculative — exit multiples reset (revised Oct 2026)</span>
+    <span class="rationale">$341 · base 0.93×, bear 0.27×, expected ~0.94× — 31.4% revenue CAGR; dp=1pp ($5.4B revenue); 0.66× dilution drag is the primary headwind; bear above S&amp;P floor notable for high-growth speculative — exit multiples reset (revised Oct 2026)</span>
     <span class="ret-low">~0.94×</span>
     <span class="vs-sp">expected ~0.94× vs S&P 1.92×</span>
   </div>
@@ -767,7 +769,7 @@
 <div class="rank-row">
     <span class="rank">#79</span>
     <span class="rticker">CIEN</span>
-    <span class="rationale">~$450 · fwd P/E ~53× · bear 0.53×, base 1.85×, bull 4.94×, expected ~0.70× — revised: growth spreads widened — revised Oct 2026</span>
+    <span class="rationale">~$450 · fwd P/E ~53× · bear 0.28×, base 0.66×, bull 1.41×, expected ~0.70× — revised: growth spreads widened — revised Oct 2026</span>
     <span class="ret-low">~0.70×</span>
     <span class="vs-sp">expected ~0.70× vs S&P 1.92×</span>
   </div>
@@ -989,9 +991,9 @@
   </div>
   <div class="scenario-row row-base">
     <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
-    <div class="s-cell val-base">12% eff (14%→10% terminal; AWS + Ads margin expansion) / 22×</div>
-    <div class="s-cell">~$756</div>
-    <div class="s-cell val-base">~2.64×</div>
+    <div class="s-cell val-base">12% eff (14%→10% terminal; AWS + Ads margin expansion) / 21×</div>
+    <div class="s-cell">~$722</div>
+    <div class="s-cell val-base">~2.52×</div>
   </div>
   <div class="scenario-row row-bull">
     <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
@@ -1001,8 +1003,8 @@
   </div>
   <div class="scenario-row row-exp">
     <div class="s-label" style="font-weight:700;">Expected</div>
-    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.20×1.20 + 0.55×2.64 + 0.25×4.83 (0.88× dilution; 20% bear for FTC + AWS decel risk)</div>
-    <div class="s-cell val-exp">~2.90×</div>
+    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.20×1.20 + 0.55×2.52 + 0.25×4.83 (0.88× dilution; 20% bear for FTC + AWS decel risk)</div>
+    <div class="s-cell val-exp">~2.83×</div>
   </div>
   <div class="note">AMZN's model improved materially from the prior card: NTM EPS jumped from ~$7 to $11.06 while the stock rose only ~14%, compressing the fwd P/E from 31× to 22.75× — the business outran the stock. AWS is the primary driver: 5 consecutive quarters of YoY acceleration (17%→20%→24%→28%→37%), reaching $169B annualized run rate as of Q2 2026. AI revenue within AWS has crossed $25B ARR, growing triple digits. This is structural margin expansion — AWS operating margins are still climbing (37%→45%+ target), and advertising (now ~15% of revenue at 50%+ margins) hasn't peaked. The margin expansion distortion fires on historical EPS (FY2022 net loss base), but unlike GOOGL (which had a one-time efficiency step now complete), AMZN's expansion is ongoing — EPS CAGR exceeds revenue CAGR by 2-3pp annually. FTC marketplace trial (Oct 13, 2026) is about self-preferencing in retail, not AWS — less existential than prior investigations. Bear 1.20× is roughly flat: AWS loses cloud share AND FTC wins restructuring — low but non-zero probability. Expected ~2.90× beats the S&amp;P baseline. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
@@ -1299,50 +1301,6 @@
   <div class="note">AI data center operator; revenue tripled YoY on AI infrastructure demand (Q1 FY2027 +167% vs FY2026). GAAP-negative through FY2028; equity-value model required — ntm_eps=1.0 proxy, growth/exit_pe represent effective revenue×margin trajectory. At ~5× EV/Rev, market prices in some margin recovery but base case (15% eff CAGR, 20× exit) still delivers 2.54×. Key risk vs CRWV: APLD is a data center landlord, not a GPU compute platform — limited pricing power vs hyperscalers. Bear (30%): data center commodity oversupply + over-leverage → severe equity impairment (0.16×), but physical assets provide a floor above zero. Bull: requires $10B+ revenue + 15% net margins + 25× exit — achievable if AI capex sustains and APLD secures long-term contracts. Run hold_check when GAAP-profitable. S&P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
 
-<!-- META -->
-<div class="card">
-  <div class="card-header">
-    <div><div class="ticker-row"><span class="ticker">META</span><span class="company">Meta Platforms — NASDAQ</span></div></div>
-    <div class="price-block"><div class="price">$728.08</div><div class="price-sub">fwd P/E 22.28× (Finnhub live)  ·  dilution 1.00×</div></div>
-  </div>
-  <div class="chips">
-    <span class="chip">~2.52B shares (approx)  ·  NTM EPS: $32.67 ($728.08 ÷ 22.28×)  ·  mechanical anchor 18.41% (eps_growth_5y) — qualitative forward anchor revised to 22%</span>
-    <span class="chip">Qualitative anchor 22%: Q1 2026 revenue +33% YoY, Q2 2026 +28% YoY; Llama 4 driving AI-augmented CPMs via Advantage+; WhatsApp monetization early innings; 5yr lookback understates current pace</span>
-    <span class="chip">Revenue: $228.2B  dp=7pp (crossed $150B threshold)  ·  base_cap=14%  ·  bull_cap=18%  ·  terminal 8%  ·  dilution 1.00×</span>
-    <span class="warn">Large-base penalty: dp=7pp; with 22% forward anchor, base_g hits base_cap 14% — eff CAGR = (14+8)/2 = 11%, meaningful improvement over mechanical 11.4% start</span>
-    <span class="warn">EU regulatory tail risk: DMA enforcement + potential Instagram/WhatsApp separation is the key bear trigger; advertiser CPM compression from AI-generated alternatives is secondary</span>
-  
-    <span class="warn">Revised: exit PEs adjusted for projected-revenue scale check</span>
-  </div>
-  <div class="scenario-row">
-    <div class="s-header">Scenario</div><div class="s-header">Growth (eff CAGR) / Exit P/E</div><div class="s-header">Price Target</div><div class="s-header">Adj Return</div>
-  </div>
-  <div class="scenario-row row-bear">
-    <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
-    <div class="s-cell val-bear">3.4% (legal penalties impair capital allocation; AI capex delivers below-avg monetization; EPS stagnates as cost inflation persists) / 13×</div>
-    <div class="s-cell">~$591</div>
-    <div class="s-cell val-bear">~0.82×</div>
-  </div>
-  <div class="scenario-row row-base">
-    <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
-    <div class="s-cell val-base">11.4% (AI-driven ad targeting lifts ARPU; regulatory costs manageable; margin recovery from peak capex; Llama/AI ecosystem monetizes) / 22×</div>
-    <div class="s-cell">~$1,806</div>
-    <div class="s-cell val-base">~2.49×</div>
-  </div>
-  <div class="scenario-row row-bull">
-    <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
-    <div class="s-cell val-bull">15.4% (Ray-Ban AI glasses + Threads + WhatsApp Business breakout; Meta AI becomes a platform; advertising TAM expands materially) / 26×</div>
-    <div class="s-cell">~$2,808</div>
-    <div class="s-cell val-bull">~3.86×</div>
-  </div>
-  <div class="scenario-row row-exp">
-    <div class="s-label" style="font-weight:700;">Expected</div>
-    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.16×0.82 + 0.52×2.49 + 0.32×3.86 = 2.66× (revised: exit PEs adjusted for projected revenue scale)</div>
-    <div class="s-cell val-exp">~2.66×</div>
-  </div>
-  <div class="note">META's hold_check expected of ~2.85× (at ~$720 entry) shows an asymmetric skew: 32% bull probability — the highest bull weight in this table. The model is pricing in a real chance that Ray-Ban AI glasses, Threads, and WhatsApp Business all achieve breakout monetization simultaneously. Bear (0.82×) at only 3.4% EPS growth + 13× exit reflects severe legal/capex headwinds depressing earnings well below trend — 16% probability. Base (2.49×) at 11.4% EPS growth is the AI-ad-targeting-sustains scenario. The key risk: META's $40B+ AI capex in 2026 either pays off (bull, 32%) or becomes a drag on ROIC (bear, 16%). Bull at 32% probability is what makes expected ~2.85× attractive; without it, base alone (2.49×) is just in line with CRM. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
-</div>
-
 <!-- DLO -->
 <div class="card">
   <div class="card-header">
@@ -1380,6 +1338,50 @@
     <div class="s-cell val-exp">~2.61×</div>
   </div>
   <div class="note">DLO at 15× fwd P/E is cheap but LatAm risk is real: currency depreciation (~4%/yr drag on USD EPS), regulatory uncertainty, governance concerns. Bear revised to 0% USD growth (currency eats local growth) at 10× exit = lose 36% of capital. Base assumes 11% USD EPS CAGR (15% local minus currency drag) with NO PE expansion (LatAm discount persists). Bull assumes 14% USD CAGR with modest PE expansion to 18× (DLO proves itself). Expected ~2.61× vs S&amp;P 1.92× — modest alpha, reflecting cheap entry offset by LatAm risk. Cross-check: PAYP at same ~15× PE gets 3.19× (US-based, lower risk); DLO’s 0.58× discount is the LatAm risk premium. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
+</div>
+
+<!-- META -->
+<div class="card">
+  <div class="card-header">
+    <div><div class="ticker-row"><span class="ticker">META</span><span class="company">Meta Platforms — NASDAQ</span></div></div>
+    <div class="price-block"><div class="price">$728.08</div><div class="price-sub">fwd P/E 22.28× (Finnhub live)  ·  dilution 1.00×</div></div>
+  </div>
+  <div class="chips">
+    <span class="chip">~2.52B shares (approx)  ·  NTM EPS: $32.67 ($728.08 ÷ 22.28×)  ·  mechanical anchor 18.41% (eps_growth_5y) — qualitative forward anchor revised to 22%</span>
+    <span class="chip">Qualitative anchor 22%: Q1 2026 revenue +33% YoY, Q2 2026 +28% YoY; Llama 4 driving AI-augmented CPMs via Advantage+; WhatsApp monetization early innings; 5yr lookback understates current pace</span>
+    <span class="chip">Revenue: $228.2B  dp=7pp (crossed $150B threshold)  ·  base_cap=14%  ·  bull_cap=18%  ·  terminal 8%  ·  dilution 1.00×</span>
+    <span class="warn">Large-base penalty: dp=7pp; with 22% forward anchor, base_g hits base_cap 14% — eff CAGR = (14+8)/2 = 11%, meaningful improvement over mechanical 11.4% start</span>
+    <span class="warn">EU regulatory tail risk: DMA enforcement + potential Instagram/WhatsApp separation is the key bear trigger; advertiser CPM compression from AI-generated alternatives is secondary</span>
+  
+    <span class="warn">Revised: exit PEs adjusted for projected-revenue scale check</span>
+  </div>
+  <div class="scenario-row">
+    <div class="s-header">Scenario</div><div class="s-header">Growth (eff CAGR) / Exit P/E</div><div class="s-header">Price Target</div><div class="s-header">Adj Return</div>
+  </div>
+  <div class="scenario-row row-bear">
+    <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
+    <div class="s-cell val-bear">3.4% (legal penalties impair capital allocation; AI capex delivers below-avg monetization; EPS stagnates as cost inflation persists) / 13×</div>
+    <div class="s-cell">~$591</div>
+    <div class="s-cell val-bear">~0.82×</div>
+  </div>
+  <div class="scenario-row row-base">
+    <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
+    <div class="s-cell val-base">11.4% (AI-driven ad targeting lifts ARPU; regulatory costs manageable; margin recovery from peak capex; Llama/AI ecosystem monetizes) / 21×</div>
+    <div class="s-cell">~$1,724</div>
+    <div class="s-cell val-base">~2.38×</div>
+  </div>
+  <div class="scenario-row row-bull">
+    <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
+    <div class="s-cell val-bull">15.4% (Ray-Ban AI glasses + Threads + WhatsApp Business breakout; Meta AI becomes a platform; advertising TAM expands materially) / 26×</div>
+    <div class="s-cell">~$2,808</div>
+    <div class="s-cell val-bull">~3.86×</div>
+  </div>
+  <div class="scenario-row row-exp">
+    <div class="s-label" style="font-weight:700;">Expected</div>
+    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.16×0.82 + 0.52×2.38 + 0.32×3.86 = 2.60× (revised: exit PEs adjusted for projected revenue scale)</div>
+    <div class="s-cell val-exp">~2.60×</div>
+  </div>
+  <div class="note">META's hold_check expected of ~2.85× (at ~$720 entry) shows an asymmetric skew: 32% bull probability — the highest bull weight in this table. The model is pricing in a real chance that Ray-Ban AI glasses, Threads, and WhatsApp Business all achieve breakout monetization simultaneously. Bear (0.82×) at only 3.4% EPS growth + 13× exit reflects severe legal/capex headwinds depressing earnings well below trend — 16% probability. Base (2.49×) at 11.4% EPS growth is the AI-ad-targeting-sustains scenario. The key risk: META's $40B+ AI capex in 2026 either pays off (bull, 32%) or becomes a drag on ROIC (bear, 16%). Bull at 32% probability is what makes expected ~2.85× attractive; without it, base alone (2.49×) is just in line with CRM. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
 
 <!-- KEYS -->
@@ -1462,50 +1464,6 @@
   <div class="note">Revised Oct 2026, 2.53× down from 3.92× — the old scenarios failed an implied-market-cap check. The bull (18% EPS, 28× exit) put MKSI at a ~$160B cap on ~$15.5B of revenue, or 10.3× sales: roughly ASML’s multiple, and a larger company than Lam Research is today, for a business that supplies vacuum, RF power, lasers and photonics subsystems plus Atotech plating chemicals. MKS has real content on nearly every fab tool and genuine advanced-packaging exposure, but it is a components supplier with competition, not an EUV monopoly. The base was worse in kind: 22× exit against today’s 17.5× assumed multiple <em>expansion</em> for a cyclical, which is backwards — you should not underwrite exiting at a cycle peak. And a 1.26× bear meant making 26% in the worst case for a company carrying ~$4–5B of acquisition debt into an industry whose names routinely fall 40–60% peak-to-trough. Revised exits bracket MKSI’s own historical ~10–22× band: 14× trough / 18× flat / 23× peak, implying 20/51/101B caps = 3.4×/4.7×/7.1× sales against AMAT ~5–6× and LRCX ~7–8×. Growth is left generous (10% base EPS CAGR, helped by deleveraging) — the correction is in the multiple, not the business. At 2.53× MKSI still clears the S&amp;P by ~3.5%/yr and edges SCHG, which is the honest read for a cheap, leveraged, cyclical supplier with AI exposure. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
 
-<!-- MSFT -->
-<div class="card">
-  <div class="card-header">
-    <div><div class="ticker-row"><span class="ticker">MSFT</span><span class="company">Microsoft Corp. — NASDAQ</span></div></div>
-    <div class="price-block"><div class="price">~$518</div><div class="price-sub">fwd P/E ~24× · NTM EPS ~$21.39 · dilution ~1.00×</div></div>
-  </div>
-  <div class="chips">
-    <span class="chip">~7.43B shares (approx)  ·  NTM EPS: $21.39 ($517.53 / 24.19x)  -  mechanical anchor 17.38% (eps_growth_5y) -- qualitative forward anchor revised to 22%</span>
-    <span class="chip">Qualitative anchor 22%: Azure $100B ARR growing 41% YoY + Copilot 30M paid seats at $30/user/month (~$11B ARR growing); 5yr lookback includes pre-Copilot era -- understates current trajectory</span>
-    <span class="chip">Revenue: $331.8B  dp=7pp ($150-400B bucket)  -  base_cap=14%  -  bull_cap=18%  -  terminal 8%  -  dilution 1.00x</span>
-    <span class="warn">At 22% forward anchor with dp=7pp: base_g hits base_cap 14% (start), eff CAGR = (14+8)/2 = 11% -- significantly better than mechanical 10.4% eff</span>
-    <span class="warn">Approaching $400B revenue threshold: if crossed next 2-3 years, dp jumps 7->10pp, base_cap drops to 11%, and expected return compresses sharply -- the model's future tension</span>
-  
-    <span class="warn">Revised: exit PEs adjusted for projected-revenue scale check</span>
-  </div>
-  <div class="scenario-row">
-    <div class="s-header">Scenario</div><div class="s-header">EPS CAGR / Exit P/E</div><div class="s-header">Price Target</div><div class="s-header">Adj Return</div>
-  </div>
-  <div class="scenario-row row-bear">
-    <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
-    <div class="s-cell val-bear">2.4% (AI capex disappoints; Azure share loss to AWS/GCP; growth decelerates sharply) / 14×</div>
-    <div class="s-cell">~$388</div>
-    <div class="s-cell val-bear">~0.75×</div>
-  </div>
-  <div class="scenario-row row-base">
-    <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
-    <div class="s-cell val-base">10.4% (Azure mid-teens growth; Copilot monetization adds 2-3pp EPS lift; Office/LinkedIn steady) / 22×</div>
-    <div class="s-cell">~$1,159</div>
-    <div class="s-cell val-base">~2.24×</div>
-  </div>
-  <div class="scenario-row row-bull">
-    <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
-    <div class="s-cell val-bull">14.4% (Agentic AI inflects enterprise spend; Azure hyperscaler share; Copilot ARPU rises; segment restructuring unlocks margin) / 26×</div>
-    <div class="s-cell">~$1,797</div>
-    <div class="s-cell val-bull">~3.47×</div>
-  </div>
-  <div class="scenario-row row-exp">
-    <div class="s-label" style="font-weight:700;">Expected</div>
-    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.07×0.75 + 0.61×2.24 + 0.32×3.47 = 2.53× (revised: exit PEs adjusted for projected revenue scale)</div>
-    <div class="s-cell val-exp">~2.53×</div>
-  </div>
-  <div class="note">hold_check originally at ~$490; returns scaled to current ~$518 (price targets fixed: bear $388 / base $1,264 / bull $2,210). Low bear probability (7%) reflects Azure's multi-year signed contracts. Base (2.44x) at 10.4% EPS CAGR + 24x exit is Azure-sustains-mid-teens + Copilot-adds-2-3pp. Bull (4.27x, 32% weight) requires Agentic AI to inflect enterprise spend broadly. Key tension: approaching $400B threshold where dp jumps 7->10pp and base_cap drops 14->11%. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
-</div>
-
 <!-- LIF -->
 <div class="card">
   <div class="card-header">
@@ -1585,6 +1543,50 @@
 </div>
 
 
+<!-- MSFT -->
+<div class="card">
+  <div class="card-header">
+    <div><div class="ticker-row"><span class="ticker">MSFT</span><span class="company">Microsoft Corp. — NASDAQ</span></div></div>
+    <div class="price-block"><div class="price">~$518</div><div class="price-sub">fwd P/E ~24× · NTM EPS ~$21.39 · dilution ~1.00×</div></div>
+  </div>
+  <div class="chips">
+    <span class="chip">~7.43B shares (approx)  ·  NTM EPS: $21.39 ($517.53 / 24.19x)  -  mechanical anchor 17.38% (eps_growth_5y) -- qualitative forward anchor revised to 22%</span>
+    <span class="chip">Qualitative anchor 22%: Azure $100B ARR growing 41% YoY + Copilot 30M paid seats at $30/user/month (~$11B ARR growing); 5yr lookback includes pre-Copilot era -- understates current trajectory</span>
+    <span class="chip">Revenue: $331.8B  dp=7pp ($150-400B bucket)  -  base_cap=14%  -  bull_cap=18%  -  terminal 8%  -  dilution 1.00x</span>
+    <span class="warn">At 22% forward anchor with dp=7pp: base_g hits base_cap 14% (start), eff CAGR = (14+8)/2 = 11% -- significantly better than mechanical 10.4% eff</span>
+    <span class="warn">Approaching $400B revenue threshold: if crossed next 2-3 years, dp jumps 7->10pp, base_cap drops to 11%, and expected return compresses sharply -- the model's future tension</span>
+  
+    <span class="warn">Revised: exit PEs adjusted for projected-revenue scale check</span>
+  </div>
+  <div class="scenario-row">
+    <div class="s-header">Scenario</div><div class="s-header">EPS CAGR / Exit P/E</div><div class="s-header">Price Target</div><div class="s-header">Adj Return</div>
+  </div>
+  <div class="scenario-row row-bear">
+    <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
+    <div class="s-cell val-bear">2.4% (AI capex disappoints; Azure share loss to AWS/GCP; growth decelerates sharply) / 14×</div>
+    <div class="s-cell">~$388</div>
+    <div class="s-cell val-bear">~0.75×</div>
+  </div>
+  <div class="scenario-row row-base">
+    <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
+    <div class="s-cell val-base">10.4% (Azure mid-teens growth; Copilot monetization adds 2-3pp EPS lift; Office/LinkedIn steady) / 21×</div>
+    <div class="s-cell">~$1,106</div>
+    <div class="s-cell val-base">~2.14×</div>
+  </div>
+  <div class="scenario-row row-bull">
+    <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
+    <div class="s-cell val-bull">14.4% (Agentic AI inflects enterprise spend; Azure hyperscaler share; Copilot ARPU rises; segment restructuring unlocks margin) / 26×</div>
+    <div class="s-cell">~$1,797</div>
+    <div class="s-cell val-bull">~3.47×</div>
+  </div>
+  <div class="scenario-row row-exp">
+    <div class="s-label" style="font-weight:700;">Expected</div>
+    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.07×0.75 + 0.61×2.14 + 0.32×3.47 = 2.47× (revised: exit PEs adjusted for projected revenue scale)</div>
+    <div class="s-cell val-exp">~2.47×</div>
+  </div>
+  <div class="note">hold_check originally at ~$490; returns scaled to current ~$518 (price targets fixed: bear $388 / base $1,264 / bull $2,210). Low bear probability (7%) reflects Azure's multi-year signed contracts. Base (2.44x) at 10.4% EPS CAGR + 24x exit is Azure-sustains-mid-teens + Copilot-adds-2-3pp. Bull (4.27x, 32% weight) requires Agentic AI to inflect enterprise spend broadly. Key tension: approaching $400B threshold where dp jumps 7->10pp and base_cap drops 14->11%. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
+</div>
+
 <!-- VICR -->
 <div class="card">
   <div class="card-header">
@@ -1662,50 +1664,6 @@
   <div class="note">Manual estimate (batch). S&P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
 
-
-<!-- AVGO -->
-<div class="card">
-  <div class="card-header">
-    <div><div class="ticker-row"><span class="ticker">AVGO</span><span class="company">Broadcom Inc. — NASDAQ</span></div></div>
-    <div class="price-block"><div class="price">~$352.82</div><div class="price-sub">fwd P/E ~25× (verified) · NTM EPS ~$14.11 · dilution ~0.95×</div></div>
-  </div>
-  <div class="chips">
-    <span class="chip">~4.70B shares · cap ~$1.7T (verified) · NTM EPS $14.11 · fwd P/E ~25× · FY2026 revenue $105.9B (Q1 19.3 + Q2 22.2 + Q3 29.6 + Q4 guide 34.8); NTM ≈ FY2027 ~$145B</span>
-    <span class="chip">Growth anchor: 22.4% (revenue_growth_3y 24.4%; eps_growth_5y 46.6% excl — VMware doubled revenue in FY2023)</span>
-    <span class="chip">Revenue: $145B (NTM &asymp; FY2027; FY2026 closed at $105.9B)  dp=5pp  ·  base_cap 15% / bull_cap 19%  ·  terminal 8%</span>
-    <span class="warn"><strong>Revision history, consolidated Oct 14 2026 — read this one, the earlier chips contradicted each other.</strong> Current: <strong>2.45×</strong> at $352.82, entry ~25× on NTM EPS $14.11, base/bull exits 22×/24×. Three passes got here. (1) The original card derived NTM EPS as price &divide; an assumed P/E — circular — and showed $18.69, which against the revenue then on file implied a 99% net margin; 3.22× &rarr; 1.47×. (2) That fix backed EPS out of a 45% sector margin but divided it into <em>stale</em> revenue, giving $8.53 and a 41.6× entry; 1.47× &rarr; 2.45× once FY2026 closed at $105.9B and NTM FY2027 was set at ~$145B, putting the entry at ~24.9× — matching Zacks and TIKR at ~24×. The price and the $1.7T cap were right all along; only revenue was wrong. (3) Exits were cut twice, 26/32× &rarr; 26/28× (bull revenue projects to $345B, too large for 32×) and then to 22×/24×, because a 26× base exit against this entry underwrote a re-rating a base case should not assume.</span>
-    <span class="warn">eps_growth_5y 46.6% excluded — trough-to-profitability; VMware acquisition (2023) roughly doubled revenue, inflating all historical CAGRs</span>
-    <span class="warn">OL suppressed — eps_growth_ttm_yoy 100.1% is M&A consolidation artifact (full-year VMware), not real operating leverage</span>
-    <span class="warn">Decay: bear eff 6.5% · base eff 11.5% · bull eff 14.5% (linear decel to 8% terminal)</span>
-  </div>
-  <div class="scenario-row">
-    <div class="s-header">Scenario</div><div class="s-header">EPS CAGR / Exit P/E</div><div class="s-header">Price Target</div><div class="s-header">Adj Return</div>
-  </div>
-  <div class="scenario-row row-bear">
-    <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
-    <div class="s-cell val-bear">6.5% eff (AI capex cycle peaks; VMware churn; 6.5% EPS CAGR; exits at 14×) / 14×</div>
-    <div class="s-cell">~$371</div>
-    <div class="s-cell val-bear">~1.00×</div>
-  </div>
-  <div class="scenario-row row-base">
-    <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
-    <div class="s-cell val-base">11.5% eff (AI networking + VMware integration + semi; 11.5% EPS CAGR; exits at 22× — the cap for a ~$211B projected-revenue company, down from 26× which sat at the exceptional-company ceiling) / 22×</div>
-    <div class="s-cell">~$922</div>
-    <div class="s-cell val-base">~2.48×</div>
-  </div>
-  <div class="scenario-row row-bull">
-    <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
-    <div class="s-cell val-bull">14.5% eff (AI infrastructure monopoly + VMware platform dominance; 14.5% EPS CAGR; exits at 24×) / 24×</div>
-    <div class="s-cell">~$1,312</div>
-    <div class="s-cell val-bull">~3.53×</div>
-  </div>
-  <div class="scenario-row row-exp">
-    <div class="s-label" style="font-weight:700;">Expected</div>
-    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.2×1.00 + 0.55×2.48 + 0.25×3.53 = 2.45× — verified price, share count and revenue</div>
-    <div class="s-cell val-exp">~2.45×</div>
-  </div>
-  <div class="note"><strong>Oct 13 2026: 2.45× on verified inputs.</strong> <strong>Revised Oct 2026: 3.22×.</strong> Base exit 26× against a 19× entry underwrote a 1.37× re-rating in the <em>base</em> case. Broadcom is genuinely exceptional, but a base case should not assume the market re-rates it by a third. Exits cut to 22×/24×. AVGO at 19× fwd P/E is cheap for its growth rate (PEG ~0.9). Two business drivers: AI custom ASICs (Google TPU, Meta MTIA, Apple Neural Engine — ~$14B+ AI revenue in FY2025) + VMware cloud infrastructure (VCF platform, tracking toward $8B ARR). Three model adjustments: (1) eps_growth_5y 46.6% excluded — VMware closed Nov 2023 artificially boosted EPS CAGR; (2) base_cap tightened from 18%→15%, bull_cap 22%→19% — acquisition-inflated revenue CAGR shouldn't drive full large-cap headroom; (3) OL suppressed — TTM EPS +100% is VMware full-year consolidation effect, not organic leverage. Decay from 15% to 8% terminal reduces effective base CAGR to 11.5%. Bear 1.32× (you still make money in bear but underperform S&P) vs MU's 0.48× bear — much less binary risk. Main risks: VMware integration execution, AI ASIC customer concentration (3 customers = large %), $40B+ acquisition debt. Verified: $347-352 price, fwd P/E 18.9-19.4× (StockAnalysis, GuruFocus). S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×. Exit PEs revised: base 26→26, bull 32→28 (projected-revenue scale check).</div>
-</div>
 
 <!-- VEEV -->
 <div class="card">
@@ -1842,6 +1800,50 @@
     <div class="s-cell val-exp">~2.4×</div>
   </div>
   <div class="note">No growth decay fires — all scenarios (3/6/10%) are at or below the 9% terminal rate for a $26B company, so yr-10 EPS is straight compound. Main uncertainty: Finnhub's NTM fwd P/E (8.79×) is FY2027-weighted, implying $27.51 starting EPS. Conservative FY2026 current-year EPS is ~$22 (12× fwd P/E), which would bring base to ~2.1× (below S&P). Bear case is a real risk: Canva + Figma + AI-native tools could cap Creative Cloud pricing power. ADBE at $242 is essentially an S&P-return stock in base. Not compelling vs NOW.</div>
+</div>
+
+<!-- AVGO -->
+<div class="card">
+  <div class="card-header">
+    <div><div class="ticker-row"><span class="ticker">AVGO</span><span class="company">Broadcom Inc. — NASDAQ</span></div></div>
+    <div class="price-block"><div class="price">~$352.82</div><div class="price-sub">fwd P/E ~25× (verified) · NTM EPS ~$14.11 · dilution ~0.95×</div></div>
+  </div>
+  <div class="chips">
+    <span class="chip">~4.70B shares · cap ~$1.7T (verified) · NTM EPS $14.11 · fwd P/E ~25× · FY2026 revenue $105.9B (Q1 19.3 + Q2 22.2 + Q3 29.6 + Q4 guide 34.8); NTM ≈ FY2027 ~$145B</span>
+    <span class="chip">Growth anchor: 22.4% (revenue_growth_3y 24.4%; eps_growth_5y 46.6% excl — VMware doubled revenue in FY2023)</span>
+    <span class="chip">Revenue: $145B (NTM &asymp; FY2027; FY2026 closed at $105.9B)  dp=5pp  ·  base_cap 15% / bull_cap 19%  ·  terminal 8%</span>
+    <span class="warn"><strong>Revision history, consolidated Oct 14 2026 — read this one, the earlier chips contradicted each other.</strong> Current: <strong>2.45×</strong> at $352.82, entry ~25× on NTM EPS $14.11, base/bull exits 22×/24×. Three passes got here. (1) The original card derived NTM EPS as price &divide; an assumed P/E — circular — and showed $18.69, which against the revenue then on file implied a 99% net margin; 3.22× &rarr; 1.47×. (2) That fix backed EPS out of a 45% sector margin but divided it into <em>stale</em> revenue, giving $8.53 and a 41.6× entry; 1.47× &rarr; 2.45× once FY2026 closed at $105.9B and NTM FY2027 was set at ~$145B, putting the entry at ~24.9× — matching Zacks and TIKR at ~24×. The price and the $1.7T cap were right all along; only revenue was wrong. (3) Exits were cut twice, 26/32× &rarr; 26/28× (bull revenue projects to $345B, too large for 32×) and then to 22×/24×, because a 26× base exit against this entry underwrote a re-rating a base case should not assume.</span>
+    <span class="warn">eps_growth_5y 46.6% excluded — trough-to-profitability; VMware acquisition (2023) roughly doubled revenue, inflating all historical CAGRs</span>
+    <span class="warn">OL suppressed — eps_growth_ttm_yoy 100.1% is M&A consolidation artifact (full-year VMware), not real operating leverage</span>
+    <span class="warn">Decay: bear eff 6.5% · base eff 11.5% · bull eff 14.5% (linear decel to 8% terminal)</span>
+  </div>
+  <div class="scenario-row">
+    <div class="s-header">Scenario</div><div class="s-header">EPS CAGR / Exit P/E</div><div class="s-header">Price Target</div><div class="s-header">Adj Return</div>
+  </div>
+  <div class="scenario-row row-bear">
+    <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
+    <div class="s-cell val-bear">6.5% eff (AI capex cycle peaks; VMware churn; 6.5% EPS CAGR; exits at 14×) / 14×</div>
+    <div class="s-cell">~$371</div>
+    <div class="s-cell val-bear">~1.00×</div>
+  </div>
+  <div class="scenario-row row-base">
+    <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
+    <div class="s-cell val-base">11.5% eff (AI networking + VMware integration + semi; 11.5% EPS CAGR; exits at 21× — the 21.6× cap (18× plus the 20% exceptional-company premium) for the ~$431B of revenue this case projects at exit, down from 26×) / 21×</div>
+    <div class="s-cell">~$880</div>
+    <div class="s-cell val-base">~2.37×</div>
+  </div>
+  <div class="scenario-row row-bull">
+    <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
+    <div class="s-cell val-bull">14.5% eff (AI infrastructure monopoly + VMware platform dominance; 14.5% EPS CAGR; exits at 24×) / 24×</div>
+    <div class="s-cell">~$1,312</div>
+    <div class="s-cell val-bull">~3.53×</div>
+  </div>
+  <div class="scenario-row row-exp">
+    <div class="s-label" style="font-weight:700;">Expected</div>
+    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.2×1.00 + 0.55×2.37 + 0.25×3.53 = 2.39× — verified price, share count and revenue</div>
+    <div class="s-cell val-exp">~2.39×</div>
+  </div>
+  <div class="note"><strong>Oct 13 2026: 2.45× on verified inputs.</strong> <strong>Revised Oct 2026: 3.22×.</strong> Base exit 26× against a 19× entry underwrote a 1.37× re-rating in the <em>base</em> case. Broadcom is genuinely exceptional, but a base case should not assume the market re-rates it by a third. Exits cut to 22×/24×. AVGO at 19× fwd P/E is cheap for its growth rate (PEG ~0.9). Two business drivers: AI custom ASICs (Google TPU, Meta MTIA, Apple Neural Engine — ~$14B+ AI revenue in FY2025) + VMware cloud infrastructure (VCF platform, tracking toward $8B ARR). Three model adjustments: (1) eps_growth_5y 46.6% excluded — VMware closed Nov 2023 artificially boosted EPS CAGR; (2) base_cap tightened from 18%→15%, bull_cap 22%→19% — acquisition-inflated revenue CAGR shouldn't drive full large-cap headroom; (3) OL suppressed — TTM EPS +100% is VMware full-year consolidation effect, not organic leverage. Decay from 15% to 8% terminal reduces effective base CAGR to 11.5%. Bear 1.32× (you still make money in bear but underperform S&P) vs MU's 0.48× bear — much less binary risk. Main risks: VMware integration execution, AI ASIC customer concentration (3 customers = large %), $40B+ acquisition debt. Verified: $347-352 price, fwd P/E 18.9-19.4× (StockAnalysis, GuruFocus). S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×. Exit PEs revised: base 26→26, bull 32→28 (projected-revenue scale check).</div>
 </div>
 
 <!-- MELI -->
@@ -2115,61 +2117,6 @@
   <div class="note"><strong>Revised Oct 2026: 2.32×.</strong> Base 24× and bull 31× against a 17.9× entry were the largest re-rating assumptions left in the table, for the #2 player in a two-horse market facing Waymo and Tesla robotaxi as an existential, not cyclical, threat. Fixed: eps_growth_ttm_yoy=3178% was triggering a max 6pp OL premium (fake signal from losses → small profit on one-time item). With OL removed, base drops from ~4.15× → 3.18×. Bear 0.99× ≈ break-even — LYFT is a pure rideshare play with no delivery/logistics diversification like UBER, making it more exposed to AV disruption. High-variance: 3× base if rideshare growth continues; ~1× if autonomous vehicles commoditize the market. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
 
-<!-- TSM -->
-<div class="card">
-  <div class="card-header">
-    <div><div class="ticker-row"><span class="ticker">TSM</span><span class="company">Taiwan Semiconductor Mfg. Co. (ADR) — NYSE</span></div></div>
-    <div class="price-block"><div class="price">$445.12</div><div class="price-sub">fwd P/E 28.5× (verified)  ·  dilution 1.00×</div></div>
-  </div>
-  <div class="chips">
-    <span class="chip">~5.19B shares (25.93B ordinary ÷ 5 per ADS) · NTM EPS: $15.52 · fwd P/E 28.5× · cap ~$2.29T (14.3× sales) · implied net margin 50% vs 67.7% gross — coherent</span>
-    <span class="chip">Growth anchor: 25.1% eps_growth_5y</span>
-    <span class="chip">Revenue: ~$160B USD  ·  dp=7pp corrected  ·  base_cap=14%  ·  bull_cap=18%  ·  S&amp;P baseline 1.92×</span>
-    <span class="chip">Q2 2026: $40.2B rev +33.7% YoY  ·  net income +77.4%  ·  gross margin 67.7%  ·  HPC/AI = 66% of revenue</span>
-    <span class="chip">2026 full-year guidance: &gt;40% revenue growth  ·  CapEx raised to $60–64B</span>
-    
-    <span class="warn">Entry multiple VERIFIED Oct 13 2026. Live: price $445.12, revenue $139.57B TTM, 25.93B ordinary shares (= 5.19B ADS at 5:1). Data providers report a forward P/E of 19.61×, which is <strong>impossible by the same proof as before</strong>: it needs EPS $22.70/ADS, or $118B of net income on $139.57B of revenue — an 84% net margin against a 67.7% gross margin. Bounding it from TSMC’s real margins (gross 67.7% → opex ~12% → net 45–48%) gives ~35× on TTM earnings, but a FORWARD multiple needs FORWARD earnings: on NTM revenue of ~$190B (&gt;40% guided growth) it is <strong>~26×</strong>. The card’s 28.5× sits just conservative of that; at 26× the expected return would be 2.39× rather than 2.18×.</span>
-    <span class="warn">Rebuilt Oct 13 2026 on verified data, 2.18×. Price $442.19 (live quote) and forward P/E ~28.5× (27.93× / 29.41× / 29.67× across sources) replace the card’s $485.09 and 18.88×. The 18.88× was the bad input: it implied NTM EPS $25.69, an 83% net margin against this card’s own 67.7% gross margin, which is impossible. Because the model derives EPS as price ÷ entry P/E, price cancels out and only the entry multiple ever mattered — 18.88× gave 3.29×, an over-corrected 33.5× gave 1.67×, the verified 28.5× gives 2.18×. Robust to what is left: across the whole sourced P/E range the answer is 1.9–2.3×.</span>
-    <span class="warn">Judgement set to the central case, not the conservative corner. Geo 15%→10%: 15% conflated “military action” with “ADR destroyed” — a blockade or limited action damages TSMC without wiping out the equity, and only a full invasion does what the 0.1× scenario assumes. Exit 20×→22%: the capital-intensity argument for 20× weakens at the exit point, where growth has slowed to 8–9% and growth CapEx moderates with it; and 22× is the same 1.375× quality premium over VOO’s 16× base exit that this dashboard already applies to SCHG. The prior 15%/20× setting was chosen under a wrongly believed 33.5× entry and stacked the pessimistic end of both axes at once.</span>
-    <span class="warn">Rebuilt Oct 13 2026 on <strong>verified data</strong>, 1.95×. Price $442.19 from a live quote and forward P/E ~28.5× from market data (27.93× and 29.67× per dividend.watch, 29.41× elsewhere) replace the card’s $485.09 and 18.88×. <strong>The 18.88× was the bad input</strong> — it implied an NTM EPS of $25.69, or an 83% net margin against this card’s own 67.7% gross margin, which is impossible. At the real ~28.5× the implied margin is 50%, coherent. Because the model derives EPS as price ÷ entry P/E, the price cancels out of the return algebra and <em>only the entry P/E ever mattered</em>: 18.88× gave 3.29×, an over-corrected 33.5× gave 1.67×, the real 28.5× gives 1.95×. Growth, exits and the geo weighting are unchanged throughout.</span>
-    <span class="warn">Geo weighting corrected Oct 13 2026, 1.67× from 1.77×: the chip stated "bear 25% = 15% geo + 10% biz" — catastrophe at 15% of <strong>total</strong> probability — but the scenario cell applied 15% of the <strong>bear</strong>, which is 3.75% of total, four times lighter than intended. Resolved to the written intent. Exit held at 20×: the case for 25× is TSMC’s irreplaceability, the case against is capital intensity — $60–64B/yr of CapEx against ~$75B of net income means free cash flow runs far below earnings, and a terminal multiple should price distributable cash, not accounting profit.</span>
-    <span class="warn">EPS anchor corrected Oct 13 2026, 1.77× from 2.94×. Proof the old figure was impossible: this card states <strong>gross margin 67.7%</strong>, and the prior NTM EPS of $25.69 against $160B of revenue implied an <strong>83% NET margin</strong>. Net income cannot exceed gross profit, and that holds at any price. The EPS was derived as price ÷ assumed-P/E, which is circular. Re-derived at a 47% net margin (67.7% gross → ~56% operating → ~47% net): EPS ~$14.50/ADS, true forward multiple ~33.5× rather than the 18.9× shown. Share count corroborated independently: 25.93B ordinary at 5 per ADS = 5.19B.</span>
-    <span class="warn" style="background:#fef3c7;border-color:#d97706;">⚠ THE PRICE IS THE OPEN QUESTION, NOT THE BUSINESS. $485.09 × 5.19B ADS = <strong>$2.52T market cap on $160B of revenue = 15.7× sales</strong>, for a foundry that has historically traded 5–10×. The whole rating turns on it: at $485 the expected return is 1.77×, below the 1.92× S&amp;P baseline; at a historically normal 10× sales (~$309/ADS) the same scenarios give <strong>2.77×</strong>, comfortably above. TSMC being an excellent business is not in question — whether this price input is real is. Verify against a live quote before acting on either number.</span>
-    <span class="warn">⚠ GEOPOLITICAL TAIL: China military action in Taiwan Strait → ADR value near-zero (~0.1×); embedded as 15% sub-probability within 25% bear bucket</span>
-    <span class="warn">Data quality: Finnhub revenue in NTD ($4,469B TWD ÷ ~28 NTD/USD ≈ $160B USD) — dp corrected from 10pp (model bug) to 7pp ($150–400B bucket); scenarios recomputed manually</span>
-    <span class="warn">Bear probability raised to 25% (from standard 20%): blends geo catastrophe (15%, ~0.1×) + business decel (10%, ~1.76×) → composite bear ~0.75×</span>
-  
-    <span class="warn">Revised: exit PEs adjusted for projected-revenue scale check</span>
-  </div>
-  <div class="scenario-row">
-    <div class="s-header">Scenario</div><div class="s-header">Growth (eff) / Exit P/E</div><div class="s-header">Price Target</div><div class="s-header">Adj Return</div>
-  </div>
-  <div class="scenario-row row-bear">
-    <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
-    <div class="s-cell val-bear">composite 0.74× @25%: 10% of TOTAL on geopolitical catastrophe (~0.10×, full invasion or sustained blockade) + 15% on business decel (10.1%→9% eff / 14× → 1.16×)</div>
-    <div class="s-cell">~$514 biz / ~$44 geo</div>
-    <div class="s-cell val-bear">~0.74×</div>
-  </div>
-  <div class="scenario-row row-base">
-    <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
-    <div class="s-cell val-base">14% start → 12% eff (base_cap=14%) / 22×</div>
-    <div class="s-cell">~$1,060</div>
-    <div class="s-cell val-base">~2.40×</div>
-  </div>
-  <div class="scenario-row row-bull">
-    <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
-    <div class="s-cell val-bull">18% start → 15% eff (bull_cap=18%) / 24×</div>
-    <div class="s-cell">~$1,506</div>
-    <div class="s-cell val-bull">~3.41×</div>
-  </div>
-  <div class="scenario-row row-exp">
-    <div class="s-label" style="font-weight:700;">Expected</div>
-    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.10×0.10 + 0.15×1.16 + 0.55×2.40 + 0.20×3.41 = 2.18× — verified price and P/E; geo 10%, exits 14/22/24×</div>
-    <div class="s-cell val-exp">~2.18×</div>
-  </div>
-  <div class="note"><strong>Oct 13 2026: 2.18× on verified inputs.</strong> This card moved five times in one session and every move traced to one number — the entry P/E — because the model derives EPS as price ÷ entry P/E, so price cancels and return reduces to (1+g)^10 × exit P/E ÷ entry P/E. The original 18.88× was provably wrong (83% net margin against a 67.7% gross margin); the verified figure is ~28.5×. <strong>On the question of whether TSM beats the index: it does, and not marginally in the place that matters.</strong> Base case 2.40× against the S&amp;P’s 1.80× — a 21% edge. Ex-geopolitical risk the expected return is ~2.3× against 1.92×. It is only the Taiwan tail that pulls the headline toward the index, so this number is really a judgement about geopolitics rather than about semiconductors. Across every defensible combination of geo weight (5–15%) and exit multiple (20–25×) the range is 1.95–2.50× — the entire band sits at or above the baseline.  This card swung from 3.29× to 1.67× to 1.95× in a single session, and every one of those moves traced to a single number: the entry P/E. The model derives EPS as price ÷ entry P/E, so price cancels and the return reduces to (1+g)^10 × exit P/E ÷ entry P/E. The original 18.88× was wrong and provably so — it implied an 83% net margin against a 67.7% gross margin. The real figure is ~28.5×. At that multiple TSM returns 1.95× against the 1.92× S&amp;P baseline: essentially index-equivalent. The business case is untouched and strong — monopoly 3nm/2nm, 66% of revenue from HPC/AI, &gt;40% guided growth, EPS still tripling in the base case — but at ~28.5× earnings and 14.3× sales, most of that performance is already in the price.  Worth being precise about what this number is and is not saying. The base case has EPS tripling, $14.50 → $45.03, on revenue reaching ~$497B — more than three times today’s entire global foundry market. The business assumption is aggressive, not conservative. What caps the return is the multiple: 33.5× → 20× is a 40% de-rating, and 3.11× of earnings growth times 0.60× of compression nets 1.86×. TSMC does everything right in that scenario; the entry price takes it away. The honest range across defensible choices is 1.67–2.14×, straddling the 1.92× S&amp;P baseline, so this is index-equivalent rather than bad. And it all rests on the unverified $485.09: at a normal 10× sales (~$309/ADS) the identical scenarios return ~2.61×. <strong>Revised Oct 13 2026: 1.77×.</strong> The EPS correction is settled — an 83% net margin against a stated 67.7% gross margin is arithmetically impossible, at any price. What is not settled is the price. At the $485.09 carded here TSM is a $2.52T company on $160B of revenue, 15.7× sales, which no foundry has sustained; at 10× sales the same scenarios return 2.77× instead of 1.77×. The business case is unchanged and strong — monopoly 3nm/2nm, 66% of revenue from HPC/AI, >40% guided growth — but a great company bought at 15.7× sales is not automatically a great stock, and that is what the number is saying. Exit PEs revised: base 22→20×, bull 26→22× — at projected revenue >$400B, PE cap is 18× (exceptional 21.6×); 20× base reflects slight geo-discount removal, 22× bull reflects exceptional premium. Expected 2.94× vs prior 3.29×. TSM is the only foundry with mass-production 3nm and 2nm nodes — it fabricates virtually every advanced AI chip (NVIDIA H100/H200/B200, AMD MI300, Apple silicon, Qualcomm). HPC/AI grew to 66% of Q2 2026 revenue, making TSM the most direct proxy to AI capex in this entire table. Gross margin of 67.7% in Q2 is extraordinary for a capital-intensive manufacturer, reflecting pricing power that Intel (IFS) and Samsung cannot match on advanced nodes. Yet fwd P/E is only 18.88× — cheaper than MA (25.02×) or VEEV (29.60×) — implying the market is already discounting the geopolitical risk heavily. That is the defining feature of this stock: China military action in the Taiwan Strait, even a limited blockade, would trigger US sanctions and halt ADR trading. ADR value would approach zero. The 10–15% probability of this tail event is embedded in the elevated 25% bear probability above. Without the geo overlay, this stock ranks top-4 or top-5 in this table on pure DCF math (~4.1× expected). The correct framing: TSM is a high-conviction AI infrastructure investment with a catastrophic tail you must size for — position sizing matters more here than for any other stock in this list. Data note: Finnhub reports TSMC revenue in New Taiwan Dollars ($4,469B NTD); the automated model applied dp=10pp (>$400B) incorrectly — corrected to dp=7pp for ~$160B USD. Anchor (25.1% eps_growth_5y), fwd P/E (18.88×), and NTM EPS ($25.69) are USD-denominated and unaffected by the NTD issue. S&P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
-</div>
-
 <!-- DASH -->
 <div class="card">
   <div class="card-header">
@@ -2340,6 +2287,61 @@
   <div class="note">Revised: growth spreads widened from ±1pp batch-add template to reflect realistic bear/bull scenarios. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
 
+
+<!-- TSM -->
+<div class="card">
+  <div class="card-header">
+    <div><div class="ticker-row"><span class="ticker">TSM</span><span class="company">Taiwan Semiconductor Mfg. Co. (ADR) — NYSE</span></div></div>
+    <div class="price-block"><div class="price">$445.12</div><div class="price-sub">fwd P/E 28.5× (verified)  ·  dilution 1.00×</div></div>
+  </div>
+  <div class="chips">
+    <span class="chip">~5.19B shares (25.93B ordinary ÷ 5 per ADS) · NTM EPS: $15.52 · fwd P/E 28.5× · cap ~$2.29T (14.3× sales) · implied net margin 50% vs 67.7% gross — coherent</span>
+    <span class="chip">Growth anchor: 25.1% eps_growth_5y</span>
+    <span class="chip">Revenue: ~$160B USD  ·  dp=7pp corrected  ·  base_cap=14%  ·  bull_cap=18%  ·  S&amp;P baseline 1.92×</span>
+    <span class="chip">Q2 2026: $40.2B rev +33.7% YoY  ·  net income +77.4%  ·  gross margin 67.7%  ·  HPC/AI = 66% of revenue</span>
+    <span class="chip">2026 full-year guidance: &gt;40% revenue growth  ·  CapEx raised to $60–64B</span>
+    
+    <span class="warn">Entry multiple VERIFIED Oct 13 2026. Live: price $445.12, revenue $139.57B TTM, 25.93B ordinary shares (= 5.19B ADS at 5:1). Data providers report a forward P/E of 19.61×, which is <strong>impossible by the same proof as before</strong>: it needs EPS $22.70/ADS, or $118B of net income on $139.57B of revenue — an 84% net margin against a 67.7% gross margin. Bounding it from TSMC’s real margins (gross 67.7% → opex ~12% → net 45–48%) gives ~35× on TTM earnings, but a FORWARD multiple needs FORWARD earnings: on NTM revenue of ~$190B (&gt;40% guided growth) it is <strong>~26×</strong>. The card’s 28.5× sits just conservative of that; at 26× the expected return would be 2.39× rather than 2.18×.</span>
+    <span class="warn">Rebuilt Oct 13 2026 on verified data, 2.18×. Price $442.19 (live quote) and forward P/E ~28.5× (27.93× / 29.41× / 29.67× across sources) replace the card’s $485.09 and 18.88×. The 18.88× was the bad input: it implied NTM EPS $25.69, an 83% net margin against this card’s own 67.7% gross margin, which is impossible. Because the model derives EPS as price ÷ entry P/E, price cancels out and only the entry multiple ever mattered — 18.88× gave 3.29×, an over-corrected 33.5× gave 1.67×, the verified 28.5× gives 2.18×. Robust to what is left: across the whole sourced P/E range the answer is 1.9–2.3×.</span>
+    <span class="warn">Judgement set to the central case, not the conservative corner. Geo 15%→10%: 15% conflated “military action” with “ADR destroyed” — a blockade or limited action damages TSMC without wiping out the equity, and only a full invasion does what the 0.1× scenario assumes. Exit 20×→22%: the capital-intensity argument for 20× weakens at the exit point, where growth has slowed to 8–9% and growth CapEx moderates with it; and 22× is the same 1.375× quality premium over VOO’s 16× base exit that this dashboard already applies to SCHG. The prior 15%/20× setting was chosen under a wrongly believed 33.5× entry and stacked the pessimistic end of both axes at once.</span>
+    <span class="warn">Rebuilt Oct 13 2026 on <strong>verified data</strong>, 1.95×. Price $442.19 from a live quote and forward P/E ~28.5× from market data (27.93× and 29.67× per dividend.watch, 29.41× elsewhere) replace the card’s $485.09 and 18.88×. <strong>The 18.88× was the bad input</strong> — it implied an NTM EPS of $25.69, or an 83% net margin against this card’s own 67.7% gross margin, which is impossible. At the real ~28.5× the implied margin is 50%, coherent. Because the model derives EPS as price ÷ entry P/E, the price cancels out of the return algebra and <em>only the entry P/E ever mattered</em>: 18.88× gave 3.29×, an over-corrected 33.5× gave 1.67×, the real 28.5× gives 1.95×. Growth, exits and the geo weighting are unchanged throughout.</span>
+    <span class="warn">Geo weighting corrected Oct 13 2026, 1.67× from 1.77×: the chip stated "bear 25% = 15% geo + 10% biz" — catastrophe at 15% of <strong>total</strong> probability — but the scenario cell applied 15% of the <strong>bear</strong>, which is 3.75% of total, four times lighter than intended. Resolved to the written intent. Exit held at 20×: the case for 25× is TSMC’s irreplaceability, the case against is capital intensity — $60–64B/yr of CapEx against ~$75B of net income means free cash flow runs far below earnings, and a terminal multiple should price distributable cash, not accounting profit.</span>
+    <span class="warn">EPS anchor corrected Oct 13 2026, 1.77× from 2.94×. Proof the old figure was impossible: this card states <strong>gross margin 67.7%</strong>, and the prior NTM EPS of $25.69 against $160B of revenue implied an <strong>83% NET margin</strong>. Net income cannot exceed gross profit, and that holds at any price. The EPS was derived as price ÷ assumed-P/E, which is circular. Re-derived at a 47% net margin (67.7% gross → ~56% operating → ~47% net): EPS ~$14.50/ADS, true forward multiple ~33.5× rather than the 18.9× shown. Share count corroborated independently: 25.93B ordinary at 5 per ADS = 5.19B.</span>
+    <span class="warn" style="background:#fef3c7;border-color:#d97706;">⚠ THE PRICE IS THE OPEN QUESTION, NOT THE BUSINESS. $485.09 × 5.19B ADS = <strong>$2.52T market cap on $160B of revenue = 15.7× sales</strong>, for a foundry that has historically traded 5–10×. The whole rating turns on it: at $485 the expected return is 1.77×, below the 1.92× S&amp;P baseline; at a historically normal 10× sales (~$309/ADS) the same scenarios give <strong>2.77×</strong>, comfortably above. TSMC being an excellent business is not in question — whether this price input is real is. Verify against a live quote before acting on either number.</span>
+    <span class="warn">⚠ GEOPOLITICAL TAIL: China military action in Taiwan Strait → ADR value near-zero (~0.1×); embedded as 15% sub-probability within 25% bear bucket</span>
+    <span class="warn">Data quality: Finnhub revenue in NTD ($4,469B TWD ÷ ~28 NTD/USD ≈ $160B USD) — dp corrected from 10pp (model bug) to 7pp ($150–400B bucket); scenarios recomputed manually</span>
+    <span class="warn">Bear probability raised to 25% (from standard 20%): blends geo catastrophe (15%, ~0.1×) + business decel (10%, ~1.76×) → composite bear ~0.75×</span>
+  
+    <span class="warn">Revised: exit PEs adjusted for projected-revenue scale check</span>
+  </div>
+  <div class="scenario-row">
+    <div class="s-header">Scenario</div><div class="s-header">Growth (eff) / Exit P/E</div><div class="s-header">Price Target</div><div class="s-header">Adj Return</div>
+  </div>
+  <div class="scenario-row row-bear">
+    <div class="s-label"><span class="dot" style="background:var(--bear)"></span>Bear</div>
+    <div class="s-cell val-bear">composite 0.74× @25%: 10% of TOTAL on geopolitical catastrophe (~0.10×, full invasion or sustained blockade) + 15% on business decel (10.1%→9% eff / 14× → 1.16×)</div>
+    <div class="s-cell">~$514 biz / ~$44 geo</div>
+    <div class="s-cell val-bear">~0.74×</div>
+  </div>
+  <div class="scenario-row row-base">
+    <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
+    <div class="s-cell val-base">14% start → 12% eff (base_cap=14%) / 21×</div>
+    <div class="s-cell">~$1,012</div>
+    <div class="s-cell val-base">~2.29×</div>
+  </div>
+  <div class="scenario-row row-bull">
+    <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
+    <div class="s-cell val-bull">18% start → 15% eff (bull_cap=18%) / 24×</div>
+    <div class="s-cell">~$1,506</div>
+    <div class="s-cell val-bull">~3.41×</div>
+  </div>
+  <div class="scenario-row row-exp">
+    <div class="s-label" style="font-weight:700;">Expected</div>
+    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.10×0.10 + 0.15×1.16 + 0.55×2.29 + 0.20×3.41 = 2.13× — verified price and P/E; geo 10%, exits 14/22/24×</div>
+    <div class="s-cell val-exp">~2.13×</div>
+  </div>
+  <div class="note"><strong>Oct 13 2026: 2.18× on verified inputs.</strong> This card moved five times in one session and every move traced to one number — the entry P/E — because the model derives EPS as price ÷ entry P/E, so price cancels and return reduces to (1+g)^10 × exit P/E ÷ entry P/E. The original 18.88× was provably wrong (83% net margin against a 67.7% gross margin); the verified figure is ~28.5×. <strong>On the question of whether TSM beats the index: it does, and not marginally in the place that matters.</strong> Base case 2.40× against the S&amp;P’s 1.80× — a 21% edge. Ex-geopolitical risk the expected return is ~2.3× against 1.92×. It is only the Taiwan tail that pulls the headline toward the index, so this number is really a judgement about geopolitics rather than about semiconductors. Across every defensible combination of geo weight (5–15%) and exit multiple (20–25×) the range is 1.95–2.50× — the entire band sits at or above the baseline.  This card swung from 3.29× to 1.67× to 1.95× in a single session, and every one of those moves traced to a single number: the entry P/E. The model derives EPS as price ÷ entry P/E, so price cancels and the return reduces to (1+g)^10 × exit P/E ÷ entry P/E. The original 18.88× was wrong and provably so — it implied an 83% net margin against a 67.7% gross margin. The real figure is ~28.5×. At that multiple TSM returns 1.95× against the 1.92× S&amp;P baseline: essentially index-equivalent. The business case is untouched and strong — monopoly 3nm/2nm, 66% of revenue from HPC/AI, &gt;40% guided growth, EPS still tripling in the base case — but at ~28.5× earnings and 14.3× sales, most of that performance is already in the price.  Worth being precise about what this number is and is not saying. The base case has EPS tripling, $14.50 → $45.03, on revenue reaching ~$497B — more than three times today’s entire global foundry market. The business assumption is aggressive, not conservative. What caps the return is the multiple: 33.5× → 20× is a 40% de-rating, and 3.11× of earnings growth times 0.60× of compression nets 1.86×. TSMC does everything right in that scenario; the entry price takes it away. The honest range across defensible choices is 1.67–2.14×, straddling the 1.92× S&amp;P baseline, so this is index-equivalent rather than bad. And it all rests on the unverified $485.09: at a normal 10× sales (~$309/ADS) the identical scenarios return ~2.61×. <strong>Revised Oct 13 2026: 1.77×.</strong> The EPS correction is settled — an 83% net margin against a stated 67.7% gross margin is arithmetically impossible, at any price. What is not settled is the price. At the $485.09 carded here TSM is a $2.52T company on $160B of revenue, 15.7× sales, which no foundry has sustained; at 10× sales the same scenarios return 2.77× instead of 1.77×. The business case is unchanged and strong — monopoly 3nm/2nm, 66% of revenue from HPC/AI, >40% guided growth — but a great company bought at 15.7× sales is not automatically a great stock, and that is what the number is saying. Exit PEs revised: base 22→20×, bull 26→22× — at projected revenue >$400B, PE cap is 18× (exceptional 21.6×); 20× base reflects slight geo-discount removal, 22× bull reflects exceptional premium. Expected 2.94× vs prior 3.29×. TSM is the only foundry with mass-production 3nm and 2nm nodes — it fabricates virtually every advanced AI chip (NVIDIA H100/H200/B200, AMD MI300, Apple silicon, Qualcomm). HPC/AI grew to 66% of Q2 2026 revenue, making TSM the most direct proxy to AI capex in this entire table. Gross margin of 67.7% in Q2 is extraordinary for a capital-intensive manufacturer, reflecting pricing power that Intel (IFS) and Samsung cannot match on advanced nodes. Yet fwd P/E is only 18.88× — cheaper than MA (25.02×) or VEEV (29.60×) — implying the market is already discounting the geopolitical risk heavily. That is the defining feature of this stock: China military action in the Taiwan Strait, even a limited blockade, would trigger US sanctions and halt ADR trading. ADR value would approach zero. The 10–15% probability of this tail event is embedded in the elevated 25% bear probability above. Without the geo overlay, this stock ranks top-4 or top-5 in this table on pure DCF math (~4.1× expected). The correct framing: TSM is a high-conviction AI infrastructure investment with a catastrophic tail you must size for — position sizing matters more here than for any other stock in this list. Data note: Finnhub reports TSMC revenue in New Taiwan Dollars ($4,469B NTD); the automated model applied dp=10pp (>$400B) incorrectly — corrected to dp=7pp for ~$160B USD. Anchor (25.1% eps_growth_5y), fwd P/E (18.88×), and NTM EPS ($25.69) are USD-denominated and unaffected by the NTD issue. S&P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
+</div>
 
 <!-- FIS -->
 <div class="card">
@@ -2611,9 +2613,9 @@
   </div>
   <div class="scenario-row row-base">
     <div class="s-label"><span class="dot" style="background:var(--base)"></span>Base</div>
-    <div class="s-cell val-base">8% (Search holds share; Cloud sustains growth; buybacks add ~3-4%/yr EPS) / 22×</div>
-    <div class="s-cell">~$642</div>
-    <div class="s-cell val-base">~1.81×</div>
+    <div class="s-cell val-base">8% (Search holds share; Cloud sustains growth; buybacks add ~3-4%/yr EPS) / 21×</div>
+    <div class="s-cell">~$613</div>
+    <div class="s-cell val-base">~1.73×</div>
   </div>
   <div class="scenario-row row-bull">
     <div class="s-label"><span class="dot" style="background:var(--bull)"></span>Bull</div>
@@ -2623,8 +2625,8 @@
   </div>
   <div class="scenario-row row-exp">
     <div class="s-label" style="font-weight:700;">Expected</div>
-    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.15×0.90 + 0.55×1.81 + 0.3×2.85 = 1.99× (verified price and P/E; bull exit 26→24×)</div>
-    <div class="s-cell val-exp">~1.99×</div>
+    <div class="s-cell muted" style="grid-column:span 2;font-family:'Inter',sans-serif;font-size:11.5px;">0.15×0.90 + 0.55×1.73 + 0.3×2.85 = 1.94× (verified price and P/E; bull exit 26→24×)</div>
+    <div class="s-cell val-exp">~1.94×</div>
   </div>
   <div class="note">Manual estimate of ~2.1× used because the hold_check output (~1.35×) implies 2.5% base EPS CAGR — which requires operating earnings to DECLINE in real terms while GOOGL buys back ~4%/yr of shares. That’s inconsistent with Google Cloud growing 29%+ YoY (now ~25% of revenue) and Alphabet’s demonstrated operating leverage. The likely cause: dp=10pp (>$400B revenue tier) applied both mechanically by the model AND qualitatively by the LLM reasoning through EU headwinds — double-penalizing. The 8% base EPS CAGR used here (operating ~4-5% + buybacks ~3-4%) is conservative but internally consistent. Bear (0.91×) assumes EU structural damage + AI search substitution more severe than base — still only 4% EPS growth, well below S&amp;P. Bull (3.34×) requires Cloud to reach No. 2 hyperscaler + Gemini monetization at scale. Waymo is pure option value not modeled. Re-run hold_check at current price to get an updated model output. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
@@ -4184,6 +4186,8 @@
   </div>
   <div class="note"><strong>Revised Oct 2026: 0.70×.</strong> Entry is 53.2× — extreme for optical networking equipment, which historically trades 15–25×. The prior bull compounded 26% EPS CAGR for a decade and implied $373B at 7.2× sales, against a 2–3× historical norm. Most of the loss here is the entry multiple, not the business. Revised: growth spreads widened from ±1pp batch-add template to reflect realistic bear/bull scenarios. S&amp;P baseline 1.92× (~6.7%/yr) — above the forward consensus (Goldman 6.5%, JPMorgan 6.0%, Vanguard 4.2-6.2%) because a bull case must let the multiple hold rather than compress, and below the historical ~10%/yr → 2.59×.</div>
 </div>
+
+
 
 
 
