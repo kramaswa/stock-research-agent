@@ -413,7 +413,7 @@ def _sanity_check(e: StockEntry) -> None:
                 premium_cap = cap * 1.2
                 if s.exit_pe > premium_cap:
                     warnings.append(
-                        f"Base exit PE {s.exit_pe}x exceeds {premium_cap:.0f}x "
+                        f"Base exit PE {s.exit_pe}x exceeds {premium_cap:.1f}x "
                         f"(20% premium on {cap}x cap) for projected "
                         f"${proj_rev_base:.0f}B revenue at exit"
                     )
@@ -538,7 +538,7 @@ def sanity_check_card(html: str, ticker: str) -> list[str]:
                     premium_cap = cap * 1.2
                     if base_exit_pe > premium_cap:
                         warnings.append(
-                            f"Base exit PE {base_exit_pe}x exceeds {premium_cap:.0f}x "
+                            f"Base exit PE {base_exit_pe}x exceeds {premium_cap:.1f}x "
                             f"(projected ${proj_rev:.0f}B rev at exit)"
                         )
                     break
@@ -735,7 +735,7 @@ def _ret_class(expected: float) -> str:
 
 def generate_rank_row(rank: int, e: StockEntry) -> str:
     rc = _ret_class(e.expected)
-    vs_sp = f"expected ~{e.expected:.2f}× vs S&P 2.55×"
+    vs_sp = f"expected ~{e.expected:.2f}× vs S&P 1.92×"
     pe_str = f"~{e.fwd_pe:.0f}×" if e.fwd_pe is not None else "N/A"
     rationale = (
         f"~${e.price:.0f} · fwd P/E {pe_str} · "
